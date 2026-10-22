@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "src/renderer/shell.html"
+        ],
+        "createdAt": "2026-10-22T22:34:51.148Z",
+        "reason": "Claude decided: mini audio player scrolling title replicates Arc's documented sidebar player (parity/visual-spec.md §2)"
+      }
+    ]
+  }
+}

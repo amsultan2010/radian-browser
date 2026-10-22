@@ -78,14 +78,22 @@ module.exports = {
       assert.deepEqual(await ctx.titres(), ['Page A']);
     });
 
-    await t.verifier('Entrée sur un champ vide ferme simplement la barre', async () => {
+    await ctx.ouvrir('/b', 'Page B');
+
+    await t.verifier('comme dans Arc, la première ligne est choisie dès l’ouverture : Entrée sur un champ vide l’exécute', async () => {
+      await ctx.nouvelOnglet();
+      assert.equal(await ctx.selection(), 0, 'première ligne choisie');
+      assert.equal((await ctx.suggestions())[0], 'Page A', 'l’onglet affiché (B) n’est pas proposé');
+      await modal.keyboard.press('Enter');
+      await fermee();
+      await jusqua(async () => (await ctx.etat()).actifUrl === ctx.url('/a'), 'onglet A actif');
+      assert.deepEqual(await ctx.titres(), ['Page B', 'Page A'], 'aucun onglet de plus');
+      // Et de nouveau : la première ligne est maintenant B.
       await ctx.nouvelOnglet();
       await modal.keyboard.press('Enter');
       await fermee();
-      assert.deepEqual(await ctx.titres(), ['Page A']);
+      await jusqua(async () => (await ctx.etat()).actifUrl === ctx.url('/b'), 'onglet B actif');
     });
-
-    await ctx.ouvrir('/b', 'Page B');
 
     await t.verifier('taper du texte affiche des suggestions (recherche, onglet ouvert, historique)', async () => {
       await ctx.nouvelOnglet();
@@ -158,13 +166,13 @@ module.exports = {
       await fermee();
     });
 
-    await t.verifier('barre ouverte sans texte : onglets récents proposés, ↓ puis Entrée y bascule', async () => {
+    await t.verifier('barre ouverte sans texte : onglets récents proposés (sauf l’onglet affiché), ↓ puis Entrée y bascule', async () => {
       await ctx.nouvelOnglet();
       const titres = await ctx.suggestions();
-      assert.ok(titres.includes('Page A') && titres.includes('Page B'), 'onglets récents : ' + titres.join(' | '));
-      assert.equal(await ctx.selection(), -1, 'rien de sélectionné tant qu’on n’a rien tapé');
+      assert.ok(titres.includes('Page A') && !titres.includes('Page B'), 'onglets récents, sans l’onglet affiché : ' + titres.join(' | '));
+      assert.equal(await ctx.selection(), 0, 'comme dans Arc, la première ligne est choisie');
       const i = titres.indexOf('Page A');
-      for (let k = 0; k <= i; k++) await modal.keyboard.press('ArrowDown');
+      for (let k = 0; k < i; k++) await modal.keyboard.press('ArrowDown');
       await modal.keyboard.press('Enter');
       await fermee();
       await jusqua(async () => (await ctx.etat()).actifUrl === ctx.url('/a'), 'onglet A actif');
@@ -183,8 +191,11 @@ module.exports = {
       assert.equal(await champ(), ctx.url('/a'));
       const sel = await modal.evaluate(() => { const i = document.getElementById('cmd-input'); return [i.selectionStart, i.selectionEnd, i.value.length]; });
       assert.deepEqual(sel.slice(0, 2), [0, sel[2]], 'toute l’adresse est sélectionnée');
+      // Comme dans Arc : la page affichée en première ligne, choisie (Entrée la recharge), et pas comme onglet où basculer.
       const titres = await ctx.suggestions();
-      assert.ok(!titres.includes('Page A'), 'l’onglet actif n’est pas proposé');
+      assert.equal(titres[0], 'Page A');
+      assert.equal(titres.filter((x) => x === 'Page A').length, 1, 'l’onglet actif n’est pas proposé une seconde fois');
+      assert.equal(await ctx.selection(), 0);
     });
 
     await t.verifier('⌘L : taper une adresse puis Entrée navigue dans le même onglet', async () => {

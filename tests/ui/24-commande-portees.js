@@ -18,7 +18,7 @@ module.exports = {
       await ctx.nouvelOnglet();
       const titres = await ctx.suggestions();
       assert.ok(titres.includes('Bienvenue dans Radian') && titres.includes('Centre d’aide') && titres.some((x) => /^Réglages/.test(x)), titres.join(' | '));
-      assert.equal(await ctx.selection(), -1);
+      assert.equal(await ctx.selection(), 0, 'comme dans Arc, la première ligne est choisie');
     });
 
     await t.verifier('⇥ sur la barre vide : pastille « Actions », la liste ne contient que des actions et défile', async () => {
@@ -34,7 +34,7 @@ module.exports = {
     });
 
     await t.verifier('↓ au-delà du bas de la liste : la ligne sélectionnée défile à l’écran', async () => {
-      for (let i = 0; i < 14; i++) await modal.keyboard.press('ArrowDown');
+      for (let i = 0; i < 13; i++) await modal.keyboard.press('ArrowDown'); // la première ligne est déjà choisie
       assert.equal(await ctx.selection(), 13);
       const vu = await modal.evaluate(() => { const l = document.getElementById('cmd-list').getBoundingClientRect(); const r = document.querySelector('#cmd-list .cmd.sel').getBoundingClientRect(); return r.top >= l.top - 1 && r.bottom <= l.bottom + 1; });
       assert.equal(vu, true);

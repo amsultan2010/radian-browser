@@ -63,7 +63,7 @@ function dedupKey(c) {
 
 // Titre d'une action, prêt à comparer : calculé une fois par action (les listes sont gardées par palette.js).
 const actionKey = (c) => (c.n === undefined ? (c.n = norm(c.title)) : c.n);
-const actionItem = (c) => ({ kind: 'command', command: c.command, arg: c.arg, title: c.title, subtitle: c.shortcut || c.sub || store.t('cmd.action') });
+const actionItem = (c) => ({ kind: 'command', command: c.command, arg: c.arg, title: c.title, subtitle: c.shortcut || c.sub || store.t('cmd.action'), shortcut: c.shortcut || '' });
 const ACTIONS_MAX = 60; // ⇥ sur une barre vide : les actions seules, en liste déroulante
 
 // Recherche incrémentale : quand la saisie prolonge la précédente (« nav » puis

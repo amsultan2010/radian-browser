@@ -133,7 +133,7 @@ function commandList(w) {
 const STARTERS = ['welcome', 'shortcuts', 'helpCenter', 'reportIssue', 'whatsNew', 'settings'];
 function starters(w) {
   const by = new Map(commandList(w).map((c) => [c.command, c]));
-  return STARTERS.map((n) => by.get(n)).filter(Boolean).map((c) => ({ kind: 'command', command: c.command, title: c.title, subtitle: c.shortcut || t('cmd.action') }));
+  return STARTERS.map((n) => by.get(n)).filter(Boolean).map((c) => ({ kind: 'command', command: c.command, title: c.title, subtitle: c.shortcut || t('cmd.action'), shortcut: c.shortcut || '' }));
 }
 
 // --- Actions à paramètre ---------------------------------------------------------

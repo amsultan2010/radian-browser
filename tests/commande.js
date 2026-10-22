@@ -285,9 +285,13 @@ module.exports = async function commandeTests(ctx) {
   })()`), 'barre de commande affichée');
   const Theme = require('../src/renderer/theme');
   const expected = Theme.palette(w.themeNow().space, w.themeNow().dark).accent;
-  check('barre de commande : aucun voile sur la page, grande ombre portée (70 px)', look.voile === 'rgba(0, 0, 0, 0)' && look.corps === 'rgba(0, 0, 0, 0)' && /70px/.test(look.ombre), JSON.stringify(look));
+  check('barre de commande : aucun voile sur la page, grande ombre portée (85 px, relevée dans Arc)', look.voile === 'rgba(0, 0, 0, 0)' && look.corps === 'rgba(0, 0, 0, 0)' && /85px/.test(look.ombre), JSON.stringify(look));
   check('elle prend les couleurs de l’Espace (accent, panneau teinté)', look.accent.toLowerCase() === expected.toLowerCase() && look.teinte === '9%', `${look.accent} / ${expected} / ${look.teinte}`);
   check('la vue connaît les sites où chercher, sans portée au départ', look.sites === palette.SITES.flatMap((s) => s.keys).length && look.portee === true);
+  // Onglet d'un autre Espace : la ligne porte le nom de cet Espace (Arc), pas « Basculer vers l'onglet ».
+  const away = make('Lointain', other);
+  const tabHit = (q, id) => w.suggestLocal(q).find((i) => i.kind === 'tab' && i.tabId === id);
+  check('onglet d’un autre Espace : la suggestion porte le nom de cet Espace ; un onglet de l’Espace affiché, non', tabHit('Lointain', away) && tabHit('Lointain', away).space === 'Voyages' && tabHit('Silencieux', quiet) && !tabHit('Silencieux', quiet).space);
 
   // --- La barre latérale reste cliquable ----------------------------------------------
   await until(() => ui(`!!document.querySelector('#today .row.tab[data-id="${quiet}"]')`), 'ligne de l’autre onglet');
