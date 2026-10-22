@@ -48,7 +48,8 @@ function tabRow(el, it) {
       + `<button class="act reset" data-act="reset">${icon('reset')}</button>`
       + `<button class="act cap" data-act="capture">${icon('screen')}</button>`
       + `<button class="act snd" data-act="mute">${icon('sound')}</button>`
-      + `<button class="act x" data-act="close">${icon('x')}</button>`;
+      // Au survol : « × » pour un onglet du jour, « − » pour un épinglé (il est déchargé, pas fermé), comme dans Arc.
+      + `<button class="act x" data-act="close">${icon('close', 'i cl')}${icon('minus', 'i mi')}</button>`;
     el._ic = el.firstChild;
     el._title = el.children[3];
     el._more = el.children[1];
@@ -177,6 +178,7 @@ function reconcile(container, items, tile) {
         else if (rowKept(el, it)) el._vm = it;
         else if (tile) tileEl(el, it);
         else tabRow(el, it);
+        if (el._in) el.classList.add('in'); // apparition en cours (voir plus bas)
       }
       return;
     }
@@ -200,7 +202,10 @@ function reconcile(container, items, tile) {
     else if (rowKept(el, it)) el._vm = it; // rien à refaire
     else if (tile) tileEl(el, it);
     else tabRow(el, it);
-    if (fresh === el) { el.classList.add('in'); fresh = null; }
+    // Ligne nouvelle : son apparition (`in`) va à son terme, même si un état reçu entre-temps
+    // (titre, icône chargés) la redessine — elle s'arrêtait net à mi-fondu.
+    if (fresh === el) { el._in = true; setTimeout(() => { el._in = false; el.classList.remove('in'); }, SPRING.duration + 50); fresh = null; }
+    if (el._in) el.classList.add('in');
     const ref = prev ? prev.nextSibling : container.firstChild;
     if (el !== ref) container.insertBefore(el, ref);
     prev = el;
@@ -308,9 +313,14 @@ function paintTheme(el, space, s, only) {
 // Pastilles des Espaces, en bas : un point par Espace, l'icône pour l'Espace courant.
 function drawSpaces(list, current) {
   const spaces = $('spaces');
-  const sig = list.map((x) => x.id + x.icon + x.name).join('|') + '>' + current;
+  const ids = list.map((x) => x.id + x.icon + x.name).join('|');
+  const sig = ids + '>' + current;
   if (spaces._sig === sig) return;
+  const same = spaces._ids === ids;
   spaces._sig = sig;
+  spaces._ids = ids;
+  // Seul l'Espace courant change : les pastilles restent, leur largeur passe au ressort (CSS).
+  if (same && list.length > 1) { for (const el of spaces.children) el.classList.toggle('active', el.dataset.space === current); return; }
   spaces.innerHTML = list.length > 1
     ? list.map((x) => `<button class="sp${x.id === current ? ' active' : ''}" data-space="${esc(x.id)}" title="${esc(x.name)}" draggable="true"><span class="em">${esc(x.icon) || '•'}</span></button>`).join('')
     : '';
@@ -354,6 +364,10 @@ function render(s) {
   const side = s.side || {};
   b.classList.toggle('blurred', side.focused === false && !FLOATING);
   $('space-head').hidden = (side.noHeader || []).includes(s.space.id);
+  // Favoris vides : l'invitation d'Arc prend leur place (et reçoit les onglets déposés).
+  const favHint = !!side.favHint && !s.favorites.length;
+  $('fav-hint').hidden = !favHint;
+  b.classList.toggle('fav-hint', favHint);
   scroller.classList.toggle('pinned-collapsed', (side.collapsed || []).includes(s.space.id));
   $('fav').dataset.hint = t('side.favHint');
   $('url-copy').hidden = !s.activeId || s.nav.internal || !s.nav.url;
@@ -892,7 +906,11 @@ const PAGER = {
   freshDrop: 0.6, // le geste décidé doit d'abord être retombé sous cette part de son sommet…
   freshRise: 1.8, // …puis remonter d'autant de fois son creux…
   freshMin: 4, // …plus tant de pixels (les frémissements de fin d'inertie ne comptent pas)
-  response: 0.2, // ressort du glissement : réponse (s), amortissement critique (≈ 240 ms)
+  // Ressorts du glissement : réponse (s), amortissement critique. Relevés dans Arc : au
+  // balayage, les listes se posent en 0,33 à 0,42 s (≈ 390 ms) ; au clic ou au raccourci,
+  // seule la liste glisse, en ≈ 170 ms — la page et les couleurs changent d'un coup.
+  response: 0.32,
+  cut: 0.135,
   elastic: 0.55, // raideur de l'élastique au bout de la rangée
   // Nouvel Espace au bout de la rangée : un geste voulu, en deux temps. Tirer d'autant (px,
   // relâchement déduit) au-delà du dernier Espace ARME la pastille « + » (elle prend la
@@ -974,7 +992,24 @@ function slideSet(x) {
   slide.x = x;
   scroller.style.transform = `translateX(${-x}px)`;
   if (slide.ghost) slide.ghost.style.transform = `translateX(${slide.dir * W - x}px)`;
-  tintEl.style.opacity = slide.ghost ? String(Math.min(1, Math.abs(x) / W)) : '0';
+  tintEl.style.opacity = slide.ghost ? String(slide.cut ? 1 : Math.min(1, Math.abs(x) / W)) : '0';
+  followDots(slide.ghost ? Math.min(1, Math.abs(x) / W) : 0);
+}
+
+// Pastilles du bas : pendant le balayage, la largeur passe de la pastille courante à
+// celle de l'Espace qui arrive, au pas des doigts (comme dans Arc). À 0, elles sont
+// rendues au CSS, qui les mène au ressort à leur place (geste abandonné ou Espace changé).
+function followDots(p) {
+  const box = $('spaces');
+  const from = p && slide && slide.targetId ? box.querySelector('.sp.active') : null;
+  const to = from ? box.querySelector(`.sp[data-space="${CSS.escape(slide.targetId)}"]`) : null;
+  const pair = !!to && from !== to;
+  for (const el of box.children) if (!(pair && (el === from || el === to)) && el.style.width) { el.style.width = ''; el.style.transition = ''; }
+  if (!pair) return;
+  const [big, small] = slide.dots || (slide.dots = [from.offsetWidth, to.offsetWidth]);
+  from.style.transition = to.style.transition = 'none';
+  from.style.width = big - (big - small) * p + 'px';
+  to.style.width = small + (big - small) * p + 'px';
 }
 
 // Pastille « + » du bout de la rangée : `p` de 0 (absente) à 1 (nouvel Espace).
@@ -1066,7 +1101,8 @@ function slideFly(to, done) {
   const dist = to - from;
   // Vitesse des doigts, en parts du trajet restant par seconde.
   const v0 = Math.abs(dist) > 1 ? Math.max(0, Math.min(40, (slide.v * 1000) / dist)) : 0;
-  const timing = springTiming(v0);
+  const timing = springTiming(v0, slide.cut ? PAGER.cut : PAGER.response);
+  followDots(0);
   const opts = { duration: timing.duration, easing: timing.easing, fill: 'forwards' };
   slide.phase = 'settle';
   slide.fly = { from, to, t0: performance.now(), timing };
@@ -1075,12 +1111,12 @@ function slideFly(to, done) {
   move(scroller, -from, -to);
   if (slide.ghost) {
     move(slide.ghost, slide.dir * W - from, slide.dir * W - to);
-    slide.anims.push(tintEl.animate({ opacity: [Math.min(1, Math.abs(from) / W), Math.min(1, Math.abs(to) / W)] }, opts));
+    if (!slide.cut) slide.anims.push(tintEl.animate({ opacity: [Math.min(1, Math.abs(from) / W), Math.min(1, Math.abs(to) / W)] }, opts));
   }
   // Changement décidé : à mi-course, quand la teinte de l'autre Espace domine, le
   // reste de la barre (adresse, favoris, pastilles) prend ses couleurs de texte.
   clearTimeout(slide.swap);
-  if (to !== 0 && slide.commit && slide.targetSpace) {
+  if (to !== 0 && slide.commit && slide.targetSpace && !slide.cut) {
     const space = slide.targetSpace;
     slide.swap = setTimeout(() => { if (slide && S) paintTheme(document.body, space, S, OrbeTheme.TEXT_VARS); }, timing.duration * 0.4);
   }
@@ -1102,6 +1138,7 @@ function slideEnd() {
   if (ghost) ghost.remove();
   scroller.style.transform = '';
   tintEl.style.opacity = '';
+  followDots(0);
   pagerEl.classList.remove('sliding');
   const next = pending || other;
   if (next) render(next);
@@ -1159,8 +1196,10 @@ function slideTo(s) {
   slideBegin();
   slideGhost({ space: s.space, pinned: s.pinned, today: s.today }, from >= 0 && to < from ? -1 : 1);
   slide.commit = true;
+  slide.cut = true; // comme dans Arc : les couleurs de l'autre Espace d'un coup, seule la liste glisse
   slide.pending = s;
   slideSet(0);
+  paintTheme(document.body, s.space, S, OrbeTheme.TEXT_VARS);
   drawSpaces(s.spaces, s.space.id);
   slideFly(slide.dir * pagerWidth(), slideEnd);
 }
@@ -1341,6 +1380,7 @@ $('resize').addEventListener('pointerdown', (e) => {
 
 // Double-clic sur le bord : retour à la largeur par défaut.
 $('resize').addEventListener('dblclick', () => send('sidebarWidthReset'));
+$('fav-hint-close').addEventListener('click', () => send('favHintOff'));
 
 // --- Petite barre des volets d'une vue scindée -------------------------------
 // Une par volet, au-dessus de sa page : adresse (clic : la modifier), « ⋯ »
@@ -1429,7 +1469,8 @@ $('dividers').addEventListener('pointerdown', (e) => {
 // tomber (transformations seulement : la mise en page ne change pas pendant le
 // geste). Dans la grille des favoris, un trait vertical marque la position.
 const line = $('drop-line');
-const ROW_SLOT = 41; // place d'une ligne (37 + 4), quand rien n'est emporté des listes
+const ROW_GAP = 5; // écart entre deux lignes (shell.css, .list) : un pas de 41 pt, comme dans Arc
+const ROW_SLOT = 41; // place d'une ligne (36 + ROW_GAP), quand rien n'est emporté des listes
 let geom = null; // relevé des listes, fait une fois par glisser (voir measure)
 let target = null; // destination affichée
 let intoEl = null; // dossier mis en évidence
@@ -1702,7 +1743,7 @@ function gridTarget(e, zone) {
 function listTarget(y) {
   const g = geom;
   // Tant que le pointeur reste dans la place ouverte, la destination ne change pas.
-  if (target && target.slot && y >= target.slot.y && y < target.slot.y + target.slot.h + 4) return target;
+  if (target && target.slot && y >= target.slot.y && y < target.slot.y + target.slot.h + ROW_GAP) return target;
   // Épinglés vides : la liste n'a pas de hauteur, on vise du nom de l'Espace au séparateur.
   const none = g.pinned.kids.length ? 0 : 1;
   let zone = y >= g.pinned.top - 30 * none && y < g.pinned.bottom + 11 * none ? g.pinned : g.today;
@@ -1726,11 +1767,11 @@ function listTarget(y) {
   for (const k of zone.kids) { if (y < (k.top + k.bottom) / 2) { index = k.i; hit = k; break; } }
   const t = { to: zone.to, folderId: zone.folderId, index, g: hit ? hit.a : zone.end, room: g.total };
   const lastKid = zone.kids[zone.kids.length - 1];
-  const pad = zone.to === 'folder' ? 4 : 0;
+  const pad = zone.to === 'folder' ? ROW_GAP : 0;
   // Liste vide : elle a déjà un peu de hauteur, et la première ligne n'ajoute pas d'écart.
-  if (!lastKid) t.room -= zone.bottom - zone.top - pad + 4;
+  if (!lastKid) t.room -= zone.bottom - zone.top - pad + ROW_GAP;
   const natural = hit ? g.flow[hit.a].top : (lastKid ? lastKid.bottom + zone.gap : zone.top + pad);
-  t.slot = { x: zone.left, w: zone.width, y: natural - g.cum[t.g], h: g.total - 4 };
+  t.slot = { x: zone.left, w: zone.width, y: natural - g.cum[t.g], h: g.total - ROW_GAP };
   return t;
 }
 
@@ -1765,6 +1806,8 @@ function dropTarget(e) {
   if (dot) return drag.folder || dot.dataset.space === S.space.id ? null : { toSpace: dot.dataset.space, into: dot, g: null };
   const fav = e.target.closest('#fav');
   if (fav) return gridTarget(e, fav);
+  const hint = e.target.closest('#fav-hint');
+  if (hint) return drag.folder ? null : { to: 'favorites', folderId: null, index: 0, into: hint };
   if (!e.target.closest('#scroll')) return null;
   if (!geom) measure();
   return listTarget(e.clientY - geom.top + geom.scroll);

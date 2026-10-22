@@ -64,7 +64,7 @@ module.exports = {
 
     await t.verifier('la barre de commande et ses suggestions sont en anglais', async () => {
       await ctx.nouvelOnglet();
-      assert.equal(await modal.getAttribute('#cmd-input', 'placeholder'), 'Search or enter URL…');
+      assert.equal(await modal.getAttribute('#cmd-input', 'placeholder'), 'Search or Enter URL…');
       await ctx.taper(ctx.hote + '/a');
       assert.match(await modal.locator('#cmd-list .cmd.sel .sub').textContent(), /Open page/);
       await modal.keyboard.press('Enter');

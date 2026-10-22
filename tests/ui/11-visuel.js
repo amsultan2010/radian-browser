@@ -27,7 +27,7 @@ module.exports = {
         basDeFenetre: Math.round(innerHeight - bottom.b),
         hauteurs: [...new Set([...document.querySelectorAll('#sidebar .row')].filter((el) => el.getClientRects().length).map((el) => Math.round(rect(el).h)))],
         tuiles: [...document.querySelectorAll('#fav .tile')].map((el) => { const r = rect(el); return [Math.round(r.w), Math.round(r.h)]; }),
-        icones: [...document.querySelectorAll('#sidebar .row .ic')].filter((el) => el.getClientRects().length).every((el) => Math.round(rect(el).w) === 16),
+        icones: [...document.querySelectorAll('#sidebar .row .ic')].filter((el) => el.getClientRects().length).every((el) => Math.round(rect(el).w) === 18),
       };
     });
 
@@ -61,7 +61,7 @@ module.exports = {
       assert.equal(m.chevauchements, 0);
       assert.equal(m.hauteurs.length, 1, 'toutes les lignes ont la même hauteur : ' + m.hauteurs.join(', '));
       assert.ok(m.tuiles.length === 2 && m.tuiles.every(([w, h]) => h >= 40 && w >= 52 && w === m.tuiles[0][0] && h === m.tuiles[0][1]), 'tuiles de favoris de même taille : ' + JSON.stringify(m.tuiles));
-      assert.equal(m.icones, true, 'icônes de 16 px');
+      assert.equal(m.icones, true, 'icônes de 18 px (cadre relevé dans Arc)');
       assert.equal(m.basDeFenetre, 0, 'la rangée du bas touche le bas de la fenêtre');
     });
 

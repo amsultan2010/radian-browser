@@ -2,6 +2,10 @@
 // par balayage horizontal (molette) sur la barre latérale.
 const assert = require('node:assert/strict');
 
+// Accent du premier Espace (son thème est celui relevé dans Arc, src/renderer/theme.js).
+const Theme = require('../../src/renderer/theme');
+const ACCENT1 = Theme.palette({ color: Theme.FIRST[0], color2: Theme.FIRST[1] }).accent;
+
 module.exports = {
   nom: 'Espaces',
   async test(ctx, t) {
@@ -69,7 +73,7 @@ module.exports = {
     await t.verifier('la couleur d’accent change avec l’Espace', async () => {
       const c2 = await shell.evaluate(() => document.body.style.getPropertyValue('--accent'));
       assert.match(c2, /^#[0-9a-f]{6}$/i);
-      assert.notEqual(c2.toLowerCase(), '#7c6cf0');
+      assert.notEqual(c2.toLowerCase(), ACCENT1);
     });
 
     await ctx.ouvrir('/b', 'Page B');
@@ -82,7 +86,7 @@ module.exports = {
       const e = await ctx.etat();
       assert.equal(e.actifUrl, ctx.url('/a'));
       assert.equal(await ctx.vueAu(e.vuePage.x + 40, e.vuePage.y + 40), ctx.url('/a'), 'la page A est affichée');
-      assert.equal(await shell.evaluate(() => document.body.style.getPropertyValue('--accent').toLowerCase()), '#7c6cf0');
+      assert.equal(await shell.evaluate(() => document.body.style.getPropertyValue('--accent').toLowerCase()), ACCENT1);
     });
 
     await t.verifier('clic sur la seconde pastille : second Espace et son onglet', async () => {

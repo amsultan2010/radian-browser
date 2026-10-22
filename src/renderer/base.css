@@ -19,12 +19,18 @@
      partent et arrivent ensemble. */
   --ease-out: cubic-bezier(0, 0, 0.58, 1);
   --ease-in: cubic-bezier(0.42, 0, 1, 1);
+  /* Barre latérale, relevée image par image dans les vidéos d'Arc (parity/web-research.md §3.3).
+     Elle part en 280 ms, très vite au départ (30 % du trajet en 33 ms, 94 % à 220 ms) ;
+     elle revient en 400 ms, à la courbe ease-out du système, celle des pages qui
+     glissent avec elle (src/main/motion.js, MOTION.sidebarIn / sidebarOut). */
+  --sidebar-out: 280ms cubic-bezier(0.05, 0.35, 0.58, 1);
+  --sidebar-in: 400ms var(--ease-out);
   /* Ressorts (durée + courbe, calculés par scripts/make-springs.js) : un ressort
      amorti décrit comme dans SwiftUI par sa réponse et son amortissement.
      Usage : `transition: transform var(--spring-snappy)`. */
-  /* snappy — réponse 0,2 s, amortissement 1, sans dépassement : lignes, panneaux, états pressés. */
-  --spring-snappy: 240ms linear(0, 0.04, 0.131, 0.243, 0.358, 0.466, 0.562, 0.645, 0.715, 0.774, 0.821, 0.859, 0.89, 0.914, 0.934, 0.949, 0.96, 0.97, 0.977, 0.982, 0.986, 0.99, 0.992, 0.994, 1);
-  /* smooth — réponse 0,3 s, amortissement 1, sans dépassement : grands déplacements (barre flottante). */
+  /* snappy — réponse 0,22 s, amortissement 0,9, sans dépassement visible : lignes, panneaux, états pressés. */
+  --spring-snappy: 200ms linear(0, 0.025, 0.085, 0.167, 0.258, 0.352, 0.442, 0.527, 0.604, 0.672, 0.732, 0.783, 0.826, 0.862, 0.892, 0.916, 0.936, 0.952, 0.964, 0.974, 0.982, 0.987, 0.992, 0.995, 1);
+  /* smooth — réponse 0,3 s, amortissement 1, sans dépassement : grands déplacements (lecteur miniature). */
   --spring-smooth: 360ms linear(0, 0.04, 0.131, 0.243, 0.358, 0.466, 0.562, 0.645, 0.715, 0.774, 0.821, 0.859, 0.89, 0.914, 0.934, 0.949, 0.96, 0.97, 0.977, 0.982, 0.986, 0.99, 0.992, 0.994, 1);
   /* bouncy — réponse 0,3 s, amortissement 0,7, dépassement 4,6 % : éléments relâchés (tuile, pastille d'Espace, message). */
   --spring-bouncy: 340ms linear(0, 0.038, 0.132, 0.256, 0.391, 0.524, 0.646, 0.751, 0.839, 0.908, 0.96, 0.998, 1.023, 1.037, 1.044, 1.046, 1.044, 1.039, 1.033, 1.027, 1.021, 1.015, 1.011, 1.007, 1);
@@ -40,10 +46,10 @@
     --fg: #f3f3f5;
     --dim: rgba(255, 255, 255, 0.55);
     --faint: rgba(255, 255, 255, 0.3);
-    --hover: rgba(255, 255, 255, 0.07);
-    --pill: rgba(255, 255, 255, 0.09);
-    --line: rgba(255, 255, 255, 0.12);
-    --active: rgba(255, 255, 255, 0.17);
+    --hover: rgba(255, 255, 255, 0.1);
+    --pill: rgba(255, 255, 255, 0.1);
+    --line: rgba(255, 255, 255, 0.15);
+    --active: rgba(255, 255, 255, 0.2);
     --active-shadow: none;
     --base: #16161a;
     --panel: rgba(38, 38, 43, 0.95);
@@ -55,10 +61,10 @@
   --fg: #f3f3f5;
   --dim: rgba(255, 255, 255, 0.55);
   --faint: rgba(255, 255, 255, 0.3);
-  --hover: rgba(255, 255, 255, 0.07);
-  --pill: rgba(255, 255, 255, 0.09);
-  --line: rgba(255, 255, 255, 0.12);
-  --active: rgba(255, 255, 255, 0.17);
+  --hover: rgba(255, 255, 255, 0.1);
+  --pill: rgba(255, 255, 255, 0.1);
+  --line: rgba(255, 255, 255, 0.15);
+  --active: rgba(255, 255, 255, 0.2);
   --active-shadow: none;
   --base: #16161a;
   --panel: rgba(38, 38, 43, 0.95);
@@ -119,7 +125,7 @@ input, select {
   background: color-mix(in srgb, var(--accent) 70%, #555);
 }
 
-svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }

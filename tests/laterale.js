@@ -432,7 +432,7 @@ module.exports = async function lateraleTests(ctx) {
   // --- Largeur de la barre ------------------------------------------------------
   w.setSidebarWidth(330);
   w.handle('sidebarWidthReset');
-  check('double-clic sur le bord de la barre : largeur par défaut', w.sidebarWidth === 250 && store.state.settings.sidebarWidth === 250);
+  check('double-clic sur le bord de la barre : largeur par défaut', w.sidebarWidth === 228 && store.state.settings.sidebarWidth === 228);
 
   // --- Fenêtre à l'arrière-plan : la barre s'estompe -----------------------------
   const focused = w.win.isFocused;
@@ -443,8 +443,11 @@ module.exports = async function lateraleTests(ctx) {
   // elle n'avance pas. L'état, lui, se vérifie toujours.
   const milieu = await outils.milieu(w);
   await until(() => ui('document.body.classList.contains("blurred")'), 'barre marquée « à l’arrière-plan »');
+  // Comme dans Arc, en sombre : le cadre s'assombrit et les icônes pâlissent (25 % de blanc), le texte reste ; en clair, la barre s'estompe.
+  const sombre = await ui('document.documentElement.dataset.family === "dark"');
+  const estompe = sombre ? 'getComputedStyle(document.getElementById("b-sidebar")).opacity === "0.41" && getComputedStyle(document.getElementById("top")).opacity === "1"' : 'getComputedStyle(document.getElementById("top")).opacity === "0.7"';
   if (milieu.images) {
-    await until(() => ui('getComputedStyle(document.getElementById("top")).opacity === "0.7"'), 'barre estompée');
+    await until(() => ui(estompe), 'barre estompée');
     check('fenêtre à l’arrière-plan : le contenu de la barre s’estompe', true);
   } else {
     check('fenêtre à l’arrière-plan : la barre est marquée pour s’estomper', true);
@@ -453,7 +456,7 @@ module.exports = async function lateraleTests(ctx) {
   w.win.isFocused = () => true;
   w.win.emit('focus');
   await until(() => ui('!document.body.classList.contains("blurred")'), 'barre de nouveau au premier plan');
-  if (milieu.images) await until(() => ui('getComputedStyle(document.getElementById("top")).opacity === "1"'), 'barre nette');
+  if (milieu.images) await until(() => ui('getComputedStyle(document.getElementById("top")).opacity === "1" && getComputedStyle(document.getElementById("b-sidebar")).opacity === "1"'), 'barre nette');
   check('… et revient quand la fenêtre repasse au premier plan', true);
   delete w.win.isFocused;
   if (w.win.isFocused !== focused) w.win.isFocused = focused;

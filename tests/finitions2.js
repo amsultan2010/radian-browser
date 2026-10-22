@@ -117,9 +117,10 @@ module.exports = async function finitions2Tests(ctx) {
     check('page seule : le reste de la hauteur vise la gauche ou la droite', left.vertical === false && left.before === true && left.zone.x === 0 && left.zone.h === rect.height
       && right.vertical === false && right.before === false && right.zone.x === Math.round(rect.width / 2), JSON.stringify([left, right]));
     w.handle('dropSplit', { id: B, x: cx, y: rect.y + 12 });
+    // La page en place s'écarte en 200 ms (comme dans Arc) : on lit sa place d'arrivée.
     let g = w.groupOf(A);
-    let pa = win.live.get(A).view.getBounds();
-    let pb = win.live.get(B).view.getBounds();
+    let pa = win.boundsOf(win.live.get(A).view);
+    let pb = win.boundsOf(win.live.get(B).view);
     check('lâché en haut : vue empilée, le nouvel onglet au-dessus, et c’est lui qui a la main', !!g && g.join() === [B, A].join() && w.isVertical(g) && pb.y < pa.y && pb.x === pa.x && w.activeId === B, JSON.stringify([g, pa, pb]));
     const stacked = w.dropTargetAt(cx, rect.y + rect.height - 20);
     check('vue déjà empilée : elle garde son sens (le bas du second volet vise « après lui »)', stacked.id === A && stacked.vertical === true && stacked.before === false);
@@ -127,14 +128,14 @@ module.exports = async function finitions2Tests(ctx) {
     w.activate(A);
     w.handle('dropSplit', { id: C, x: cx, y: rect.y + rect.height - 12 });
     g = w.groupOf(A);
-    pa = win.live.get(A).view.getBounds();
-    const pc = win.live.get(C).view.getBounds();
+    pa = win.boundsOf(win.live.get(A).view);
+    const pc = win.boundsOf(win.live.get(C).view);
     check('lâché en bas : vue empilée, le nouvel onglet au-dessous', !!g && g.join() === [A, C].join() && w.isVertical(g) && pc.y > pa.y, JSON.stringify([g, pa, pc]));
     w.leaveSplit(C); w.leaveSplit(A);
     w.activate(A);
     w.handle('dropSplit', { id: D, x: rect.x + 20, y: cy });
     g = w.groupOf(A);
-    check('lâché à gauche : côte à côte, le nouvel onglet à gauche (comme avant)', !!g && g.join() === [D, A].join() && !w.isVertical(g) && win.live.get(D).view.getBounds().x < win.live.get(A).view.getBounds().x);
+    check('lâché à gauche : côte à côte, le nouvel onglet à gauche (comme avant)', !!g && g.join() === [D, A].join() && !w.isVertical(g) && win.boundsOf(win.live.get(D).view).x < win.boundsOf(win.live.get(A).view).x);
     w.leaveSplit(D); w.leaveSplit(A);
     w.activate(A);
     w.layout();
@@ -482,7 +483,7 @@ module.exports = async function finitions2Tests(ctx) {
       return { top: of(top), gap: of(top.querySelector('.drag')), gapW: gap.width, buttons: ['b-sidebar', 'b-back', 'b-forward', 'b-reload'].map((id) => of(document.getElementById(id))).join(), list: of(document.getElementById('scroll')), blank: of(document.getElementById('blank')), resize: of(document.getElementById('resize')) };
     })()`);
     check('le haut de la barre (entre les boutons) déplace la fenêtre ; les boutons, la liste et son vide (double-clic : nouvel onglet) non',
-      region.top === 'drag' && region.gap === 'drag' && region.gapW > 20 && region.buttons === 'no-drag,no-drag,no-drag,no-drag' && region.list !== 'drag' && region.blank !== 'drag' && region.resize === 'no-drag', JSON.stringify(region));
+      region.top === 'drag' && region.gap === 'drag' && region.gapW >= 9 /* Arc : 13 pt entre le bouton de la barre (fin à x 109) et « précédent » (x 122) */ && region.buttons === 'no-drag,no-drag,no-drag,no-drag' && region.list !== 'drag' && region.blank !== 'drag' && region.resize === 'no-drag', JSON.stringify(region));
   }
 
   // --- Témoin de capture animé, onglet partagé surligné, favori qui joue (BL-48, BL-38) ---------------

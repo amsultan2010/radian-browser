@@ -24,11 +24,11 @@ const DEFAULT_SETTINGS = {
   suggestions: true,
   archiveAfterHours: 12,
   appearance: 'auto',
-  translucent: true,
+  translucent: false, // Arc's sidebar is opaque by default
   // Survol de l'icône de la Bibliothèque : sortes de fichiers montrées (src/main/library.js).
   libraryPeek: ['captures', 'downloads', 'media'],
   showToolbar: false,
-  sidebarWidth: 250,
+  sidebarWidth: 228, // comme dans Arc (bord de la fenêtre → page)
   maxLiveTabs: 30,
   // Veille automatique (src/main/veille.js) : après tant d'heures sans être affiché
   // (0 : jamais), et au-delà de cette part de la mémoire de la machine, en % (0 : sans limite).
@@ -47,7 +47,7 @@ const DEFAULT_SETTINGS = {
   soundVolume: 50,
   soundGestures: false,
   // Fenêtre des réglages à volets (validation : src/main/prefs.js).
-  showFullUrl: true,
+  showFullUrl: false, // Arc shows the short URL unless the Advanced setting is on
   warnOnQuit: false,
   restoreSession: true,
   haptics: true,
@@ -56,7 +56,7 @@ const DEFAULT_SETTINGS = {
   littleShortcut: '',
   littleArchiveHours: 0,
   cookieBanners: false,
-  themeData: false,
+  themeData: true, // Arc always exposes the --arc-* theme variables to pages
   boostsEnabled: true,
   // JavaScript des Boosts : coupé tant que l'utilisateur ne l'a pas permis (src/main/boosts.js).
   boostsJs: false,
@@ -161,7 +161,9 @@ class Store {
     // Mises à jour : dernière vérification et version annoncée (src/main/updates.js).
     s.updates = s.updates && typeof s.updates === 'object' && !Array.isArray(s.updates) ? s.updates : {};
     if (!Array.isArray(s.spaces) || !s.spaces.length) {
-      s.spaces = [this.makeSpace(this.t('spaces.firstName', s.settings.lang), '🏠', SPACE_COLORS[0])];
+      // Premier Espace : le thème violet relevé dans Arc (deux couleurs, src/renderer/theme.js).
+      const [color, color2] = require('../renderer/theme').FIRST;
+      s.spaces = [Object.assign(this.makeSpace(this.t('spaces.firstName', s.settings.lang), '🏠', color), { color2 })];
     }
     // Répare les références orphelines (fichier modifié à la main, crash…).
     const seen = favSeen;

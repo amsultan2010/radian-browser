@@ -9,15 +9,24 @@
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute">
-  <symbol id="i-back" viewBox="0 0 16 16"><path d="M9.5 3.5 5 8l4.5 4.5"/></symbol>
-  <symbol id="i-forward" viewBox="0 0 16 16"><path d="M6.5 3.5 11 8l-4.5 4.5"/></symbol>
-  <symbol id="i-reload" viewBox="0 0 16 16"><path d="M12.6 8a4.6 4.6 0 1 1-1.5-3.4"/><path d="M12.8 2.6v2.6h-2.6"/></symbol>
-  <symbol id="i-stop" viewBox="0 0 16 16"><path d="m4.5 4.5 7 7m0-7-7 7"/></symbol>
-  <symbol id="i-sidebar" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="2.5"/><path d="M6.2 3v10"/></symbol>
-  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9"/></symbol>
+  <!-- Un seul tracé par icône quand c’est possible : la couleur est translucide, deux tracés qui se
+       croisent s’additionneraient (plus clair aux jonctions). -->
+  <!-- Barre du haut et rangée du bas : dessinés sur 20 × 20 (svg.i.tb), à la taille de l'encre relevée dans Arc
+       (flèches 15 × 12, actualiser 14 × 17, barre latérale 18,5 × 14,5, « + » 14 × 14, Bibliothèque 13,5 × 16,5). -->
+  <symbol id="i-back" viewBox="0 0 20 20"><path d="M16.75 10H3.25M8.5 4.75 3.25 10l5.25 5.25"/></symbol>
+  <symbol id="i-forward" viewBox="0 0 20 20"><path d="M3.25 10h13.5M11.5 4.75 16.75 10l-5.25 5.25"/></symbol>
+  <symbol id="i-reload" viewBox="0 0 20 20"><path d="M10 4.75a6.25 6.25 0 1 0 5.41 3.13M8 1.75 11 4.75 8 7.75"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 20 20"><path d="m5.5 5.5 9 9m0-9-9 9"/></symbol>
+  <symbol id="i-sidebar" viewBox="0 0 20 20"><path d="M4.75 3.5h10.5a3.25 3.25 0 0 1 3.25 3.25v6.5a3.25 3.25 0 0 1-3.25 3.25H4.75a3.25 3.25 0 0 1-3.25-3.25v-6.5A3.25 3.25 0 0 1 4.75 3.5zM7.6 3.5v13"/><path d="M3.85 6.9h1.3M3.85 8.9h1.3M3.85 10.9h1.3" stroke-width="1.2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 20 20"><path d="M10 3.75v12.5M3.75 10h12.5"/></symbol>
   <symbol id="i-x" viewBox="0 0 16 16"><path d="m4.8 4.8 6.4 6.4m0-6.4-6.4 6.4"/></symbol>
-  <symbol id="i-library" viewBox="0 0 16 16"><rect x="2.2" y="3" width="11.6" height="3.4" rx="1.2"/><path d="M3.2 6.4v5.2a1.6 1.6 0 0 0 1.6 1.6h6.4a1.6 1.6 0 0 0 1.6-1.6V6.4M6.5 9h3"/></symbol>
-  <symbol id="i-folder" viewBox="0 0 16 16"><path d="M2.2 5.2a1.6 1.6 0 0 1 1.6-1.6h2.3l1.5 1.6h4.6a1.6 1.6 0 0 1 1.6 1.6v4.2a1.6 1.6 0 0 1-1.6 1.6H3.8a1.6 1.6 0 0 1-1.6-1.6z"/></symbol>
+  <!-- Fermer (onglet du jour) et décharger (onglet épinglé), au survol d'une ligne : encre 10 × 10. -->
+  <symbol id="i-close" viewBox="0 0 16 16"><path d="m3.75 3.75 8.5 8.5m0-8.5-8.5 8.5"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 16 16"><path d="M3.75 8h8.5"/></symbol>
+  <symbol id="i-library" viewBox="0 0 20 20"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M6.5 9.25h7.85a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2zM9.4 10.4h2.1a.9.9 0 0 1 0 1.8H9.4a.9.9 0 0 1 0-1.8z"/><path fill="currentColor" stroke="none" d="M6.6 2.5c.35 1.45 1.2 2.25 3.2 2.8-2 .5-2.85 1.3-3.2 2.75-.35-1.45-1.2-2.25-3.2-2.75 2-.55 2.85-1.35 3.2-2.8z"/><circle cx="12.4" cy="2.6" r=".9" fill="currentColor" stroke="none"/><path fill="currentColor" stroke="none" d="M13.6 3.7 17 5.85 13.6 8z"/></symbol>
+  <!-- Dossier plein, à la couleur de l'Espace, liseré clair (encre 19 × 18,5 dans Arc). -->
+  <symbol id="i-folder" viewBox="0 0 20 20"><path style="fill:currentColor;stroke:var(--folder-line)" d="M1.25 4.25A2.75 2.75 0 0 1 4 1.5h4.6a2 2 0 0 1 1.5.7l1 1.2H16a2.75 2.75 0 0 1 2.75 2.75v10.1A2.25 2.25 0 0 1 16.5 18.5h-13a2.25 2.25 0 0 1-2.25-2.25z"/><path style="stroke:var(--folder-line)" d="M1.25 5.5h17.5"/></symbol>
+  <symbol id="i-star" viewBox="0 0 20 20"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M10 0a10 10 0 1 1 0 20 10 10 0 0 1 0-20zM10 5.75 11.2 8.69 14.37 8.93 11.95 10.98 12.7 14.07 10 12.4 7.3 14.07 8.05 10.98 5.63 8.93 8.8 8.69z"/></symbol>
   <symbol id="i-chevron" viewBox="0 0 16 16"><path d="m6 4 4 4-4 4"/></symbol>
   <symbol id="i-sound" viewBox="0 0 16 16"><path d="M3 6.4h2L7.8 4v8L5 9.6H3z"/><path d="M10.2 6.2a2.6 2.6 0 0 1 0 3.6M11.9 4.6a5 5 0 0 1 0 6.8"/></symbol>
   <symbol id="i-mute" viewBox="0 0 16 16"><path d="M3 6.4h2L7.8 4v8L5 9.6H3z"/><path d="m10.5 6.3 3 3.4m0-3.4-3 3.4"/></symbol>
@@ -28,7 +37,7 @@
   <symbol id="i-back15" viewBox="0 0 16 16"><path d="M3.4 8a4.6 4.6 0 1 0 1.5-3.4"/><path d="M3.2 2.6v2.6h2.6"/><path d="M6.6 6.9l1-.6v3.6M9.9 6.4H8.8v1.4c.9-.3 1.4.1 1.4.9 0 .9-.9 1.3-1.6.9" stroke-width="1.1"/></symbol>
   <symbol id="i-fwd15" viewBox="0 0 16 16"><path d="M12.6 8a4.6 4.6 0 1 1-1.5-3.4"/><path d="M12.8 2.6v2.6h-2.6"/><path d="M6.1 6.9l1-.6v3.6M9.4 6.4H8.3v1.4c.9-.3 1.4.1 1.4.9 0 .9-.9 1.3-1.6.9" stroke-width="1.1"/></symbol>
   <symbol id="i-shield" viewBox="0 0 16 16"><path d="M8 2.2 3.4 3.9v3.6c0 2.9 1.9 5.2 4.6 6.3 2.7-1.1 4.6-3.4 4.6-6.3V3.9z"/></symbol>
-  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7.2" cy="7.2" r="3.8"/><path d="m10.2 10.2 3 3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7.5" cy="7.5" r="4.75"/><path d="m11 11 2.25 2.25"/></symbol>
   <symbol id="i-more" viewBox="0 0 16 16"><path d="M3.5 8h.01M8 8h.01M12.5 8h.01" stroke-width="2.4"/></symbol>
   <symbol id="i-reset" viewBox="0 0 16 16"><path d="M4 8h8M4 8l3-3M4 8l3 3"/></symbol>
   <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3.6" y="7.2" width="8.8" height="6" rx="1.6"/><path d="M5.6 7.2V5.4a2.4 2.4 0 0 1 4.8 0v1.8"/></symbol>
@@ -41,18 +50,21 @@
 </svg>
 
 <div id="tint"></div>
+<!-- Ombre de la carte (la page est une vue native posée par-dessus) ; fenêtre à l'arrière-plan, son
+     ombre étendue assombrit tout le cadre autour de la carte (comme dans Arc). -->
+<div id="card"></div>
 <aside id="sidebar">
   <div id="top">
-    <button class="ib" id="b-sidebar" data-tip="side.sidebar" data-tip-key="toggleSidebar"><svg class="i"><use href="#i-sidebar"/></svg></button>
+    <button class="ib" id="b-sidebar" data-tip="side.sidebar" data-tip-key="toggleSidebar"><svg class="i tb"><use href="#i-sidebar"/></svg></button>
     <button class="ib" id="b-menu" data-tip="side.menu"><svg class="i"><use href="#i-more"/></svg></button>
     <span class="grow drag"></span>
-    <button class="ib" id="b-back" data-tip="side.back" data-tip-key="back"><svg class="i"><use href="#i-back"/></svg></button>
-    <button class="ib" id="b-forward" data-tip="side.forward" data-tip-key="forward"><svg class="i"><use href="#i-forward"/></svg></button>
-    <button class="ib" id="b-reload" data-tip="side.reload" data-tip-key="reload"><svg class="i"><use id="reload-icon" href="#i-reload"/></svg></button>
+    <button class="ib" id="b-back" data-tip="side.back" data-tip-key="back"><svg class="i tb"><use href="#i-back"/></svg></button>
+    <button class="ib" id="b-forward" data-tip="side.forward" data-tip-key="forward"><svg class="i tb"><use href="#i-forward"/></svg></button>
+    <button class="ib" id="b-reload" data-tip="side.reload" data-tip-key="reload"><svg class="i tb"><use id="reload-icon" href="#i-reload"/></svg></button>
   </div>
   <div id="url-row">
     <button id="lock" hidden><svg class="i"><use id="lock-icon" href="#i-lock"/></svg><span id="lock-text"></span></button>
-    <button id="url"><span id="url-text"></span></button>
+    <button id="url"><svg class="i" id="url-search"><use href="#i-search"/></svg><span id="url-text"></span></button>
     <button id="url-copy" data-tip="side.copyLink" data-tip-key="copyUrl" hidden><svg class="i"><use href="#i-link"/></svg></button>
     <button id="popup-note" class="note" hidden><svg class="i"><use href="#i-popup"/></svg></button>
     <button id="capture-note" class="note" hidden><svg class="i"><use id="capture-icon" href="#i-screen"/></svg></button>
@@ -60,6 +72,14 @@
   </div>
   <div id="exts"></div>
   <div id="fav" data-drop="favorites"></div>
+  <!-- Favoris vides : l'invitation d'Arc (cadre en tirets), jusqu'à ce qu'on la ferme. -->
+  <div id="fav-hint" hidden>
+    <svg class="fh-box"><rect/></svg>
+    <svg class="i fh-star"><use href="#i-star"/></svg>
+    <b data-t="side.favEmptyTitle"></b>
+    <span data-t="side.favEmptyBody"></span>
+    <button id="fav-hint-close" data-t-title="popup.dismiss"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
   <div id="pager">
   <div id="scroll">
     <div id="space-head">
@@ -87,19 +107,19 @@
   <div id="blank-note"><b data-t="blank.title"></b><span data-t="blank.body"></span></div>
   <div id="bottom">
     <button class="ib" id="b-library" data-tip="side.library" data-tip-key="library">
-      <svg class="i"><use href="#i-library"/></svg>
+      <svg class="i tb"><use href="#i-library"/></svg>
       <svg id="dl-ring" viewBox="0 0 28 28"><circle cx="14" cy="14" r="12"/></svg>
     </button>
     <div id="spaces" class="grow"></div>
-    <button class="ib" id="b-plus" data-tip="side.plus"><svg class="i"><use href="#i-plus"/></svg></button>
+    <button class="ib" id="b-plus" data-tip="side.plus"><svg class="i tb"><use href="#i-plus"/></svg></button>
   </div>
   <div id="resize"></div>
 </aside>
 
 <div id="toolbar">
-  <button class="ib" id="tb-back"><svg class="i"><use href="#i-back"/></svg></button>
-  <button class="ib" id="tb-forward"><svg class="i"><use href="#i-forward"/></svg></button>
-  <button class="ib" id="tb-reload"><svg class="i"><use href="#i-reload"/></svg></button>
+  <button class="ib" id="tb-back"><svg class="i tb"><use href="#i-back"/></svg></button>
+  <button class="ib" id="tb-forward"><svg class="i tb"><use href="#i-forward"/></svg></button>
+  <button class="ib" id="tb-reload"><svg class="i tb"><use href="#i-reload"/></svg></button>
   <button id="tb-url"><svg class="i"><use href="#i-search"/></svg><span id="tb-url-text"></span></button>
   <div id="tb-exts"></div>
 </div>

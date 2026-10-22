@@ -23,12 +23,14 @@ const palette = require('./palette');
 // Marge autour de la page : 10 pt, comme mesuré dans Arc.
 const PAD = 10;
 const GAP = 8;
-const RADIUS = 10;
+// Coins de la carte : 6 pt (courbe continue dans Arc ; ici un arc de cercle, le plus proche).
+const RADIUS = 6;
 const TOOLBAR_H = 40;
 const PEEK_PULL = 150; // déplacement (px) au bout duquel un aperçu tiré se ferme
 const PEEK_BAR = 40; // marge au-dessus de la carte de l'aperçu quand son adresse s'affiche
 const SPLIT_BAR = 28; // petite barre de chaque volet d'une vue scindée (adresse, options, fermer)
-const TRAFFIC = { x: 15, y: 15 };
+// Feux tricolores : bouton de fermeture à (12, 16), comme dans Arc (cadres d’accessibilité).
+const TRAFFIC = { x: 13, y: 17 }; // Electron les pose 1 pt plus haut et plus à gauche que demandé
 const SIDEBAR_MIN = 200;
 const SIDEBAR_MAX = 420;
 const UI_PRELOAD = path.join(__dirname, '../preload/ui.js');
@@ -460,7 +462,8 @@ class OrbeWindow {
   // Feux tricolores : masqués avec la barre latérale ; macOS oublie leur
   // position personnalisée quand on les réaffiche.
   setButtons(visible) {
-    platform.setButtons(this.win, visible, TRAFFIC);
+    // Barre flottante : posée à 5 pt des bords (Arc), les feux suivent le panneau.
+    platform.setButtons(this.win, visible, this.peek && !this.sidebarVisible ? { x: TRAFFIC.x + 5, y: TRAFFIC.y + 5 } : TRAFFIC);
   }
 
   // Écouteurs et garde-fous communs à toutes les vues de l'interface.
@@ -901,10 +904,12 @@ class OrbeWindow {
       shown.add(rt.view);
       // Aperçu qui devient un onglet : la carte grandit jusqu'à sa place, par-dessus le reste.
       const grow = this.growing && this.growing.view === rt.view ? this.growing : null;
+      const was = !!this.attached && this.attached.has(rt.view);
       if (grow && !grow.started) this.win.contentView.addChildView(rt.view);
-      else if (!this.attached || !this.attached.has(rt.view)) this.win.contentView.addChildView(rt.view, 1);
+      else if (!was) this.win.contentView.addChildView(rt.view, 1);
       rt.view.setBorderRadius(this.htmlFullscreen ? 0 : RADIUS);
-      const ms = grow && !grow.started ? grow.ms : slide;
+      // Onglet déposé en vue scindée (activateSplit) : seules les pages déjà là glissent ; la nouvelle paraît dessous.
+      const ms = grow && !grow.started ? grow.ms : slide || (was ? this.splitSlide || 0 : 0);
       if (grow) grow.started = true;
       place(rt.view, this.pageRect(panes[i]), ms);
     });
@@ -931,8 +936,9 @@ class OrbeWindow {
       // Au-dessus du volet concerné (le volet actif), pas au milieu de la vue scindée.
       const i = this.toastPane && ids.includes(this.toastPane) ? ids.indexOf(this.toastPane) : Math.max(0, ids.indexOf(this.activeId));
       const zone = panes[i] ? this.pageRect(panes[i]) : rect;
+      // En haut à droite de la page, comme dans Arc (le message s'aligne à droite dans sa vue).
       const width = Math.min(380, Math.max(160, zone.width - 16));
-      this.toastView.setBounds({ x: Math.round(zone.x + zone.width / 2 - width / 2), y: zone.y + 12, width, height: 46 });
+      this.toastView.setBounds({ x: Math.round(zone.x + zone.width - width - 6), y: zone.y + 6, width, height: 52 });
     }
     hooks.layout(this);
   }
@@ -941,11 +947,11 @@ class OrbeWindow {
   // animation du système (voir `place`) : un appel par page, aucun minuteur. La
   // largeur de la page rétrécit dans le même mouvement, mais la page n'est remise
   // en page qu'une fois, à l'arrivée (mesuré). Comme dans Arc, la barre revient en
-  // 50 ms et disparaît d'un coup.
+  // 400 ms et part en 280 ms ; en partant, la page s'élargit dans le même mouvement.
   animateTo(target) {
     const from = this.p;
     this.p = target;
-    this.layout({ slide: target === 1 && from !== 1 && !this.htmlFullscreen ? motion(MOTION.sidebarIn) : 0 });
+    this.layout({ slide: from === target || this.htmlFullscreen ? 0 : motion(target === 1 ? MOTION.sidebarIn : MOTION.sidebarOut) });
   }
 
   toggleSidebar(force) {
@@ -962,7 +968,8 @@ class OrbeWindow {
   // La surveillance du bord gauche ne tourne que barre latérale masquée.
   syncPeekTimer() {
     const needed = !this.sidebarVisible && !this.win.isDestroyed();
-    if (needed && !this.peekTimer) this.peekTimer = setInterval(() => this.pollPeek(), 80);
+    // Une image (16 ms) : comme dans Arc, la barre paraît dès que le pointeur touche le bord.
+    if (needed && !this.peekTimer) this.peekTimer = setInterval(() => this.pollPeek(), 16);
     else if (!needed && this.peekTimer) { clearInterval(this.peekTimer); this.peekTimer = null; }
     if (needed) this.fillSpares(); // la barre flottante se prépare dès que la barre latérale est masquée
   }
@@ -980,12 +987,12 @@ class OrbeWindow {
       this.layout();
       this.floatView.setVisible(true);
     } else if (this.floatView) {
-      // Le temps que la barre glisse hors de l'écran.
+      // Le temps que la barre glisse hors de l'écran (--sidebar-out de base.css, plus une image).
       this.floatTimer = setTimeout(() => {
         if (this.win.isDestroyed() || this.peek || !this.floatView) return;
         this.floatView.setVisible(false);
         try { this.win.contentView.removeChildView(this.floatView); } catch {}
-      }, 220);
+      }, motion(MOTION.sidebarOut) + 20);
     }
     OrbeWindow.pushAll();
   }
@@ -1003,7 +1010,8 @@ class OrbeWindow {
     const y = pt.y - b.y;
     const inside = y >= 0 && y <= b.height;
     if (!this.peek && inside && x >= -2 && x <= 5) this.setPeek(true);
-    else if (this.peek && (!inside || x > this.sidebarWidth + 28 || x < -40)) this.setPeek(false);
+    // Le pointeur revient sur la page (la carte flottante finit à sidebarWidth + 4) : elle repart.
+    else if (this.peek && (!inside || x > this.sidebarWidth + 10 || x < -40)) this.setPeek(false);
   }
 
   setSidebarWidth(w) {
@@ -3395,9 +3403,12 @@ class OrbeWindow {
     const tab = mode === 'edit' ? this.data.tabs[this.activeId] : null;
     const rect = this.contentRect();
     const [W] = this.win.getContentSize();
+    const value = tab && !isInternal(tab.url) ? tab.url : '';
+    // ⌘L, comme dans Arc : la page affichée en première ligne (choisie d'office) ; Entrée la recharge.
+    const here = value ? [{ kind: 'raw', url: value, title: tab.customTitle || tab.title || suggest.strip(value), favicon: this.incognito ? '' : tab.favicon || '' }] : [];
     this.showModal('command', {
-      value: tab && !isInternal(tab.url) ? tab.url : '',
-      items: this.suggestLocal(''),
+      value,
+      items: here.concat(this.suggestLocal('')),
       sites: palette.siteKeys(),
       centerX: Math.round(W / 2),
       anchor: mode === 'edit' && this.sidebarVisible ? { x: 8, y: 46, width: Math.max(460, this.sidebarWidth + 220) } : null,
@@ -3430,9 +3441,15 @@ class OrbeWindow {
       for (const id of [...walk(sp.pinned), ...sp.today]) tabs.push(this.data.tabs[id]);
     }
     for (const list of Object.values(this.data.favs)) for (const id of list) tabs.push(this.data.tabs[id]);
-    const items = suggest.local(q, { tabs, commands: this.commandList(), activeId: this.commandMode === 'edit' ? this.activeId : null });
+    // Barre vide : l'onglet affiché n'est pas proposé (Arc, ⌘T comme ⌘L).
+    const items = suggest.local(q, { tabs, commands: this.commandList(), activeId: this.commandMode === 'edit' || !q.trim() ? this.activeId : null });
     // Aucun onglet à proposer sur une barre vide : de quoi démarrer (aide, réglages).
     if (!items.length && !q.trim()) return palette.starters(this);
+    // Onglet d'un autre Espace : la ligne porte le nom de cet Espace (Arc).
+    for (const it of items) {
+      const loc = it.kind === 'tab' && this.locate(it.tabId);
+      if (loc && loc.space && loc.space.id !== this.spaceId) it.space = loc.space.name;
+    }
     return this.incognito ? items.filter((i) => i.kind !== 'history').map((i) => ({ ...i, favicon: '' })) : items;
   }
 
@@ -3837,7 +3854,7 @@ class OrbeWindow {
       g.splice(g.indexOf(anchor) + (target && target.before ? 0 : 1), 0, id);
       delete g.ratios;
       this.setVertical(g, vertical);
-      return this.activate(id);
+      return this.activateSplit(id);
     }
     const alone = !g;
     this.splitWith(anchor, id, true, !!(target && target.before));
@@ -3845,7 +3862,13 @@ class OrbeWindow {
     const made = this.groupOf(anchor);
     if (!made || !made.includes(id)) return undefined; // vue déjà pleine : rien n'a changé
     if (alone && target && target.vertical) this.setVertical(made, true);
-    return this.activate(id);
+    return this.activateSplit(id);
+  }
+
+  // Comme dans Arc, la page déjà affichée s'écarte pour faire place à l'onglet déposé (200 ms, ease-out).
+  activateSplit(id) {
+    this.splitSlide = motion(MOTION.split);
+    try { this.activate(id); } finally { this.splitSlide = 0; }
   }
 
   // --- Onglet glissé hors de la fenêtre -------------------------------------
@@ -4016,7 +4039,9 @@ class OrbeWindow {
     if (!tab) return;
     const url = cleanUrl(tab.url);
     clipboard.writeText(markdown ? mdLink(tab.title, url) : url);
-    this.toast(t(markdown ? 'toast.markdownCopied' : 'toast.urlCopied'));
+    // Comme dans Arc : le message de la copie propose « Partager » (feuille de partage de macOS).
+    const share = !markdown && platform.isMac && webUrl(tab.url);
+    this.toast(t(markdown ? 'toast.markdownCopied' : 'toast.urlCopied'), null, share ? () => this.share() : null, { label: share ? t('toast.share') : '' });
   }
 
   // Copie la sélection sous forme de citation Markdown, avec sa source.
@@ -4710,7 +4735,8 @@ class OrbeWindow {
       activeId,
       selRev: this.selRev || 0,
       // Barre latérale : fenêtre au premier plan ou non, Espaces à l'en-tête masqué ou à la section épinglée repliée, ligne à montrer.
-      side: { focused: this.win.isFocused(), noHeader: d.spaces.filter((s) => s.hideHeader).map((s) => s.id), collapsed: d.spaces.filter((s) => s.pinnedCollapsed).map((s) => s.id), reveal: this.reveal || null },
+      // favHint : invitation des favoris vides (cadre en tirets), tant qu’elle n’a pas été fermée.
+      side: { focused: this.win.isFocused(), favHint: !settings.favHintOff, noHeader: d.spaces.filter((s) => s.hideHeader).map((s) => s.id), collapsed: d.spaces.filter((s) => s.pinnedCollapsed).map((s) => s.id), reveal: this.reveal || null },
       nav: {
         url: tab ? tab.url : '',
         internal: tab ? isInternal(tab.url) : false,
@@ -4799,6 +4825,7 @@ class OrbeWindow {
       case 'spaceMenu': return this.spaceMenu(a);
       case 'sidebarMenu': return this.sidebarMenu(a === 'plus');
       case 'sidebarWidthReset': return this.setSidebarWidth(DEFAULT_SETTINGS.sidebarWidth);
+      case 'favHintOff': return require('./commands').setSetting('favHintOff', true);
       case 'navMenu': return this.navMenu(Number(a));
       case 'navNew': return this.navNew(Number(a));
       case 'reloadMenu': return this.popup(this.reloadMenuTemplate());

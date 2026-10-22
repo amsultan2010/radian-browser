@@ -243,7 +243,7 @@ module.exports = {
 
     await t.verifier('menu du site → « Connexion et autorisations » : l’autorisation y figure et se réinitialise', async () => {
       // Le bouclier ouvre le centre de contrôle du site ; « Connexion et certificat… » mène aux informations du site.
-      await ctx.clic(shell, '#shield');
+      await ctx.clic(shell, '#shield', { survol: shell.locator('#url') }); // au repos, la pastille d’adresse est vide (Arc)
       const c = await feuille('control');
       assert.ok((await c.locator('#perms .item').evaluateAll((rows) => rows.map((r) => r.dataset.key))).includes('notifications'));
       await c.click('#c-details');
@@ -260,7 +260,7 @@ module.exports = {
     });
 
     await t.verifier('bouclier → centre de contrôle : bulle ancrée du côté de l’adresse, nom du site, bloqueur, données, outils ; un clic trop rapide est ignoré', async () => {
-      await ctx.clic(shell, '#shield');
+      await ctx.clic(shell, '#shield', { survol: shell.locator('#url') }); // au repos, la pastille d’adresse est vide (Arc)
       const c = await feuille('control');
       const vu = await c.evaluate(() => { const r = document.getElementById('card').getBoundingClientRect(); return { haut: r.top, gauche: r.left, titre: document.getElementById('title').textContent, sections: [...document.querySelectorAll('#body h2')].map((h) => h.textContent), dev: document.getElementById('c-dev').checked }; });
       assert.ok(vu.haut < 40 && vu.gauche < 40, JSON.stringify(vu));
@@ -287,7 +287,7 @@ module.exports = {
     });
 
     await t.verifier('centre de contrôle : Échap le ferme ; « Copier l’URL » copie l’adresse ; le clic droit sur le bouclier garde le menu', async () => {
-      await ctx.clic(shell, '#shield');
+      await ctx.clic(shell, '#shield', { survol: shell.locator('#url') }); // au repos, la pastille d’adresse est vide (Arc)
       const c = await feuille('control');
       await ctx.principal(({ electron }) => electron.clipboard.writeText(''));
       await c.click('#c-copy');
@@ -295,6 +295,7 @@ module.exports = {
       await touche(c, 'Escape');
       await plusDeFeuille();
       await ctx.principal(({ w }) => { w.menuVu = null; });
+      await shell.hover('#url');
       await shell.click('#shield', { button: 'right' });
       const menu = await jusqua(() => ctx.principal(({ w }) => w.menuVu && w.menuVu.filter((x) => x.label).map((x) => x.label)), 'menu du bouclier');
       assert.ok(menu.includes(await ctx.texte('site.info')), menu.join(' | '));

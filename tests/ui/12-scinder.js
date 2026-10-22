@@ -32,7 +32,9 @@ module.exports = {
       await jusqua(async () => (await barres()).length === 2, 'deux petites barres');
       const b = await barres();
       assert.ok(b[0].texte.endsWith('/b') && b[1].texte.endsWith('/a'), JSON.stringify(b));
-      const v = await volets();
+      // La page déjà affichée s'écarte en 200 ms, comme dans Arc : on attend son arrivée.
+      const posee = (x) => x.places.every((p, i) => JSON.stringify(x.pages[i]) === JSON.stringify({ x: p.x, y: p.y + p.bar, width: p.width, height: p.height - p.bar }));
+      const v = await jusqua(async () => { const x = await volets(); return posee(x) ? x : null; }, 'pages à leur place').catch(() => volets());
       v.places.forEach((p, i) => {
         assert.ok(p.bar > 20, 'place réservée à la barre');
         assert.deepEqual(v.pages[i], { x: p.x, y: p.y + p.bar, width: p.width, height: p.height - p.bar });

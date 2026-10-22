@@ -211,17 +211,19 @@ module.exports = async function selftest(ctx) {
 
   // Barre latérale
   const x0 = win.live.get(w.activeId).view.getBounds().x;
+  // Les pages glissent (280 ms à l'aller, 400 ms au retour) : leur arrivée est attendue.
+  const arrived = () => until(() => !win.inFlight(win.live.get(w.activeId).view), 'arrivée de la page', 6000);
   w.run('toggleSidebar');
-  await sleep(320);
+  await arrived();
   const x1 = win.live.get(w.activeId).view.getBounds().x;
   check('⌘S masque la barre latérale', !w.sidebarVisible && x1 < x0 && x1 === 10);
   w.run('toggleSidebar');
-  await sleep(320);
+  await arrived();
   check('⌘S la réaffiche', w.sidebarVisible && win.live.get(w.activeId).view.getBounds().x === x0);
 
   // Barre masquée : au survol du bord, elle flotte par-dessus la page sans la déplacer
   w.toggleSidebar(false);
-  await sleep(320);
+  await arrived();
   const hiddenX = win.live.get(w.activeId).view.getBounds();
   clearInterval(w.peekTimer); // le test remplace la souris
   w.peekTimer = null;
@@ -248,15 +250,16 @@ module.exports = async function selftest(ctx) {
     const same = (r1, r2) => r1.x === r2.x && r1.y === r2.y && r1.width === r2.width && r1.height === r2.height;
     const pane = (i = 0) => w.pageRect(w.paneRects(w.contentRect(), w.visibleIds())[i]);
     const docked = pane();
-    w.toggleSidebar(false);
-    await sleep(120);
-    const hidden = pane();
-    check('barre masquée : la page prend la largeur d’un coup', same(view().getBounds(), hidden) && hidden.x === 10);
-    // Arrivée des pages : attendue, jamais supposée. Le trajet demandé dure 50 ms,
+    // Arrivée des pages : attendue, jamais supposée. Le trajet demandé dure 280 ou 400 ms,
     // mais il ne commence qu'à la première image composée : sur une machine lente
-    // il finit bien plus tard (plus de 320 ms relevés sur les machines macOS).
+    // il finit bien plus tard.
     const flying = () => w.visibleIds().some((x) => win.inFlight(win.live.get(x).view));
     const settled = async () => { const t = Date.now(); await until(() => !flying(), 'arrivée des pages', 6000); return Date.now() - t; };
+    w.toggleSidebar(false);
+    const hidden = pane();
+    check('barre masquée : la page s’élargit par une animation du système, vers la pleine largeur', same(win.boundsOf(view()), hidden) && win.inFlight(view()) === moving && hidden.x === 10);
+    await settled();
+    check('barre masquée : la page finit à la pleine largeur', same(view().getBounds(), hidden));
     const before = { ...win.motionStats };
     const t0 = Date.now();
     let landed = 0;
@@ -315,9 +318,9 @@ module.exports = async function selftest(ctx) {
       w.toggleSidebar(true);
       const late = view().getBounds();
       Date.now = () => realNow() + 60e3;
-      try { w.toggleSidebar(false); } finally { Date.now = realNow; }
-      await settled();
-      await sleep(400);
+      // L'horloge reste avancée jusqu'à l'arrivée : le départ de la barre est lui aussi animé
+      // (280 ms), et la fin de ce trajet est datée par elle.
+      try { w.toggleSidebar(false); await settled(); await sleep(400); } finally { Date.now = realNow; }
       check('trajet plus long que prévu (machine lente) : masquer la barre en plein vol laisse la page à la pleine largeur', same(late, hidden) && same(view().getBounds(), hidden) && !flying(), JSON.stringify({ lue: view().getBounds(), attendue: hidden, enVol: late }));
       w.toggleSidebar(true);
       await settled();
@@ -893,17 +896,27 @@ module.exports = async function selftest(ctx) {
     check('thème : toute valeur invalide est ignorée (couleur, quatrième couleur, bornes, texture, mode)', changed === false && JSON.stringify(sp) === before);
     Theme.apply(sp, { colors: [] });
     check('thème : sans aucune couleur, thème par défaut (fond neutre, accent d’origine)', sp.plain === true && sp.color === Theme.DEFAULT_COLOR && sp.color2 === '' && sp.color3 === ''
-      && Theme.palette({ ...sp, mode: 'light' }, true).stops.join() === '#f3f3f5' && Theme.palette({ ...sp, mode: 'auto' }, true).stops.join() === '#16161a');
+      && Theme.palette({ ...sp, mode: 'light' }, true).stops.join() === '#eeeeee' && Theme.palette({ ...sp, mode: 'auto' }, true).stops.join() === '#373737');
     Theme.apply(sp, { color: '#10b981' });
     check('thème : choisir une couleur quitte le thème par défaut', !sp.plain && Theme.normalize(sp).colors.join() === '#10b981');
     Theme.apply(sp, { preset: 'lagon' });
     check('thème prêt : couleurs, intensité et texture appliquées d’un coup', sp.color === '#3b82f6' && sp.color3 === '#9fdcc4' && sp.texture === 'grain' && sp.grain === 0.25 && sp.intensity === 0.62);
-    check('nuanciers : trois familles de neuf teintes, toutes valides et distinctes ; huit thèmes prêts',
-      ['pastel', 'drab', 'grey'].every((f) => Theme.PALETTES[f].length === 9 && Theme.PALETTES[f].every(Theme.isHex)) && new Set(Object.values(Theme.PALETTES).flat()).size === 27
+    check('pastilles du sélecteur : trois pages de neuf, d’une à trois couleurs valides, toutes distinctes, la première = thème par défaut ; huit thèmes prêts',
+      Theme.SWATCHES.length === 3 && Theme.SWATCHES.every((page) => page.length === 9 && page.every((c) => c.length <= Theme.MAX_COLORS && c.every(Theme.isHex))) && new Set(Theme.SWATCHES.flat().map(String)).size === 27 && Theme.SWATCHES[0][0].length === 0
       && Theme.PRESETS.length === 8 && Theme.PRESETS.every((x) => x.colors.every(Theme.isHex) && x.colors.length <= 3 && Theme.TEXTURES.includes(x.texture)));
-    check('thème d’origine inchangé : 18 % de couleur en clair, 24 % en sombre à l’intensité moyenne',
-      Math.abs(Theme.tintOf(Theme.normalize({ color: '#7c6cf0' }), false) - 0.18) < 1e-9 && Math.abs(Theme.tintOf(Theme.normalize({ color: '#7c6cf0' }), true) - 0.24) < 1e-9
-      && Theme.tintOf(Theme.normalize({ color: '#7c6cf0', intensity: 0 }), false) < 0.05 && Theme.tintOf(Theme.normalize({ color: '#7c6cf0', intensity: 1 }), false) > 0.7);
+    // Thème du premier Espace, en sombre : les couleurs relevées dans Arc (fond, texte, accent).
+    const first = (mode, dark, intensity = 0.5) => Theme.palette({ colors: Theme.FIRST, accent: Theme.FIRST[0], intensity, grain: 0, texture: 'grain', mode }, dark);
+    const near = (a, b) => Theme.rgb(a).every((v, i) => Math.abs(v - Theme.rgb(b)[i]) <= 10);
+    const fd = first('auto', true);
+    check('thème du premier Espace, en sombre : dégradé #232537 → #371937, texte #dddfff, accent #464ddc (relevés dans Arc, en sRGB)',
+      fd.stops.join() === '#232537,#371937' && near(fd.fg, '#dddfff') && near(fd.accent, '#464ddc') && fd.hover === 'rgba(255, 255, 255, 0.1)' && fd.active === 'rgba(255, 255, 255, 0.2)', JSON.stringify(fd));
+    const light = (intensity) => Theme.palette({ colors: ['#97dfa6', '#94bbd5'], accent: '#97dfa6', intensity, grain: 0, texture: 'grain', mode: 'light' }, false);
+    const dist = (p) => Math.hypot(...Theme.rgb(p.stops[0]).map((v, i) => v - Theme.NEUTRAL.light[i]));
+    check('thème : en clair, la couleur telle quelle à mi-intensité ; plus neutre en dessous, plus saturée au-dessus',
+      light(0.5).stops.join() === '#97dfa6,#94bbd5' && light(0).stops.join() === '#eeeeee,#eeeeee' && dist(light(0.2)) < dist(light(0.5)) && dist(light(0.5)) < dist(light(1)));
+    check('variables d’Arc pour les pages : palette, couleur simple, un arrêt de dégradé par couleur',
+      fd.page['--arc-palette-background'] === '#232537FF' && fd.page['--arc-background-gradient-color1'] === '#371937FF' && fd.page['--arc-palette-focus'] === fd.accent.toUpperCase() + 'FF'
+      && Object.keys(fd.page).length === 17 && !('--arc-background-gradient-color1' in Theme.palette({ color: '#10b981' }, true).page));
     // Lisibilité : thèmes prêts, nuanciers, et 3 000 thèmes au hasard, en clair et en sombre.
     let seed = 20261009;
     const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
@@ -911,7 +924,7 @@ module.exports = async function selftest(ctx) {
     let worstOf = '';
     const see = (theme, dark) => { const p = Theme.palette(theme, dark); if (p.contrast < worst) { worst = p.contrast; worstOf = JSON.stringify([theme.colors, theme.intensity, theme.mode, dark]); } return p; };
     for (const preset of Theme.PRESETS) for (const mode of Theme.MODES) for (const dark of [false, true]) see({ colors: preset.colors, accent: preset.colors[0], intensity: preset.intensity, grain: 0, texture: 'grain', mode }, dark);
-    for (const c of Object.values(Theme.PALETTES).flat()) for (const i of [0, 0.5, 1]) for (const dark of [false, true]) see({ colors: [c], accent: c, intensity: i, grain: 0, texture: 'grain', mode: 'auto' }, dark);
+    for (const colors of Theme.SWATCHES.flat()) for (const i of [0, 0.5, 1]) for (const dark of [false, true]) see({ colors, accent: colors[0] || Theme.DEFAULT_COLOR, intensity: i, grain: 0, texture: 'grain', mode: 'auto' }, dark);
     for (let i = 0; i < 3000; i++) {
       const colors = Array.from({ length: 1 + Math.floor(rnd() * 3) }, () => Theme.hex([rnd() * 255, rnd() * 255, rnd() * 255]));
       see({ colors, accent: colors[0], intensity: rnd(), grain: 0, texture: 'grain', mode: Theme.MODES[i % 3] }, i % 2 === 0);
@@ -920,7 +933,8 @@ module.exports = async function selftest(ctx) {
     console.log(`  – contraste le plus faible calculé : ${worst.toFixed(2)}`);
     const navy = Theme.palette({ colors: ['#0b1d4a'], accent: '#0b1d4a', intensity: 1, grain: 0, texture: 'grain', mode: 'light' }, false);
     const lemon = Theme.palette({ colors: ['#fff27a'], accent: '#fff27a', intensity: 1, grain: 0, texture: 'grain', mode: 'dark' }, true);
-    check('thème : fond foncé en mode clair = texte clair ; fond pâle en mode sombre = texte sombre ; texte sur l’accent choisi de même', navy.family === 'dark' && navy.fg === '#f3f3f5' && navy.onAccent === '#ffffff' && lemon.family === 'light' && lemon.fg === '#1d1d1f' && lemon.onAccent === '#141416');
+    const lemonLight = Theme.palette({ colors: ['#fff27a'], accent: '#fff27a', intensity: 1, grain: 0, texture: 'grain', mode: 'light' }, false);
+    check('thème : fond foncé en mode clair = texte clair ; fond pâle = texte sombre ; en mode sombre, le fond reste sombre ; texte sur l’accent choisi de même', navy.family === 'dark' && navy.onAccent === '#ffffff' && lemonLight.family === 'light' && lemonLight.fg === '#1d1d1f' && lemonLight.onAccent === '#141416' && lemon.family === 'dark');
     // Textures : quatre carreaux, exactement ceux que produit le script, gris moyen neutre.
     const txDir = path.join(__dirname, '..', 'src', 'renderer', 'textures');
     const tiles = Theme.TEXTURES.map((name) => {

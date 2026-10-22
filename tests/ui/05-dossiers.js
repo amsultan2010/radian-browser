@@ -59,10 +59,11 @@ module.exports = {
       assert.equal((await ctx.etat()).epingles[0].ouvert, true);
     });
 
-    await t.verifier('clic sur le chevron : même effet', async () => {
-      await ctx.clic(shell, tete.locator('.chev'));
+    // Comme dans Arc, la ligne d’un dossier n’a pas de chevron : c’est son icône qui se vise.
+    await t.verifier('clic sur l’icône du dossier : même effet', async () => {
+      await ctx.clic(shell, tete.locator('.ic'));
       await jusqua(async () => !(await ouvert()), 'dossier fermé');
-      await ctx.clic(shell, tete.locator('.chev'));
+      await ctx.clic(shell, tete.locator('.ic'));
       await jusqua(ouvert, 'dossier ouvert');
     });
 

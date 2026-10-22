@@ -25,11 +25,11 @@ module.exports = {
 
     await ctx.ouvrir('/a', 'Page A');
 
-    await t.verifier('largeur par défaut : 250 px, la page commence au bord de la barre', async () => {
-      assert.equal(await largeur(), 250);
+    await t.verifier('largeur par défaut : 228 px, la page commence au bord de la barre', async () => {
+      assert.equal(await largeur(), 228);
       const e = await ctx.etat();
-      assert.equal(e.largeur, 250);
-      assert.equal(e.vuePage.x, 250);
+      assert.equal(e.largeur, 228);
+      assert.equal(e.vuePage.x, 228);
     });
 
     await t.verifier('la poignée affiche le curseur de redimensionnement', async () => {
@@ -91,17 +91,17 @@ module.exports = {
     });
 
     await ctx.capture('laterale-200');
-    await tirer(250);
-    await jusqua(async () => (await largeur()) === 250, 'barre à 250 px');
+    await tirer(228);
+    await jusqua(async () => (await largeur()) === 228, 'barre à 228 px');
 
     await t.verifier('double-clic sur le bord : la barre reprend sa largeur par défaut', async () => {
       await tirer(340);
       await jusqua(async () => (await largeur()) === 340, 'barre à 340 px');
       const sw = await largeur();
       await shell.mouse.dblclick(sw - 2, 420);
-      await jusqua(async () => (await largeur()) === 250, 'barre à 250 px');
-      assert.equal((await ctx.etat()).largeur, 250);
-      assert.equal((await ctx.etat()).vuePage.x, 250);
+      await jusqua(async () => (await largeur()) === 228, 'barre à 228 px');
+      assert.equal((await ctx.etat()).largeur, 228);
+      assert.equal((await ctx.etat()).vuePage.x, 228);
     });
 
     await t.verifier('tirer le bord tout à gauche (sous 100 px) : la barre se masque ; ⌘S la ramène à sa largeur', async () => {
@@ -115,13 +115,13 @@ module.exports = {
       await shell.mouse.move(300, 424, { steps: 4 });
       await shell.mouse.up();
       await ctx.sleep(150);
-      const e = await ctx.etat();
+      // La page s'élargit en 280 ms, comme dans Arc : son arrivée est attendue.
+      const e = await jusqua(async () => { const x = await ctx.etat(); return x.vuePage.x === 10 ? x : null; }, 'page à 10 px du bord');
       assert.equal(e.lateraleVisible, false);
-      assert.equal(e.largeur, 250, 'la largeur réglée est conservée');
-      assert.equal(e.vuePage.x, 10);
+      assert.equal(e.largeur, 228, 'la largeur réglée est conservée');
       assert.equal(await shell.evaluate(() => document.body.classList.contains('no-anim')), false);
       await ctx.menu('Cmd+S');
-      await jusqua(async () => (await ctx.etat()).vuePage.x === 250, 'page à 250 px');
+      await jusqua(async () => (await ctx.etat()).vuePage.x === 228, 'page à 228 px');
       await jusqua(async () => (await shell.locator('#sidebar').boundingBox()).x === 0, 'barre en place');
     });
 
@@ -142,13 +142,13 @@ module.exports = {
       assert.equal(e.lateraleVisible, false);
       const w = await shell.evaluate(() => innerWidth);
       assert.equal(e.vuePage.width, w - 20);
-      await jusqua(async () => (await shell.locator('#sidebar').boundingBox()).x + 250 <= 0, 'barre sortie de la fenêtre');
+      await jusqua(async () => (await shell.locator('#sidebar').boundingBox()).x + 228 <= 0, 'barre sortie de la fenêtre');
     });
 
     await t.verifier('⌘S (élément de menu) la réaffiche à la même largeur', async () => {
       await ctx.menu('Cmd+S');
       await jusqua(async () => shell.evaluate(() => document.body.classList.contains('docked')), 'barre affichée');
-      await jusqua(async () => (await ctx.etat()).vuePage.x === 250, 'page à 250 px');
+      await jusqua(async () => (await ctx.etat()).vuePage.x === 228, 'page à 228 px');
       await jusqua(async () => (await shell.locator('#sidebar').boundingBox()).x === 0, 'barre en place');
       assert.equal((await ctx.etat()).lateraleVisible, true);
     });
@@ -159,7 +159,7 @@ module.exports = {
       await ctx.clic(shell, '#b-sidebar');
       await jusqua(async () => (await shell.locator('#empty').boundingBox()).x === 10, 'accueil pleine largeur');
       await ctx.menu('Cmd+S');
-      await jusqua(async () => (await shell.locator('#empty').boundingBox()).x === 250, 'accueil à droite de la barre');
+      await jusqua(async () => (await shell.locator('#empty').boundingBox()).x === 228, 'accueil à droite de la barre');
     });
 
     await t.verifier('⇧⌘D (élément de menu) affiche la barre d’outils au-dessus de la page', async () => {
@@ -169,7 +169,7 @@ module.exports = {
       await jusqua(async () => (await ctx.etat()).vuePage.y === 50, 'page décalée sous la barre d’outils');
       assert.equal(await shell.textContent('#tb-url-text'), ctx.url('/b'));
       const tb = await shell.locator('#toolbar').boundingBox();
-      assert.ok(tb.x >= 250 && tb.y + tb.height <= 50, 'barre d’outils entre la barre latérale et la page');
+      assert.ok(tb.x >= 228 && tb.y + tb.height <= 50, 'barre d’outils entre la barre latérale et la page');
       await ctx.capture('barre-outils');
       await ctx.clic(shell, '#tb-url');
       await jusqua(ctx.commandeOuverte, 'barre de commande ouverte depuis la barre d’outils');
