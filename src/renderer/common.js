@@ -1,6 +1,6 @@
 // Outils partagés par toutes les pages de l'interface.
 const O = window.orbe;
-let lang = O.lang || 'fr';
+let lang = O.lang || 'en';
 
 // Classe « mac » ou « win » sur <html> : les feuilles de style adaptent
 // l'habillage (boutons de fenêtre, police) dans un bloc à part.
@@ -49,7 +49,7 @@ function esc(s) {
 function host(url) {
   try {
     const u = new URL(url);
-    if (u.protocol === 'orbe:') return 'Orbe';
+    if (u.protocol === 'orbe:') return 'Radian';
     return u.host.replace(/^www\./, '') || url;
   } catch {
     return url || '';

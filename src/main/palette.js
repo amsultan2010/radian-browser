@@ -15,7 +15,7 @@ const t = (key, vars) => store.t(key, null, vars);
 // `keys` : ce que l'on tape avant ⇥ ou espace (nom, domaine, abréviation).
 const SITES = [
   { id: 'youtube', name: 'YouTube', keys: ['youtube', 'youtube.com', 'yt'], url: 'https://www.youtube.com/results?search_query=%s' },
-  { id: 'wikipedia', name: 'Wikipédia', keys: ['wikipedia', 'wikipedia.org', 'wiki'], url: 'https://{lang}.wikipedia.org/w/index.php?search=%s' },
+  { id: 'wikipedia', name: 'Wikipedia', keys: ['wikipedia', 'wikipedia.org', 'wiki'], url: 'https://{lang}.wikipedia.org/w/index.php?search=%s' },
   { id: 'github', name: 'GitHub', keys: ['github', 'github.com', 'gh'], url: 'https://github.com/search?q=%s' },
   { id: 'google', name: 'Google', keys: ['google', 'google.com'], url: 'https://www.google.com/search?q=%s' },
   { id: 'duckduckgo', name: 'DuckDuckGo', keys: ['duckduckgo', 'duckduckgo.com', 'ddg'], url: 'https://duckduckgo.com/?q=%s' },

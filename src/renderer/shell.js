@@ -358,7 +358,7 @@ function render(s) {
   $('fav').dataset.hint = t('side.favHint');
   $('url-copy').hidden = !s.activeId || s.nav.internal || !s.nav.url;
 
-  const label = s.nav.internal ? (s.nav.title || 'Orbe') : host(s.nav.url);
+  const label = s.nav.internal ? (s.nav.title || 'Radian') : host(s.nav.url);
   $('url-text').textContent = label || t('side.search');
   $('url-text').classList.toggle('placeholder', !label);
   $('url').classList.toggle('loading', s.nav.loading);

@@ -132,7 +132,7 @@ const volatileRecords = new Set(); // navigation privée : jamais écrits sur di
 function quarantine(file, url, withUrl = true) {
   return new Promise((resolve) => {
     if (process.platform === 'darwin') {
-      const value = `0081;${Math.floor(Date.now() / 1000).toString(16)};Orbe;${require('crypto').randomUUID().toUpperCase()}`;
+      const value = `0081;${Math.floor(Date.now() / 1000).toString(16)};Radian;${require('crypto').randomUUID().toUpperCase()}`;
       require('child_process').execFile('/usr/bin/xattr', ['-w', 'com.apple.quarantine', value, file], { timeout: 5000 }, (err) => resolve(!err));
     } else if (process.platform === 'win32') {
       const host = withUrl && /^https?:/i.test(url || '') ? `HostUrl=${String(url).replace(/[\r\n]/g, '')}\r\n` : '';

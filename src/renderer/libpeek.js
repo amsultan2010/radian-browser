@@ -43,7 +43,7 @@
   function ago(at) {
     const s = Math.max(0, (Date.now() - at) / 1000);
     if (s < 60) return t('peek.now');
-    const f = new Intl.RelativeTimeFormat(document.documentElement.lang || 'fr', { numeric: 'auto', style: 'short' });
+    const f = new Intl.RelativeTimeFormat(document.documentElement.lang || 'en', { numeric: 'auto', style: 'short' });
     if (s < 3600) return f.format(-Math.round(s / 60), 'minute');
     if (s < 86400) return f.format(-Math.round(s / 3600), 'hour');
     return f.format(-Math.round(s / 86400), 'day');

@@ -539,7 +539,7 @@ api.extend({
   // Orbe n'a pas de compte Google : aucun jeton à donner.
   'identity.getAuthToken'(ctx) {
     X.need(ctx, 'identity');
-    throw X.fail('OAuth2 not granted or revoked. Orbe n’a pas de compte Google : utiliser launchWebAuthFlow.');
+    throw X.fail('OAuth2 not granted or revoked. Radian has no Google account: use launchWebAuthFlow.');
   },
   'identity.getProfileUserInfo'(ctx) {
     X.need(ctx, 'identity');

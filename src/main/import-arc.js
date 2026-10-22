@@ -40,7 +40,7 @@ function vivid(hex) {
 function read(file = ARC_FILE) {
   const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
   const container = (raw.sidebar.containers || []).find((c) => c && c.items && c.spaces);
-  if (!container) throw new Error('Format Arc non reconnu');
+  if (!container) throw new Error('Unrecognized Arc format');
   const items = new Map(objects(container.items).map((o) => [o.id, o]));
 
   const tabOf = (it) => {
@@ -56,7 +56,7 @@ function read(file = ARC_FILE) {
       const child = items.get(cid);
       if (!child || !child.data) continue;
       if (child.data.tab) { const tab = tabOf(child); if (tab) out.push(tab); }
-      else if (child.data.list) out.push({ type: 'folder', name: child.title || 'Dossier', children: children(cid) });
+      else if (child.data.list) out.push({ type: 'folder', name: child.title || store.t('tabs.folderDefault'), children: children(cid) });
       else if (child.data.splitView) out.push(...children(cid));
     }
     return out;
@@ -70,7 +70,7 @@ function read(file = ARC_FILE) {
     const icon = sp.customInfo && sp.customInfo.iconType && sp.customInfo.iconType.emoji_v2;
     return {
       arcId: sp.id,
-      name: sp.title || 'Espace',
+      name: sp.title || store.t('spaces.defaultName'),
       icon: typeof icon === 'string' ? icon : '',
       color: vivid(findColor(sp.customInfo && sp.customInfo.windowTheme)),
       profile: profileKey(sp.profile),

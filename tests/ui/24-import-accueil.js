@@ -43,7 +43,7 @@ module.exports = {
       global.__maj = { ouverts: [], montres: [] };
       u.configure({ test: true, endpoint: a.url, version: '0.12.0', downloadsDir: () => a.dl, reveal: (f) => global.__maj.montres.push(f), open: (x) => global.__maj.ouverts.push(x) });
       return u.assetName('9.1.0');
-    }, { url: `http://127.0.0.1:${serveur.address().port}/repos/amadoubaui/orbe/releases/latest`, dl });
+    }, { url: `http://127.0.0.1:${serveur.address().port}/repos/amsultan2010/radian-browser/releases/latest`, dl });
 
     await ctx.ouvrir('/a', 'Page A');
     let r = null;
@@ -119,17 +119,17 @@ module.exports = {
       await jusqua(async () => (await volet()) === 'advanced', 'volet Avancé').catch(async () => { r = await ctx.attendrePage('settings.html'); });
       r = await ctx.attendrePage('settings.html');
       await jusqua(async () => (await volet()) === 'advanced' && (await r.locator('#update-new').isVisible()), 'carte de la nouvelle version');
-      assert.equal(await r.textContent('#update-version'), 'Orbe 0.12.0');
-      assert.equal(await r.textContent('#update-state'), 'Orbe 9.1.0 est disponible');
+      assert.equal(await r.textContent('#update-version'), 'Radian 0.12.0');
+      assert.equal(await r.textContent('#update-state'), 'Radian 9.1.0 est disponible');
       assert.match(await r.textContent('#update-notes'), /Import depuis Chrome, Firefox et Safari\n<b>pas du HTML<\/b>/);
       assert.equal(await r.locator('#update-notes b').count(), 0);
-      assert.equal(demandes[0].agent, 'Orbe');
+      assert.equal(demandes[0].agent, 'Radian');
       assert.equal(demandes[0].cookie, '');
     });
 
     await t.verifier('barre latérale : note « Orbe 9.1.0 est disponible », sur une ligne au-dessus des Espaces ; × l’écarte', async () => {
       await jusqua(() => shell.locator('#update-note').isVisible(), 'note affichée');
-      assert.equal(await shell.textContent('#update-open'), 'Orbe 9.1.0 est disponible');
+      assert.equal(await shell.textContent('#update-open'), 'Radian 9.1.0 est disponible');
       const b = await shell.locator('#update-note').boundingBox();
       const bas = await shell.locator('#bottom').boundingBox();
       assert.ok(b.y + b.height <= bas.y + 1 && b.height < 40, 'la note tient au-dessus des Espaces, sur une ligne : ' + JSON.stringify(b));
@@ -156,7 +156,7 @@ module.exports = {
     await t.verifier('« Page de téléchargement » et « Télécharger » : page de la version dans le dépôt d’Orbe ; archive vérifiée, montrée, jamais ouverte', async () => {
       await r.click('#update-page');
       await jusqua(async () => (await ctx.principal(() => global.__maj.ouverts.length)) === 1, 'page demandée');
-      assert.equal(await ctx.principal(() => global.__maj.ouverts[0]), 'https://github.com/amadoubaui/orbe/releases/tag/v9.1.0');
+      assert.equal(await ctx.principal(() => global.__maj.ouverts[0]), 'https://github.com/amsultan2010/radian-browser/releases/tag/v9.1.0');
       if (!serveur.archive) return;
       await r.click('#update-download');
       await jusqua(async () => (await r.locator('#update-reveal').isVisible()), 'archive téléchargée');
@@ -185,7 +185,7 @@ module.exports = {
       a = await ctx.attendrePage('welcome.html');
       await jusqua(async () => (await a.locator('#dots i').count()) === 5, 'accueil chargé');
       assert.equal(await etape(), 'hello');
-      assert.equal(await a.textContent('.step.on h1'), 'Bienvenue dans Orbe');
+      assert.equal(await a.textContent('.step.on h1'), 'Bienvenue dans Radian');
       assert.equal(await a.locator('.step:visible').count(), 1);
       assert.equal((await a.textContent('#next')).trim(), 'Commencer');
       assert.ok(await a.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1), 'la première étape tient dans la fenêtre');

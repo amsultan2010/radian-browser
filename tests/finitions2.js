@@ -48,7 +48,7 @@ module.exports = async function finitions2Tests(ctx) {
       !!folder && space.pinned[0] === folder && folder.open === true && folder.name === T('starter.folder') && kids.length === starter.PAGES.length && kids.length >= 3
       && kids.every((tab, i) => tab && tab.url === starter.PAGES[i][1] && tab.homeUrl === tab.url && tab.title === T(starter.PAGES[i][0])));
     check('« Premiers pas » : seules des pages d’Orbe (marquées internes) et des adresses https écrites dans le code ; aucune page n’est chargée d’avance',
-      kids.every((tab) => (tab.internal === true ? /^orbe:\/\/app\/[a-z]+\.html$/.test(tab.url) : /^https:\/\/github\.com\/amadoubaui\/orbe/.test(tab.url)) && !win.live.has(tab.id)));
+      kids.every((tab) => (tab.internal === true ? /^orbe:\/\/app\/[a-z]+\.html$/.test(tab.url) : /^https:\/\/github\.com\/amsultan2010\/radian-browser/.test(tab.url)) && !win.live.has(tab.id)));
     check('« Premiers pas » : posé une seule fois ; jamais dans une fenêtre privée', starter.seed(w, space) === null && store.state.window.starter === true && space.pinned.filter((n) => n.type === 'folder').length === 1
       && (() => { delete store.state.window.starter; const r = starter.seed({ incognito: true, shared: false, data: d, space, changed() {} }); return r === null && !store.state.window.starter; })());
     await until(() => ui(`[...document.querySelectorAll('#pinned .folder > .row .title')].some((el) => el.textContent === ${JSON.stringify(T('starter.folder'))})`), 'dossier dans la barre');
@@ -600,8 +600,8 @@ module.exports = async function finitions2Tests(ctx) {
     const { Menu } = require('electron');
     const find = (menu, label) => { for (const it of menu.items) { if (it.label === label) return it; if (it.submenu) { const f = find(it.submenu, label); if (f) return f; } } return null; };
     (ctx.menu || require('../src/main/menu')).refresh(true);
-    await until(() => !!find(Menu.getApplicationMenu(), T('lib.media')), 'barre de menus à jour');
-    const item = find(Menu.getApplicationMenu(), T('lib.media'));
+    await until(() => !!find(Menu.getApplicationMenu(), T('window.viewMedia')), 'barre de menus à jour');
+    const item = find(Menu.getApplicationMenu(), T('window.viewMedia'));
     const before = w.activeId;
     item.click();
     const opened = await until(() => { const tab = w.activeId && d.tabs[w.activeId]; return tab && tab.internal && tab.url === 'orbe://app/library.html#media' ? tab : null; }, 'section Médias ouverte');

@@ -232,7 +232,7 @@ function list() {
   };
   const groups = GROUPS.map(([title, names]) => ({ title: store.t(title), items: names.map(row).filter(Boolean) }));
   const rest = commands.COMMANDS.map((c) => row(c.name)).filter(Boolean);
-  groups.push({ title: 'Orbe', items: rest });
+  groups.push({ title: 'Radian', items: rest });
   return groups.filter((g) => g.items.length);
 }
 

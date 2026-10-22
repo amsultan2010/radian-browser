@@ -46,7 +46,7 @@ function testModeAllowed() {
 }
 const pendingUrls = [];
 
-app.setName('Orbe');
+app.setName('Radian');
 const SELFTEST = process.argv.includes('--selftest') && testModeAllowed();
 if (process.argv.includes('--selftest') && !SELFTEST) {
   console.error('[orbe] --selftest refusé : application fabriquée, sans --orbe-test ni ORBE_USER_DATA à part');
@@ -320,7 +320,7 @@ function setupUpdates() {
   const updateSession = () => {
     if (!ses) {
       ses = session.fromPartition('orbe-mises-a-jour', { cache: false });
-      ses.setUserAgent('Orbe', 'en');
+      ses.setUserAgent('Radian', 'en');
       // Chaque requête de cette session, sauts de redirection compris, est contrôlée :
       // HTTPS et hôte exact de GitHub, sinon elle est annulée avant de partir.
       ses.webRequest.onBeforeRequest((details, done) => done({ cancel: !updates.hopAllowed(details.url) }));
@@ -506,7 +506,7 @@ app.whenReady().then(async () => {
   extUi.hooks.openSettings = openSettings;
   extUi.hooks.changed = () => { for (const wc of webContents.getAllWebContents()) if (trusted.has(wc) && !wc.isDestroyed()) wc.send('settings', store.state.settings); menu.refresh(true); };
 
-  app.setAboutPanelOptions({ applicationName: 'Orbe', applicationVersion: app.getVersion(), copyright: 'Logiciel libre — licence MIT', credits: `Chromium ${process.versions.chrome}` });
+  app.setAboutPanelOptions({ applicationName: 'Radian', applicationVersion: app.getVersion(), copyright: 'Free software — MIT license. Based on Orbe.', credits: `Chromium ${process.versions.chrome}` });
   menu.build();
 
   const first = newWindow();

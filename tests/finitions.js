@@ -724,7 +724,7 @@ module.exports = async function finitionsTests(ctx) {
   // La question d'abord : elle dit ce que la trace contient. Refusée, rien ne s'enregistre.
   await commands.run(w, 'recordTrace');
   check('« Enregistrer une trace… » : la question est posée d’abord, elle dit que la trace contient adresses et titres de toutes les fenêtres ; refusée, rien ne commence',
-    questions.length === 1 && questions[0].message === T('trace.confirm') && questions[0].detail === T('trace.detail') && /toutes les fenêtres|every Orbe window/.test(questions[0].detail) && /adresses|addresses/.test(questions[0].detail) && questions[0].cancelId === 1 && questions[0].defaultId === 1 && commands.tracing() === false && trace.length === 0 && toasts.length === 0, JSON.stringify(questions));
+    questions.length === 1 && questions[0].message === T('trace.confirm') && questions[0].detail === T('trace.detail') && /toutes les fenêtres|every Radian window/.test(questions[0].detail) && /adresses|addresses/.test(questions[0].detail) && questions[0].cancelId === 1 && questions[0].defaultId === 1 && commands.tracing() === false && trace.length === 0 && toasts.length === 0, JSON.stringify(questions));
   traceAnswer = 0;
   await commands.run(w, 'recordTrace');
   menu.refresh(true);

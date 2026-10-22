@@ -17,7 +17,7 @@ module.exports = {
     await t.verifier('aucun onglet : la barre ouverte propose de quoi démarrer (accueil, raccourcis, aide, réglages)', async () => {
       await ctx.nouvelOnglet();
       const titres = await ctx.suggestions();
-      assert.ok(titres.includes('Bienvenue dans Orbe') && titres.includes('Centre d’aide') && titres.some((x) => /^Réglages/.test(x)), titres.join(' | '));
+      assert.ok(titres.includes('Bienvenue dans Radian') && titres.includes('Centre d’aide') && titres.some((x) => /^Réglages/.test(x)), titres.join(' | '));
       assert.equal(await ctx.selection(), -1);
     });
 
@@ -69,7 +69,7 @@ module.exports = {
       await modal.keyboard.press('Backspace');
       await jusqua(async () => (await portee()) === null, 'portée quittée');
       assert.equal(await modal.getAttribute('#cmd-input', 'placeholder'), 'Rechercher ou saisir une adresse…');
-      assert.ok((await ctx.suggestions()).includes('Bienvenue dans Orbe'));
+      assert.ok((await ctx.suggestions()).includes('Bienvenue dans Radian'));
       await modal.keyboard.press('Escape');
       await fermee();
     });

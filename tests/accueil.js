@@ -35,14 +35,14 @@ module.exports = async function accueilTests(ctx) {
   const hello = JSON.parse(await js(`JSON.stringify({ step: document.querySelector('.step.on').dataset.step, h1: document.querySelector('.step.on h1').textContent, next: document.getElementById('next').textContent,
     skip: document.getElementById('skip').textContent, back: document.getElementById('back').hidden, shown: [...document.querySelectorAll('.step')].filter((s) => s.getClientRects().length).length })`));
   check('accueil : une étape à la fois, « Commencer », « Passer l’accueil », cinq points',
-    hello.step === 'hello' && hello.h1 === 'Bienvenue dans Orbe' && hello.next === 'Commencer' && hello.skip === 'Passer l’accueil' && hello.back && hello.shown === 1, JSON.stringify(hello));
+    hello.step === 'hello' && hello.h1 === 'Bienvenue dans Radian' && hello.next === 'Commencer' && hello.skip === 'Passer l’accueil' && hello.back && hello.shown === 1, JSON.stringify(hello));
 
   // Langue : choisie dès la première étape, appliquée tout de suite à toute l'interface.
   await click('#langs [data-lang="en"]');
-  await until(async () => (await js('document.querySelector(".step.on h1").textContent')) === 'Welcome to Orbe', 'accueil en anglais');
+  await until(async () => (await js('document.querySelector(".step.on h1").textContent')) === 'Welcome to Radian', 'accueil en anglais');
   const en = { next: await js('document.getElementById("next").textContent'), lang: store.state.settings.lang, pressed: await js('document.querySelector("#langs [aria-pressed=true]").dataset.lang') };
   await click('#langs [data-lang="fr"]');
-  await until(async () => (await js('document.querySelector(".step.on h1").textContent')) === 'Bienvenue dans Orbe', 'accueil en français');
+  await until(async () => (await js('document.querySelector(".step.on h1").textContent')) === 'Bienvenue dans Radian', 'accueil en français');
   check('première étape : la langue se choisit (français, anglais) et s’applique aussitôt', en.next === 'Get started' && en.lang === 'en' && en.pressed === 'en' && store.state.settings.lang === 'fr', JSON.stringify(en));
 
   await click('#next');

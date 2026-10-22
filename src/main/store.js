@@ -18,7 +18,8 @@ const lightIcon = (u) => !!u && !(u.startsWith('data:') && u.length > 2048);
 const INTERNAL_PAGE = /^orbe:\/\/app\/(library|shortcuts|welcome|notes|easel)\.html/;
 
 const DEFAULT_SETTINGS = {
-  lang: 'fr',
+  // Anglais par défaut ; les essais (npm test, test:ui) vérifient le texte de référence, en français.
+  lang: process.argv.includes('--selftest') || process.env.ORBE_UI_TEST === '1' ? 'fr' : 'en',
   searchEngine: 'google',
   suggestions: true,
   archiveAfterHours: 12,
@@ -192,7 +193,7 @@ class Store {
   }
 
   t(key, lang, vars) {
-    const l = lang || (this.state && this.state.settings.lang) || 'fr';
+    const l = lang || (this.state && this.state.settings.lang) || 'en';
     let str = (locales[l] && locales[l][key]) || locales.fr[key] || key;
     if (vars) for (const k of Object.keys(vars)) str = str.replace(`{${k}}`, vars[k]);
     return str;

@@ -17,7 +17,7 @@ O.on('state', (s) => {
   document.getElementById('u-wrap').classList.toggle('site', !!s.url);
   open.disabled = !s.url;
   copy.disabled = !s.url;
-  document.title = s.title || 'Orbe';
+  document.title = s.title || 'Radian';
   document.getElementById('hint').hidden = !s.hint;
   const was = !!spaces;
   spaces = Array.isArray(s.spaces) ? s.spaces : null;

@@ -532,7 +532,7 @@ el('ext-add').onclick = async () => {
 function drawUpdate(u) {
   if (!u) return;
   drawUpdate.last = u;
-  el('update-version').textContent = 'Orbe ' + u.current;
+  el('update-version').textContent = 'Radian ' + u.current;
   const when = u.checkedAt ? new Date(u.checkedAt).toLocaleString(lang, { dateStyle: 'medium', timeStyle: 'short' }) : '';
   el('update-state').textContent = u.checking ? t('update.checking') : u.error ? t('update.err.' + u.error) : u.available ? t('update.available', { version: u.latest.version }) : when ? t('update.upToDate', { when }) : t('update.never');
   el('update-check').disabled = !!u.checking;
@@ -616,7 +616,7 @@ function draw(data) {
   routes = (data.settings.routes || []).slice();
   spaceNames = data.spaces;
   el('searchEngine').innerHTML = data.engines.map((e) => `<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
-  el('version').textContent = `Orbe ${data.version} · Chromium ${data.chrome}`;
+  el('version').textContent = `Radian ${data.version} · Chromium ${data.chrome}`;
   drawExternal();
   fill(data.settings);
   drawProfiles(data.profiles);

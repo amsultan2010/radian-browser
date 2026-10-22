@@ -46,7 +46,7 @@ function debuggee(ctx, target) {
   const d = target || {};
   let id = d.tabId;
   if (typeof id !== 'number' && typeof d.targetId === 'string' && /^orbe-tab-\d+$/.test(d.targetId)) id = Number(d.targetId.slice(9));
-  if (typeof id !== 'number') throw X.fail('Seul un onglet peut être débogué (« tabId »).');
+  if (typeof id !== 'number') throw X.fail('Only a tab can be debugged ("tabId").');
   return X.findTab(ctx, id);
 }
 
@@ -116,8 +116,8 @@ api.extend({
     X.need(ctx, 'debugger');
     const t = debuggee(ctx, target);
     owned(ctx, t);
-    if (typeof method !== 'string' || !/^[A-Za-z]+\.[A-Za-z]+$/.test(method)) throw X.fail('Commande invalide.');
-    if (!allowed(ctx, method, params)) throw X.fail(`Commande refusée par Orbe : ${method}`);
+    if (typeof method !== 'string' || !/^[A-Za-z]+\.[A-Za-z]+$/.test(method)) throw X.fail('Invalid command.');
+    if (!allowed(ctx, method, params)) throw X.fail(`Command refused by Radian: ${method}`);
     const sessionId = target && typeof target.sessionId === 'string' ? target.sessionId : undefined;
     try {
       return await t.wc.debugger.sendCommand(method, params && typeof params === 'object' ? params : {}, sessionId);

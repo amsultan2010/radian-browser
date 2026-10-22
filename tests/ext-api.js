@@ -585,7 +585,7 @@ module.exports = async function extApiTest({ first: w, OrbeWindow, win, extApi, 
     await until(() => menus.length === 1, 'menu contextuel du bouton');
     const labels = menus[0].filter((i) => i.type !== 'separator').map((i) => i.label);
     check('clic droit sur le bouton : nom, Options, Détacher, Désactiver, « Retirer d’Orbe… », Gérer',
-      labels.join('|') === ['Orbe — extension d\'essai', 'Options', 'Détacher de la barre latérale', 'Désactiver', 'Retirer d’Orbe…', 'Gérer les extensions…'].join('|') && menus[0][0].enabled === false, labels.join('|'));
+      labels.join('|') === ['Orbe — extension d\'essai', 'Options', 'Détacher de la barre latérale', 'Désactiver', 'Retirer de Radian…', 'Gérer les extensions…'].join('|') && menus[0][0].enabled === false, labels.join('|'));
     const item = (label) => menus[0].find((i) => i.label === label);
     const tabsBefore = Object.keys(w.data.tabs).length;
     item('Options').click();
@@ -709,11 +709,11 @@ module.exports = async function extApiTest({ first: w, OrbeWindow, win, extApi, 
     dialog.showMessageBox = async (...args) => { boxes.push(args[args.length - 1]); return { response: boxes.length === 1 ? 1 : 0 }; };
     await require('../src/main/panes').handle('shortcuts:assign', { name: keyName('essai'), accel: 'Ctrl+Alt+F9' });
     extUi.setPinned(ext.id, false);
-    await item('Retirer d’Orbe…').click();
+    await item('Retirer de Radian…').click();
     await until(() => boxes.length === 1, 'question posée');
     await sleep(100);
     const kept = !!extensions.get(ext.id);
-    await item('Retirer d’Orbe…').click();
+    await item('Retirer de Radian…').click();
     await until(() => !extensions.get(ext.id), 'extension retirée');
     check('« Retirer d’Orbe… » : la question nomme l’extension ; « Annuler » garde tout ; confirmé, elle est désinstallée, ses raccourcis et son réglage d’épingle oubliés',
       boxes[0].message === 'Retirer l’extension « Orbe — extension d\'essai » ?' && boxes[0].cancelId === 1 && kept && extUi.list().length === 0 && !fs.existsSync(path.join(dirExt, ext.id))

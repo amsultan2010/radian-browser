@@ -292,7 +292,7 @@ module.exports = async function reglagesTests(ctx) {
   await set({ cookieBanners: false });
   await until(async () => (await css(banner)) === 'block', 'bandeau rétabli');
   check('bandeaux de cookies : masqués quand le réglage est actif, rétablis sinon', shown === 'block');
-  const themeVar = 'getComputedStyle(document.documentElement).getPropertyValue("--orbe-theme-color").trim()';
+  const themeVar = 'getComputedStyle(document.documentElement).getPropertyValue("--radian-theme-color").trim()';
   const noTheme = await css(themeVar);
   await set({ themeData: true });
   await until(async () => (await css(themeVar)).toLowerCase() === s2.color.toLowerCase(), 'couleur du thème');

@@ -1047,7 +1047,7 @@ async function exportDialog(pid) {
   if (!(await authenticate(t('pw.authExport'), manager, { fresh: true }))) return null;
   const sure = await hooks.confirm(manager, { type: 'warning', message: t('pw.exportTitle'), detail: t('pw.exportPlain'), buttons: [t('pw.export'), t('pw.cancel')], defaultId: 1, cancelId: 1 });
   if (!sure) return null;
-  const r = await dialog.showSaveDialog(manager, { title: t('pw.export'), defaultPath: path.join(app.getPath('documents'), 'Mots de passe Orbe.csv'), filters: [{ name: 'CSV', extensions: ['csv'] }] });
+  const r = await dialog.showSaveDialog(manager, { title: t('pw.export'), defaultPath: path.join(app.getPath('documents'), t('pw.exportFile')), filters: [{ name: 'CSV', extensions: ['csv'] }] });
   if (r.canceled || !r.filePath) return null;
   try {
     fs.writeFileSync(r.filePath, exportCsv(pid), { mode: 0o600 });

@@ -54,21 +54,21 @@ function readUiFile(file) {
 
 function serveInternal(request) {
   const url = new URL(request.url);
-  if (url.host !== 'app') return new Response('Introuvable', { status: 404 });
+  if (url.host !== 'app') return new Response('Not found', { status: 404 });
   const file = path.normalize(path.join(RENDERER_DIR, decodeURIComponent(url.pathname)));
-  if (!file.startsWith(RENDERER_DIR + path.sep)) return new Response('Interdit', { status: 403 });
+  if (!file.startsWith(RENDERER_DIR + path.sep)) return new Response('Forbidden', { status: 403 });
   const type = UI_TYPES[path.extname(file).toLowerCase()];
   if (!type) return net.fetch(pathToFileURL(file).toString());
   try {
     return new Response(readUiFile(file), { headers: { 'content-type': type } });
   } catch {
-    return new Response('Introuvable', { status: 404 });
+    return new Response('Not found', { status: 404 });
   }
 }
 
 // Les sites (Google, banques…) refusent parfois les agents « Electron ».
 function cleanUserAgent(ses) {
-  return ses.getUserAgent().replace(/\sElectron\/\S+/, '').replace(/\s(Orbe|orbe)\/\S+/, '');
+  return ses.getUserAgent().replace(/\sElectron\/\S+/, '').replace(/\s(Radian|radian)\/\S+/, '');
 }
 
 const originOf = permissions.originOf;

@@ -4,7 +4,7 @@
 // ici, jamais lues d'ailleurs. Posé une seule fois : supprimé, il ne revient pas.
 const { store, uid } = require('./store');
 
-const REPO_URL = 'https://github.com/amadoubaui/orbe';
+const REPO_URL = 'https://github.com/amsultan2010/radian-browser';
 // [libellé, adresse, page interne d'Orbe ?]
 const PAGES = [
   ['help.shortcuts', 'orbe://app/shortcuts.html', true],

@@ -323,7 +323,7 @@ module.exports = async function bibliothequeTests(ctx) {
     const got2 = await until(() => { const x = store.state.downloads[0]; return x && x !== before && x.state === 'completed' && x.marked !== undefined ? x : null; }, 'fichier téléchargé et marqué');
     if (mac) {
       const attr = require('child_process').execFileSync('/usr/bin/xattr', ['-p', 'com.apple.quarantine', got2.path]).toString().trim();
-      check('macOS : le fichier téléchargé porte la marque de quarantaine (avertissement du système à l’ouverture)', got2.marked === true && /^0081;[0-9a-f]{8};Orbe;[0-9A-F-]{36}$/.test(attr), attr);
+      check('macOS : le fichier téléchargé porte la marque de quarantaine (avertissement du système à l’ouverture)', got2.marked === true && /^0081;[0-9a-f]{8};Radian;[0-9A-F-]{36}$/.test(attr), attr);
     } else if (process.platform === 'win32') {
       const zone = fs.readFileSync(got2.path + ':Zone.Identifier', 'utf8');
       check('Windows : le fichier téléchargé est marqué « zone Internet » (SmartScreen, avertissement à l’ouverture)', got2.marked === true && /\[ZoneTransfer\]\r\nZoneId=3\r\n/.test(zone) && zone.includes('HostUrl=' + origin), JSON.stringify(zone));

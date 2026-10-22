@@ -41,7 +41,7 @@ function list() {
   const t = (k, v) => store.t(k, null, v);
   const rows = app.getAppMetrics().map((m) => {
     const row = { pid: m.pid, mb: Math.round(processMb(m)), cpu: Math.round((m.cpu && m.cpu.percentCPUUsage) * 10) / 10 || 0, kind: 'other', titles: [], canEnd: false };
-    if (m.type === 'Browser') { row.kind = 'app'; row.name = 'Orbe'; }
+    if (m.type === 'Browser') { row.kind = 'app'; row.name = 'Radian'; }
     else if (m.type === 'GPU') { row.kind = 'gpu'; row.name = t('tasks.gpu'); }
     else if (m.type === 'Tab') {
       const mine = tabs.get(m.pid);

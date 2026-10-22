@@ -9,7 +9,7 @@ const easels = require('./easels');
 // Page de soutien de l'auteur d'Orbe.
 const SUPPORT_URL = 'https://buymeacoffee.com/amadouba';
 
-const REPO_URL = 'https://github.com/amadoubaui/orbe';
+const REPO_URL = 'https://github.com/amsultan2010/radian-browser';
 
 const hooks = { newWindow: () => {}, newLittle: () => {}, openSettings: () => {}, settingsChanged: null, openBoost: () => {}, openPasswords: () => {}, importBookmarks: () => {}, menuChanged: () => {}, checkUpdates: () => {} };
 
@@ -340,7 +340,7 @@ async function clearArchive(w) {
 
 // « Copier les infos d'Orbe » : de quoi décrire son installation dans un rapport de bogue.
 function appInfo() {
-  return [`Orbe ${app.getVersion()}`, `Electron ${process.versions.electron}`, `Chromium ${process.versions.chrome}`, `${process.platform} ${process.arch} ${require('os').release()}`].join('\n');
+  return [`Radian ${app.getVersion()}`, `Electron ${process.versions.electron}`, `Chromium ${process.versions.chrome}`, `${process.platform} ${process.arch} ${require('os').release()}`].join('\n');
 }
 
 // La saisie en cours dans `target` a-t-elle quelque chose à annuler elle-même ? Un seul cas

@@ -1002,7 +1002,7 @@ module.exports = async function selftest(ctx) {
 
   // Page d'accueil
   const wel = w.openInternal('welcome.html');
-  await until(() => win.live.get(wel.id).wc.executeJavaScript('document.querySelector("h1").textContent === "Bienvenue dans Orbe" && document.querySelectorAll("[data-cmd]").length >= 3'), 'page d’accueil');
+  await until(() => win.live.get(wel.id).wc.executeJavaScript('document.querySelector("h1").textContent === "Bienvenue dans Radian" && document.querySelectorAll("[data-cmd]").length >= 3'), 'page d’accueil');
   check('la page d’accueil s’affiche', tabs()[wel.id].internal === true);
   if (shots) fs.writeFileSync(path.join(shots, 'accueil.png'), (await win.live.get(wel.id).wc.capturePage()).toPNG());
   w.close(wel.id);

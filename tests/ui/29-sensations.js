@@ -254,7 +254,7 @@ module.exports = {
     await t.verifier('Bibliothèque → Médias : « Afficher les médias de : » propose Orbe, Téléchargements, Bureau, Documents ; tant qu’on ne choisit rien, aucun dossier n’est lu', async () => {
       await lib.locator('.tabs [data-tab="media"]').click();
       await jusqua(() => lib.locator('#f-from').isVisible(), 'filtre des médias');
-      assert.deepEqual(await lib.locator('#f-from option').allTextContents(), ['Orbe (téléchargements et captures)', 'Dossier Téléchargements', 'Bureau', 'Documents']);
+      assert.deepEqual(await lib.locator('#f-from option').allTextContents(), ['Radian (téléchargements et captures)', 'Dossier Téléchargements', 'Bureau', 'Documents']);
       assert.equal(await lib.locator('#f-from').inputValue(), 'orbe');
       assert.equal(await lib.locator('#from-label').textContent(), 'Afficher les médias de :');
       assert.equal(await lib.locator('#f-how').isVisible(), false);

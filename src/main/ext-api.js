@@ -163,7 +163,7 @@ function hasPermission(ctx, name) {
 }
 
 function need(ctx, name) {
-  if (!hasPermission(ctx, name)) throw fail(`L'extension n'a pas l'autorisation « ${name} »`);
+  if (!hasPermission(ctx, name)) throw fail(`The extension does not have the "${name}" permission.`);
 }
 
 function hostAccess(ctx, url) {
@@ -228,7 +228,7 @@ function safeUrl(ctx, input) {
   if (u.protocol === 'http:' || u.protocol === 'https:') return u.href;
   if (u.protocol === 'chrome-extension:' && u.host === ctx.id) return u.href;
   if (u.href === 'about:blank') return u.href;
-  throw fail(`Adresse refusée : ${u.protocol}`);
+  throw fail(`URL not allowed: ${u.protocol}`);
 }
 
 function windowObject(ctx, w, populate) {
@@ -684,7 +684,7 @@ const METHODS = {
     return windowObject(ctx, w, false);
   },
   'windows.remove'() {
-    throw fail('Une extension ne peut pas fermer une fenêtre d’Orbe.');
+    throw fail('An extension cannot close a Radian window.');
   },
 
   // cookies -------------------------------------------------------------------
@@ -727,10 +727,10 @@ const METHODS = {
   // contextMenus --------------------------------------------------------------
   'contextMenus.create'(ctx, [props]) {
     need(ctx, 'contextMenus');
-    if (!props || props.id == null) throw fail('Identifiant de menu manquant');
+    if (!props || props.id == null) throw fail('Missing menu item id.');
     const id = String(props.id);
     if (ctx.st.menus.has(id)) throw fail(`Cannot create item with duplicate id ${id}`);
-    if (ctx.st.menus.size >= 500) throw fail('Trop d’éléments de menu');
+    if (ctx.st.menus.size >= 500) throw fail('Too many menu items.');
     ctx.st.menus.set(id, menuItem(props));
     saveMenus(ctx);
   },
@@ -855,9 +855,9 @@ function frameObject(wc, f) {
 async function invoke(ses, id, wc, frame, name, args) {
   try {
     const ctx = context(ses, id, wc);
-    if (!ctx) throw fail('Extension inconnue');
+    if (!ctx) throw fail('Unknown extension.');
     const fn = Object.hasOwn(METHODS, String(name)) ? METHODS[name] : null;
-    if (!fn) throw fail(`API non prise en charge par Orbe : ${name}`);
+    if (!fn) throw fail(`API not supported by Radian: ${name}`);
     if (process.env.ORBE_EXT_TRACE && name[0] !== '_') console.log('[appel]', id.slice(0, 4), name, JSON.stringify(args).slice(0, 200));
     const value = await fn(ctx, Array.isArray(args) ? args : [], { frame });
     return { value };
@@ -1028,7 +1028,7 @@ function setupIpc() {
     const ses = e.sender.session;
     let origin = null;
     try { origin = frame ? new URL(frame.origin && frame.origin !== 'null' ? frame.origin : frame.url) : null; } catch {}
-    if (!origin || origin.protocol !== 'chrome-extension:' || !attached.has(ses)) return { error: 'Appel refusé' };
+    if (!origin || origin.protocol !== 'chrome-extension:' || !attached.has(ses)) return { error: 'Call refused.' };
     return invoke(ses, origin.host, e.sender, frame, name, args);
   });
 }

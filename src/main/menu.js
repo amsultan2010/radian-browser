@@ -60,7 +60,7 @@ function build() {
   const exts = extensionActions(w);
   const template = [
     {
-      label: 'Orbe',
+      label: 'Radian',
       submenu: [
         { label: t('app.about'), role: 'about' },
         item('checkUpdates'),
@@ -166,7 +166,7 @@ function build() {
         // (Sans fenêtre, la commande en ouvre une : l'article reste disponible.)
         item('newSpace', { enabled: !w || w.shared }), item('editTheme'), item('renameSpace'),
         {
-          label: t('spaces.profile'),
+          label: t('spaces.changeProfile'),
           enabled: !!w && w.shared,
           submenu: [
             ...(w ? w.data.profiles : []).map((p) => ({
@@ -206,7 +206,7 @@ function build() {
         sep, item('clearToday'), item('resetTabs'),
         // ⌘1…⌘9 : accès direct aux onglets, dans l'ordre de la barre latérale.
         ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => ({
-          label: `Onglet ${n}`,
+          label: `Tab ${n}`,
           visible: false,
           acceleratorWorksWhenHidden: true,
           accelerator: platform.accel(`Cmd+${n}`),
@@ -241,7 +241,7 @@ function build() {
         { label: t('window.minimize'), role: 'minimize' },
         ...(platform.isMac ? [{ label: t('window.minimizeAll'), accelerator: 'Alt+Cmd+M', click: () => commands.minimizeAll() }] : []),
         { label: t('window.zoom'), role: 'zoom' },
-        sep, item('library'), item('downloads'), item('media'), item('notes'), item('easels'),
+        sep, item('library'), item('downloads'), item('media', { labelKey: 'window.viewMedia' }), item('notes'), item('easels'),
         sep, { label: t('window.front'), role: 'front' },
       ],
     },

@@ -4064,7 +4064,7 @@ class OrbeWindow {
     const copy = () => { clipboard.write([new ClipboardItem({ 'image/png': new Blob([png], { type: 'image/png' }) })]).catch(() => {}); };
     const save = () => {
       const stamp = captureStamp();
-      require('./library').keepCapture(`Orbe ${stamp}.png`, png, { incognito: !this.shared });
+      require('./library').keepCapture(`Radian ${stamp}.png`, png, { incognito: !this.shared });
     };
     const done = (what) => {
       if (what === 'copy') { copy(); this.toast(t('capture.copied')); }
@@ -4104,7 +4104,7 @@ class OrbeWindow {
     const png = out.toPNG();
     if (opts.write !== false) {
       clipboard.write([new ClipboardItem({ 'image/png': new Blob([png], { type: 'image/png' }) })]).catch(() => {});
-      require('./library').keepCapture(`Orbe ${captureStamp()}.png`, png, { incognito: !this.shared });
+      require('./library').keepCapture(`Radian ${captureStamp()}.png`, png, { incognito: !this.shared });
     }
     this.toast(t('toast.captured'));
     return out;
@@ -4129,7 +4129,7 @@ class OrbeWindow {
       const png = Buffer.from(shot.data, 'base64');
       clipboard.write([new ClipboardItem({ 'image/png': new Blob([png], { type: 'image/png' }) })]).catch(() => {});
       const stamp = captureStamp();
-      require('./library').keepCapture(`Orbe ${stamp}.png`, png, { incognito: !this.shared });
+      require('./library').keepCapture(`Radian ${stamp}.png`, png, { incognito: !this.shared });
       this.toast(t('toast.captured'));
     } catch (err) {
       console.error('[orbe] capture', err);
@@ -4482,7 +4482,7 @@ class OrbeWindow {
 
   async exportSpace(space = this.space) {
     if (!this.shared) return null;
-    const name = String(space.name || 'Espace').replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').trim().slice(0, 80) || 'Espace';
+    const name = String(space.name || t('spaces.defaultName')).replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').trim().slice(0, 80) || t('spaces.defaultName');
     const file = await hooks.saveFile(this.win, { title: t('spaces.export'), defaultPath: path.join(app.getPath('documents'), `${name}.html`), filters: [{ name: 'HTML', extensions: ['html'] }] });
     if (!file || typeof file !== 'string' || !path.isAbsolute(file)) return null;
     const { html, count } = this.spaceExportHtml(space);

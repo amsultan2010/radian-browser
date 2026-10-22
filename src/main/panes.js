@@ -184,7 +184,7 @@ function extraCss(wc) {
     }
     if (space && COLOR.test(space.color || '')) {
       const second = COLOR.test(space.color2 || '') ? space.color2 : space.color;
-      css += `:root { --orbe-theme-color: ${space.color}; --orbe-theme-color-2: ${second}; --orbe-theme-dark: ${nativeTheme.shouldUseDarkColors ? 1 : 0}; }\n`;
+      css += `:root { --radian-theme-color: ${space.color}; --radian-theme-color-2: ${second}; --radian-theme-dark: ${nativeTheme.shouldUseDarkColors ? 1 : 0}; }\n`;
     }
   }
   return css;
