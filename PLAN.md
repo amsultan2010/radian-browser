@@ -34,7 +34,8 @@ REA is a separate tool. Use it here to observe Arc's behaviour and read our own 
 - Recreate behaviour and feel from observation and public docs; draw our own art.
 - Don't use the name "Arc" in branding beyond "import from Arc".
 
-## Open decision: the engine
+## Engine: Chromium (decided)
 
-- **Chromium**: what Arc uses. Chrome extensions and identical site behaviour, but the hardest path (embedding Chromium in a Swift app is what took Arc's team years).
-- **WebKit (`WKWebView`)**: Safari's engine, built into macOS. Far faster to build and lighter, but no Chrome extensions, so 1Password/uBlock-style setups change for switchers. Open-source Arc-likes Nook and Ora take this path.
+Same engine as Arc, so Chrome extensions work and sites behave identically. This is the hardest part: embedding Chromium in a Swift app is what took Arc's team years. WebKit (Safari's engine, used by Nook and Ora) was rejected because it can't run Chrome extensions.
+
+First step: a spike that embeds Chromium in a minimal Swift window and installs one Chrome extension, to choose how we embed it (CEF, the Chromium Embedded Framework, versus our own Chromium build).
