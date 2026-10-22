@@ -17,6 +17,7 @@
   <symbol id="i-expand" viewBox="0 0 16 16"><path d="M9.5 3h3.5v3.5M13 3 8.8 7.2M6.5 13H3V9.5M3 13l4.2-4.2"/></symbol>
   <symbol id="i-split" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="2.5"/><path d="M8 3v10"/></symbol>
   <symbol id="i-x" viewBox="0 0 16 16"><path d="m4.8 4.8 6.4 6.4m0-6.4-6.4 6.4"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M3.5 8h9M8.8 4.2 12.6 8l-3.8 3.8"/></symbol>
 </svg>
 
 <div id="backdrop"></div>
@@ -33,39 +34,36 @@
 
 <div id="switcher" class="panel" hidden></div>
 
-<div id="theme" class="panel" hidden>
-  <div id="theme-head">
-    <h3 data-t="theme.title"></h3>
-    <!-- Apparence de l'Espace : automatique, claire, sombre (icônes animées). -->
-    <div id="theme-modes" role="radiogroup">
-      <button class="mode" data-mode="auto" data-t-title="view.auto"><svg class="i" viewBox="0 0 16 16"><path class="star s1" d="M6 2.6l.9 2.5 2.5.9-2.5.9L6 9.4l-.9-2.5-2.5-.9 2.5-.9z"/><path class="star s2" d="M11.4 8.6l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z"/></svg></button>
-      <button class="mode" data-mode="light" data-t-title="view.light"><svg class="i" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.7"/><path class="rays" d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1"/></svg></button>
-      <button class="mode" data-mode="dark" data-t-title="view.dark"><svg class="i" viewBox="0 0 16 16"><path class="moon" d="M12.9 9.6A5.4 5.4 0 0 1 6.4 3.1a5.4 5.4 0 1 0 6.5 6.5z"/></svg></button>
-    </div>
+<!-- Sélecteur de thème, disposé comme celui d'Arc ; se ferme d'un clic à côté ou par Échap. -->
+<div id="theme" class="panel" role="dialog" data-tip="theme.title" hidden>
+  <!-- Apparence de l'Espace : claire, automatique, sombre (icônes animées). -->
+  <div id="theme-modes" role="radiogroup">
+    <button class="mode" data-mode="light" role="radio" data-t-title="view.light"><svg class="i" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.7"/><path class="rays" d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1"/></svg></button>
+    <button class="mode" data-mode="auto" role="radio" data-t-title="view.auto"><svg class="i" viewBox="0 0 16 16"><path class="star s1" d="M6 2.6l.9 2.5 2.5.9-2.5.9L6 9.4l-.9-2.5-2.5-.9 2.5-.9z"/><path class="star s2" d="M11.4 8.6l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z"/></svg></button>
+    <button class="mode" data-mode="dark" role="radio" data-t-title="view.dark"><svg class="i" viewBox="0 0 16 16"><path class="moon" d="M12.9 9.6A5.4 5.4 0 0 1 6.4 3.1a5.4 5.4 0 1 0 6.5 6.5z"/></svg></button>
   </div>
-  <div id="theme-top">
-    <!-- Nuancier : la teinte tourne, la saturation va du centre au bord ; un point par couleur. -->
-    <div id="theme-wheel"><div id="theme-plain" data-t="theme.default"></div></div>
-    <div id="theme-side">
-      <div id="theme-count">
-        <button class="tb" id="theme-less" data-t-title="theme.remove">−</button>
-        <span id="theme-n"></span>
-        <button class="tb" id="theme-more" data-t-title="theme.add">+</button>
-      </div>
-      <label data-t="theme.intensity"></label>
-      <input id="theme-intensity" type="range" min="0" max="100" value="50">
-      <label data-t="theme.grain"></label>
-      <input id="theme-grain" type="range" min="0" max="100" value="0">
-      <div id="theme-textures"></div>
-    </div>
+  <!-- Champ de couleurs : une grille de points colorés (la teinte tourne autour du centre,
+       la saturation croît vers le bord) ; une poignée par couleur, la première plus grande. -->
+  <div id="theme-wheel"><canvas id="theme-grid"></canvas><div id="theme-plain" data-t="theme.default"></div></div>
+  <div id="theme-count">
+    <button class="tb" id="theme-less" data-t-title="theme.remove"><svg class="i" viewBox="0 0 16 16"><path d="M4 8h8"/></svg></button>
+    <button class="tb" id="theme-more" data-t-title="theme.add"><svg class="i" viewBox="0 0 16 16"><path d="M4 8h8M8 4v8"/></svg></button>
   </div>
-  <label data-t="theme.presets"></label>
-  <div id="theme-presets"></div>
-  <label data-t="theme.palette"></label>
-  <div id="theme-palettes"></div>
-  <label data-t="theme.icon"></label>
-  <div id="theme-icons"></div>
-  <button id="theme-done" data-t="theme.done"></button>
+  <!-- Thèmes prêts : neuf pastilles par page, entre deux flèches. -->
+  <div id="theme-pages">
+    <button class="pg" id="theme-prev" data-t-title="theme.prev"><svg class="i" viewBox="0 0 16 16"><path d="m9.5 4-4 4 4 4"/></svg></button>
+    <div id="theme-presets"></div>
+    <button class="pg" id="theme-next" data-t-title="theme.next"><svg class="i" viewBox="0 0 16 16"><path d="m6.5 4 4 4-4 4"/></svg></button>
+  </div>
+  <!-- Intensité : une vague qui s'aplatit vers la droite, curseur en pilule blanche.
+       Grain : une molette crantée que l'on tourne. -->
+  <div id="theme-tune">
+    <div id="theme-wave">
+      <svg viewBox="0 0 200 20" preserveAspectRatio="none"><path d="M0 10 Q3.8 -4.3 7.7 10 Q11.5 23.6 15.4 10 Q19.2 -2.9 23.1 10 Q26.9 22.2 30.8 10 Q34.6 -1.5 38.5 10 Q42.3 20.9 46.2 10 Q50 -0.2 53.8 10 Q57.7 19.6 61.5 10 Q65.4 1 69.2 10 Q73.1 18.4 76.9 10 Q80.8 2.3 84.6 10 Q88.5 17.2 92.3 10 Q96.2 3.4 100 10 Q103.8 16 107.7 10 Q111.5 4.6 115.4 10 Q119.2 14.9 123.1 10 Q126.9 5.6 130.8 10 Q134.6 13.9 138.5 10 Q142.3 6.6 146.2 10 Q150 12.9 153.8 10 Q157.7 7.5 161.5 10 Q165.4 12 169.2 10 Q173.1 8.4 176.9 10 Q180.8 11.3 184.6 10 Q188.5 9.1 192.3 10 Q196.2 10.7 200 10"/></svg>
+      <input id="theme-intensity" type="range" min="0" max="100" value="50" data-t-title="theme.intensity">
+    </div>
+    <div id="theme-dial" data-t-title="theme.grain"><input id="theme-grain" type="range" min="0" max="100" value="0" data-t-title="theme.grain"></div>
+  </div>
 </div>
 
 <!-- Création d'un Espace : nom, icône, couleur, profil ; rien n'est créé avant « Créer ». -->

@@ -54,22 +54,36 @@ function drawItems() {
   list.textContent = '';
   items.forEach((it, i) => {
     const row = document.createElement('div');
-    row.className = 'cmd' + (i === sel ? ' sel' : '');
+    row.className = `cmd k-${it.kind}` + (i === sel ? ' sel' : '');
     row.dataset.i = i;
     const ic = document.createElement('span');
     ic.className = 'ic';
-    if (it.favicon) ic.appendChild(faviconEl(it.favicon, it.title));
-    else ic.innerHTML = `<svg class="i"><use href="#i-${KIND_ICON[it.kind] || 'globe'}"/></svg>`;
+    // Sans icône de site (ou icône introuvable) : un globe, comme dans Arc, pas une lettre.
+    const glyph = () => { ic.innerHTML = `<svg class="i"><use href="#i-${KIND_ICON[it.kind] || 'globe'}"/></svg>`; };
+    const fav = it.favicon && faviconEl(it.favicon, it.title);
+    if (fav && fav.tagName === 'IMG') { fav.addEventListener('error', glyph); ic.appendChild(fav); } else glyph();
     const title = document.createElement('span');
     title.className = 'title';
     title.textContent = it.title;
+    // Comme dans Arc : un onglet ouvert dit « Switch to Tab » à droite (flèche dans un carré),
+    // sur chaque ligne ; une action montre son raccourci à droite, sans « — Action ».
     const sub = document.createElement('span');
     sub.className = 'sub';
-    sub.textContent = it.subtitle ? '— ' + it.subtitle : '';
-    const hint = document.createElement('span');
-    hint.className = 'hint';
-    hint.textContent = it.kind === 'tab' ? t('cmd.switchTo') + ' ↵' : (it.kind === 'site' ? '⇥' : '↵');
-    row.append(ic, title, sub, hint);
+    const plain = it.kind === 'command' && (it.shortcut || it.subtitle === t('cmd.action'));
+    // Onglet d'un autre Espace : le nom de cet Espace à la place de « Switch to Tab ».
+    sub.textContent = it.kind === 'tab' ? it.space || t('cmd.switchTo') : (it.subtitle && !plain ? '— ' + it.subtitle : '');
+    row.append(ic, title, sub);
+    if (it.kind === 'tab') {
+      const go = document.createElement('span');
+      go.className = 'go';
+      go.innerHTML = '<svg class="i"><use href="#i-arrow"/></svg>';
+      row.appendChild(go);
+    } else {
+      const hint = document.createElement('span');
+      hint.className = 'hint';
+      hint.textContent = it.kind === 'site' ? '⇥' : (it.kind === 'command' && it.shortcut) || '';
+      row.appendChild(hint);
+    }
     // Suggestion venue de l'historique ou de l'archive : une croix l'oublie.
     if (it.deletable) {
       const del = document.createElement('button');
@@ -98,7 +112,8 @@ async function query() {
   const res = (await send('suggest', scope ? { q, scope } : q)) || [];
   if (mine !== seq || mode !== 'command') return;
   items = res;
-  sel = q ? 0 : -1;
+  // Comme dans Arc, la première ligne est toujours choisie : Entrée l'exécute, même champ vide.
+  sel = items.length ? 0 : -1;
   // Complète l'adresse la plus probable, comme dans une barre d'adresse.
   const first = items[0];
   if (q && !scope && !deleting && first && first.complete && first.complete.toLowerCase().startsWith(q.toLowerCase()) && input.selectionStart === input.value.length) {
@@ -127,9 +142,13 @@ async function forget(i) {
   if (keep >= 0 && items[keep]) select(keep);
 }
 
+// Icône du champ : un globe tant qu'il montre l'adresse de la page (⌘L), une loupe sinon.
+const fieldIcon = (url) => $('cmd-icon').querySelector('use').setAttribute('href', url ? '#i-globe' : '#i-search');
+
 input.addEventListener('input', (e) => {
   deleting = !!e.inputType && e.inputType.startsWith('delete');
   typed = input.value;
+  fieldIcon(false);
   query();
 });
 
@@ -197,12 +216,14 @@ function openCommand(p) {
   if (p.anchor) box.style.cssText = `left:${p.anchor.x}px;top:${p.anchor.y}px;width:${p.anchor.width}px`;
   else box.style.cssText = `left:${p.centerX ? p.centerX + 'px' : '50%'}`;
   input.value = p.value || '';
+  fieldIcon(!!p.value);
   typed = '';
   deleting = false;
   sites = p.sites || {};
   setScope(null);
   items = p.items || [];
-  sel = -1;
+  // Première ligne choisie dès l'ouverture (Arc). ⌘L : c'est la page affichée, Entrée la recharge.
+  sel = items.length ? 0 : -1;
   seq++;
   drawItems();
   input.focus();
@@ -244,15 +265,16 @@ function openSwitcher(p) {
 }
 
 // --- Thème de l'Espace ------------------------------------------------------
-// Éditeur : un nuancier où chaque couleur est un point que l'on déplace (teinte
-// autour, saturation du centre au bord), « + » et « − » pour passer d'une à trois
-// couleurs (aucune : thème par défaut), intensité, texture, apparence, thèmes et
-// nuanciers prêts, icône. Chaque geste part aussitôt vers la fenêtre, qui
-// repeint la barre : l'aperçu, c'est la barre elle-même.
-const ICONS = ['🏠', '💼', '✨', '🎬', '🎨', '🎧', '📚', '🧪', '🛒', '💬', '🧭', '🌍', '🚀', '⚙️', '❤️', '🌙', '☀️', '🌿', '🔥', '🎮', '📷', '✈️', '🍿', '🧠', '💡', '📈', '🔒', '🎓', '⚽️', '🏦', '📝', '⭐️'];
-const WHEEL = 140; // diamètre du nuancier
+// Sélecteur disposé comme celui d'Arc : apparence (claire, automatique, sombre),
+// un champ de couleurs où chaque couleur est une poignée que l'on déplace (teinte
+// autour du centre, saturation vers le bord), « − » et « + » pour passer de zéro à
+// trois couleurs (zéro : thème par défaut), des pastilles par pages de neuf,
+// l'intensité (vague) et le grain (molette). Chaque geste part aussitôt vers la
+// fenêtre, qui se repeint : l'aperçu, c'est la fenêtre elle-même.
+const SMAX = 0.8; // saturation au bord du champ
+const V_FIELD = 0.93; // clarté des couleurs du champ : des pastels vifs, comme les fonds clairs d'Arc
 const wheel = $('theme-wheel');
-let theme = null; // { dots: [{h, s, v}], sel, intensity, grain, texture, mode, icon, preset }
+let theme = null; // { dots: [{h, s, v}], sel, intensity, grain, mode, page }
 let themeFrame = 0;
 let themePatch = {};
 
@@ -268,11 +290,40 @@ function pushTheme(patch) {
     send('theme', out);
   });
 }
-const pushColors = () => { theme.preset = ''; pushTheme({ colors: theme.dots.map(dotHex) }); };
+const pushColors = () => pushTheme({ colors: theme.dots.map(dotHex) });
+
+// Grille du champ : chaque point a la couleur de sa place (plus gros vers le bord).
+function drawGrid() {
+  const c = $('theme-grid');
+  const w = c.clientWidth;
+  const k = devicePixelRatio || 1;
+  if (!w || c.width === Math.round(w * k)) return;
+  c.width = c.height = Math.round(w * k);
+  const g = c.getContext('2d');
+  g.scale(k, k);
+  const n = 15;
+  const step = w / n;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const dx = (x + 0.5) * step - w / 2;
+    const dy = (y + 0.5) * step - w / 2;
+    const s = Math.min(1, Math.hypot(dx, dy) / (w / 2));
+    g.fillStyle = OrbeTheme.hsvToHex(((Math.atan2(dx, -dy) * 180) / Math.PI + 360) % 360, s * SMAX, V_FIELD);
+    g.beginPath();
+    g.arc(w / 2 + dx, w / 2 + dy, 1.4 + s * 1.2, 0, Math.PI * 2);
+    g.fill();
+  }
+}
+
+const pageOf = (colors) => Math.max(0, OrbeTheme.SWATCHES.findIndex((page) => page.some((c) => c.join() === colors.join())));
+function drawSwatches() {
+  const plain = OrbeTheme.hex(OrbeTheme.NEUTRAL.light);
+  $('theme-presets').innerHTML = OrbeTheme.SWATCHES[theme.page].map((c, i) => `<button class="swatch" data-i="${i}" style="background:${c.length > 1 ? `linear-gradient(131deg, ${c.join(', ')})` : c[0] || plain}"></button>`).join('');
+}
 
 function drawTheme() {
   const colors = theme.dots.map(dotHex);
-  // Points du nuancier : créés une fois, puis seulement déplacés.
+  // Poignées : créées une fois, puis seulement déplacées.
+  const R = wheel.clientWidth / 2;
   const dots = wheel.querySelectorAll('.dot');
   for (let i = theme.dots.length; i < dots.length; i++) dots[i].remove();
   theme.dots.forEach((d, i) => {
@@ -285,20 +336,19 @@ function drawTheme() {
     el.dataset.i = i;
     el.classList.toggle('sel', i === theme.sel);
     el.style.background = colors[i];
-    const r = (WHEEL / 2) * d.s;
+    const r = R * Math.min(1, d.s / SMAX);
     const a = (d.h * Math.PI) / 180;
-    el.style.transform = `translate(${(WHEEL / 2 + r * Math.sin(a)).toFixed(1)}px, ${(WHEEL / 2 - r * Math.cos(a)).toFixed(1)}px)`;
+    el.style.transform = `translate(${(R + r * Math.sin(a)).toFixed(1)}px, ${(R - r * Math.cos(a)).toFixed(1)}px)`;
   });
   wheel.classList.toggle('plain', !theme.dots.length);
-  $('theme-n').textContent = String(theme.dots.length);
   $('theme-less').disabled = !theme.dots.length;
   $('theme-more').disabled = theme.dots.length >= OrbeTheme.MAX_COLORS;
-  const current = theme.dots.length ? colors[theme.sel] : '';
-  for (const b of $('theme-palettes').children) b.classList.toggle('sel', b.dataset.c === current);
-  for (const b of $('theme-presets').children) b.classList.toggle('sel', b.dataset.preset === theme.preset);
-  for (const b of $('theme-textures').children) b.classList.toggle('sel', b.dataset.tx === theme.texture);
-  for (const b of $('theme-modes').children) b.classList.toggle('sel', b.dataset.mode === theme.mode);
-  for (const b of $('theme-icons').children) b.classList.toggle('sel', b.textContent === theme.icon);
+  const page = OrbeTheme.SWATCHES[theme.page];
+  for (const b of $('theme-presets').children) b.classList.toggle('sel', page[b.dataset.i].join() === colors.join());
+  $('theme-prev').disabled = theme.page === 0;
+  $('theme-next').disabled = theme.page === OrbeTheme.SWATCHES.length - 1;
+  for (const b of $('theme-modes').children) { b.classList.toggle('sel', b.dataset.mode === theme.mode); b.setAttribute('aria-checked', String(b.dataset.mode === theme.mode)); }
+  $('theme-dial').style.setProperty('--turn', `${-135 + 270 * theme.grain}deg`);
   // Le panneau suit la couleur principale.
   document.documentElement.style.setProperty('--accent', colors[0] || OrbeTheme.DEFAULT_COLOR);
 }
@@ -306,39 +356,33 @@ function drawTheme() {
 function openTheme(p) {
   show('theme');
   const t0 = OrbeTheme.normalize(p.space);
-  theme = { dots: t0.colors.map(OrbeTheme.hexToHsv), sel: 0, intensity: t0.intensity, grain: t0.grain, texture: t0.texture, mode: t0.mode, icon: p.icon, preset: '' };
+  theme = { dots: t0.colors.map(OrbeTheme.hexToHsv), sel: 0, intensity: t0.intensity, grain: t0.grain, mode: t0.mode, page: pageOf(t0.colors) };
   $('theme').style.left = (p.x || 260) + 'px';
   $('theme-intensity').value = String(Math.round(t0.intensity * 100));
   $('theme-grain').value = String(Math.round(t0.grain * 100));
-  const swatch = (c, family) => `<button class="sw-color" data-c="${esc(c)}" data-family="${family}" style="background:${esc(c)}"></button>`;
-  $('theme-palettes').innerHTML = Object.entries(OrbeTheme.PALETTES).map(([family, list]) => list.map((c) => swatch(c, family)).join('')).join('');
-  $('theme-presets').innerHTML = OrbeTheme.PRESETS.map((x) => {
-    const look = OrbeTheme.palette({ colors: x.colors, accent: x.colors[0], intensity: 1, grain: 0, texture: x.texture, mode: 'light' }, false);
-    return `<button class="preset" data-preset="${x.id}" title="${esc(t('theme.preset.' + x.id))}" style="background:${OrbeTheme.paint(look)}"></button>`;
-  }).join('');
-  $('theme-textures').innerHTML = OrbeTheme.TEXTURES.map((x) => `<button class="tx" data-tx="${x}" title="${esc(t('theme.tx.' + x))}" style="background-image:url(textures/${x}.png)"></button>`).join('');
-  $('theme-icons').innerHTML = ICONS.map((e) => `<button class="sw-icon">${e}</button>`).join('');
+  drawGrid();
+  drawSwatches();
   drawTheme();
 }
 
-// Position du pointeur dans le nuancier -> teinte et saturation.
+// Position du pointeur dans le champ -> teinte et saturation.
 function wheelAt(e) {
   const r = wheel.getBoundingClientRect();
   const x = e.clientX - r.left - r.width / 2;
   const y = e.clientY - r.top - r.height / 2;
-  return { h: ((Math.atan2(x, -y) * 180) / Math.PI + 360) % 360, s: Math.min(1, Math.hypot(x, y) / (r.width / 2)) };
+  return { h: ((Math.atan2(x, -y) * 180) / Math.PI + 360) % 360, s: Math.min(1, Math.hypot(x, y) / (r.width / 2)) * SMAX };
 }
 wheel.addEventListener('pointerdown', (e) => {
   if (!theme || e.button !== 0) return;
   e.preventDefault();
   const hit = e.target.closest('.dot');
   if (hit) theme.sel = Number(hit.dataset.i);
-  else if (!theme.dots.length) { theme.dots.push({ ...wheelAt(e), v: 1 }); theme.sel = 0; } // thème par défaut : un clic pose la première couleur
+  else if (!theme.dots.length) { theme.dots.push({ ...wheelAt(e), v: V_FIELD }); theme.sel = 0; } // thème par défaut : un clic pose la première couleur
   const dot = theme.dots[theme.sel];
   const move = (ev) => {
     Object.assign(dot, wheelAt(ev));
-    // Hors du centre, une couleur éteinte (gris des nuanciers) retrouve de l'éclat.
-    if (dot.s > 0.15 && dot.v < 0.55) dot.v = 0.9;
+    // Hors du centre, une couleur éteinte (gris foncé d'une pastille) retrouve de l'éclat.
+    if (dot.s > 0.15 && dot.v < 0.55) dot.v = V_FIELD;
     drawTheme();
     pushColors();
   };
@@ -354,16 +398,16 @@ wheel.addEventListener('pointerdown', (e) => {
   wheel.addEventListener('pointerup', up);
   wheel.addEventListener('pointercancel', up);
 });
-// Au clavier : les flèches déplacent le point qui a le focus.
+// Au clavier : les flèches déplacent la poignée qui a le focus.
 wheel.addEventListener('keydown', (e) => {
   const hit = e.target.closest('.dot');
-  const step = { ArrowLeft: [-6, 0], ArrowRight: [6, 0], ArrowUp: [0, 0.05], ArrowDown: [0, -0.05] }[e.key];
+  const step = { ArrowLeft: [-6, 0], ArrowRight: [6, 0], ArrowUp: [0, 0.04], ArrowDown: [0, -0.04] }[e.key];
   if (!hit || !step) return;
   e.preventDefault();
   theme.sel = Number(hit.dataset.i);
   const dot = theme.dots[theme.sel];
   dot.h = (dot.h + step[0] + 360) % 360;
-  dot.s = Math.max(0, Math.min(1, dot.s + step[1]));
+  dot.s = Math.max(0, Math.min(SMAX, dot.s + step[1]));
   drawTheme();
   pushColors();
 });
@@ -371,7 +415,7 @@ $('theme-more').onclick = () => {
   if (theme.dots.length >= OrbeTheme.MAX_COLORS) return;
   const last = theme.dots[theme.dots.length - 1];
   // La nouvelle couleur part de la voisine, un peu plus loin sur le cercle.
-  theme.dots.push(last ? { h: (last.h + 48) % 360, s: Math.max(0.45, last.s), v: last.v } : OrbeTheme.hexToHsv(OrbeTheme.DEFAULT_COLOR));
+  theme.dots.push(last ? { h: (last.h + 48) % 360, s: Math.max(0.36, last.s), v: Math.max(0.55, last.v) } : OrbeTheme.hexToHsv(OrbeTheme.FIRST[0]));
   theme.sel = theme.dots.length - 1;
   drawTheme();
   pushColors();
@@ -383,36 +427,42 @@ $('theme-less').onclick = () => {
   drawTheme();
   pushColors(); // plus aucune couleur : thème par défaut
 };
-$('theme-palettes').addEventListener('click', (e) => {
-  const b = e.target.closest('.sw-color');
-  if (!b) return;
-  const hsv = OrbeTheme.hexToHsv(b.dataset.c);
-  if (theme.dots.length) theme.dots[theme.sel] = hsv; else { theme.dots.push(hsv); theme.sel = 0; }
-  drawTheme();
-  theme.preset = '';
-  // La teinte exacte du nuancier, sans passer par le cercle.
-  pushTheme({ colors: theme.dots.map((d, i) => (i === theme.sel ? b.dataset.c : dotHex(d))) });
-});
 $('theme-presets').addEventListener('click', (e) => {
-  const b = e.target.closest('.preset');
-  const preset = b && OrbeTheme.PRESETS.find((x) => x.id === b.dataset.preset);
-  if (!preset) return;
-  Object.assign(theme, { dots: preset.colors.map(OrbeTheme.hexToHsv), sel: 0, intensity: preset.intensity, grain: preset.grain, texture: preset.texture, preset: preset.id });
-  $('theme-intensity').value = String(Math.round(preset.intensity * 100));
-  $('theme-grain').value = String(Math.round(preset.grain * 100));
-  drawTheme();
-  pushTheme({ preset: preset.id });
-});
-$('theme-intensity').addEventListener('input', (e) => { theme.intensity = Number(e.target.value) / 100; theme.preset = ''; pushTheme({ intensity: theme.intensity }); });
-$('theme-grain').addEventListener('input', (e) => { theme.grain = Number(e.target.value) / 100; pushTheme({ grain: theme.grain }); });
-$('theme-textures').addEventListener('click', (e) => {
-  const b = e.target.closest('.tx');
+  const b = e.target.closest('.swatch');
   if (!b) return;
-  theme.texture = b.dataset.tx;
-  // Choisir une texture sans force réglée la rend visible.
-  if (!theme.grain) { theme.grain = 0.3; $('theme-grain').value = '30'; }
+  const colors = OrbeTheme.SWATCHES[theme.page][b.dataset.i];
+  theme.dots = colors.map(OrbeTheme.hexToHsv);
+  theme.sel = 0;
   drawTheme();
-  pushTheme({ texture: theme.texture, grain: theme.grain });
+  // Les teintes exactes de la pastille, sans passer par le champ.
+  pushTheme({ colors });
+});
+function turnPage(d) {
+  theme.page = Math.max(0, Math.min(OrbeTheme.SWATCHES.length - 1, theme.page + d));
+  drawSwatches();
+  drawTheme();
+}
+$('theme-prev').onclick = () => turnPage(-1);
+$('theme-next').onclick = () => turnPage(1);
+$('theme-intensity').addEventListener('input', (e) => { theme.intensity = Number(e.target.value) / 100; pushTheme({ intensity: theme.intensity }); });
+$('theme-grain').addEventListener('input', (e) => { theme.grain = Number(e.target.value) / 100; drawTheme(); pushTheme({ grain: theme.grain }); });
+// Molette : on la tourne en tirant autour de son centre, de −135° (sans grain) à +135°.
+$('theme-dial').addEventListener('pointerdown', (e) => {
+  if (!theme || e.button !== 0) return;
+  e.preventDefault();
+  const dial = e.currentTarget;
+  const input = $('theme-grain');
+  input.focus();
+  const turn = (ev) => {
+    const r = dial.getBoundingClientRect();
+    const a = (Math.atan2(ev.clientX - r.left - r.width / 2, r.top + r.height / 2 - ev.clientY) * 180) / Math.PI;
+    const v = String(Math.round(Math.max(0, Math.min(1, (a + 135) / 270)) * 100));
+    if (v !== input.value) { input.value = v; input.dispatchEvent(new Event('input')); }
+  };
+  dial.setPointerCapture(e.pointerId);
+  turn(e);
+  dial.onpointermove = turn;
+  dial.onpointerup = dial.onpointercancel = () => { dial.onpointermove = null; };
 });
 $('theme-modes').addEventListener('click', (e) => {
   const b = e.target.closest('.mode');
@@ -421,14 +471,6 @@ $('theme-modes').addEventListener('click', (e) => {
   drawTheme();
   pushTheme({ mode: theme.mode });
 });
-$('theme-icons').addEventListener('click', (e) => {
-  const b = e.target.closest('.sw-icon');
-  if (!b) return;
-  theme.icon = b.textContent;
-  drawTheme();
-  pushTheme({ icon: theme.icon });
-});
-$('theme-done').onclick = () => send('closeOverlay');
 
 // Les vues flottantes prennent les couleurs de l'Espace : accent, panneaux et
 // messages légèrement teintés, apparence claire ou sombre de l'Espace.
@@ -721,7 +763,7 @@ O.on('overlay', (p) => {
   else if (p.mode === 'space') openSpace(p);
   else if (p.mode === 'command-value') {
     // Barre de commande déjà ouverte : une autre adresse à modifier (adresse d'un épinglé).
-    if (mode === 'command' && typeof p.value === 'string') { input.value = p.value; input.select(); input.dispatchEvent(new Event('input')); }
+    if (mode === 'command' && typeof p.value === 'string') { input.value = p.value; input.select(); input.dispatchEvent(new Event('input')); fieldIcon(true); }
   }
   else if (p.mode === 'find') {
     show('find');
