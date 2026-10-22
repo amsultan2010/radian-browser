@@ -296,6 +296,11 @@ module.exports = async function reglagesTests(ctx) {
   const noTheme = await css(themeVar);
   await set({ themeData: true });
   await until(async () => (await css(themeVar)).toLowerCase() === s2.color.toLowerCase(), 'couleur du thème');
+  // Les noms d'Arc aussi, pour les Boosts écrits pour Arc.
+  const arcVar = (n) => css(`getComputedStyle(document.documentElement).getPropertyValue("${n}").trim()`);
+  const arcWant = require('../src/renderer/theme').palette(s2, require('electron').nativeTheme.shouldUseDarkColors).page;
+  check('les pages reçoivent aussi les variables d’Arc (--arc-palette-*, --arc-background-*)',
+    (await arcVar('--arc-palette-background')) === arcWant['--arc-palette-background'] && (await arcVar('--arc-background-gradient-color0')) === arcWant['--arc-background-gradient-color0'] && (await arcVar('--arc-palette-focus')) === arcWant['--arc-palette-focus']);
   await set({ themeData: false });
   await until(async () => (await css(themeVar)) === '', 'couleur retirée');
   check('couleurs de l’Espace données aux pages seulement sur demande', noTheme === '');

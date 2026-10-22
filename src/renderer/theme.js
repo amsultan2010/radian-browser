@@ -20,13 +20,17 @@
   const MIN_CONTRAST = 4.5;
   const TARGET = 4.56; // visé par le calcul : une marge sur le minimum, pour les arrondis du moteur
 
-  // Nuanciers prêts, comme dans Arc : neuf pastels, neuf teintes ternes, neuf gris
-  // (teintes propres à Orbe).
-  const PALETTES = {
-    pastel: ['#f6a5a0', '#f8bd92', '#f5d98b', '#bfe3a1', '#9fdcc4', '#9fd3ec', '#aab9f5', '#c9aef2', '#f1acd3'],
-    drab: ['#a8665f', '#a97c56', '#9c8a4f', '#6f8a5b', '#56897b', '#557f98', '#6470a3', '#84659f', '#a0607f'],
-    grey: ['#f1f1f3', '#d9dadd', '#bfc1c6', '#a3a6ad', '#868a92', '#6a6e77', '#50545c', '#383b42', '#222429'],
-  };
+  // Pastilles du sélecteur, comme dans Arc : des pages de neuf, que l'on fait défiler.
+  // Chaque pastille donne les couleurs du thème ([] : thème par défaut, neutre).
+  // Page 1 : teintes relevées sur l'image du sélecteur d'Arc ; les autres sont propres à Radian.
+  const SWATCHES = [
+    [[], ['#d8a6bd'], ['#a183a1'], ['#d67c76'], ['#e19a74'], ['#edda87'], ['#97dfa6'], ['#94bbd5'], ['#6e7388']],
+    [['#f4a6b7'], ['#c9a7f5'], ['#a7b4f6'], ['#8fd3f0'], ['#86e0cf'], ['#c7e58f'], ['#f7c873'], ['#f59e86'], ['#b9a58d']],
+    [['#9aa3f2', '#f26ef2'], ['#f8a37a', '#f1acd3'], ['#94bbd5', '#97dfa6'], ['#edda87', '#d67c76'], ['#a183a1', '#6e7388'], ['#86e0cf', '#a7b4f6'], ['#f7c873', '#f59e86'], ['#c9a7f5', '#8fd3f0'], ['#d8a6bd', '#e19a74']],
+  ];
+  // Thème du premier Espace : celui mesuré dans Arc (en sombre, #232537 → #371937 en sRGB ;
+  // les relevés de parity/captures/colors/spec.md sont des valeurs d'écran, converties).
+  const FIRST = ['#9aa3f2', '#f26ef2'];
 
   // Thèmes prêts à l'emploi (couleurs, intensité, texture).
   const PRESETS = [
@@ -122,22 +126,34 @@
     return JSON.stringify(normalize(space)) + space.icon !== before;
   }
 
-  // Part de la couleur dans le fond (le reste est la base, claire ou sombre).
-  // À mi-course on retrouve le réglage d'origine d'Orbe : 18 % en clair, 24 % en
-  // sombre (8 points de plus pour un dégradé).
-  function tintOf(theme, dark) {
-    const mid = (dark ? 0.24 : 0.18) + (theme.colors.length > 1 ? 0.08 : 0);
-    const i = theme.intensity;
-    return i <= 0.5 ? 0.04 + (mid - 0.04) * (i / 0.5) : mid + (0.72 - mid) * ((i - 0.5) / 0.5);
+  // Arrêt du fond pour une couleur, comme dans Arc : en clair, la couleur telle
+  // quelle ; en sombre, sa teinte et sa saturation à 21,6 % de clarté (relevé dans
+  // Arc : #9aa3f2 → #232537, #f26ef2 → #371937). L'intensité, à mi-course par défaut,
+  // rapproche du gris neutre en dessous et sature davantage au-dessus.
+  const NEUTRAL = { light: [238, 238, 238], dark: [55, 55, 55] }; // #eeeeee : Arc sans couleur
+  const DARK_V = 55 / 255;
+  const GRAIN_MAX = 0.4;
+  function stopOf(color, dark, i) {
+    const c = hexToHsv(color);
+    const s = Math.min(1, c.s * (i > 0.5 ? 1 + (i - 0.5) * 1.2 : 1));
+    const col = rgb(hsvToHex(c.h, s, dark ? DARK_V : c.v));
+    return i >= 0.5 ? col : mix(col, NEUTRAL[dark ? 'dark' : 'light'], i * 2);
+  }
+
+  // Couleur d'accent (ligne choisie de la barre de commande, focus) : la couleur
+  // principale ; une teinte pâle est approfondie (Arc tire #464ddc d'un thème lavande).
+  function focusOf(color) {
+    const c = hexToHsv(color);
+    return c.s >= 0.68 || c.s < 0.04 ? color : hsvToHex(c.h, Math.max(c.s, Math.min(0.68, c.s * 2.2)), Math.min(c.v, 0.87));
   }
 
   const FAMILY = {
     // Texte sombre sur fond clair.
     light: { ink: [0, 0, 0], fg: [29, 29, 31], dim: 0.52, faint: 0.28, hover: 0.06, pill: 0.07, line: 0.1, active: [[255, 255, 255], 1], push: [255, 255, 255] },
-    // Texte clair sur fond sombre.
-    dark: { ink: [255, 255, 255], fg: [243, 243, 245], dim: 0.55, faint: 0.3, hover: 0.07, pill: 0.09, line: 0.12, active: [[255, 255, 255], 0.17], push: [0, 0, 0] },
+    // Texte clair sur fond sombre (voiles blancs relevés dans Arc : survol et champ
+    // d'adresse 10 %, onglet choisi 20 %, séparateur 15 %, texte discret 55 %).
+    dark: { ink: [255, 255, 255], fg: [243, 243, 245], dim: 0.55, faint: 0.25, hover: 0.1, pill: 0.1, line: 0.15, active: [[255, 255, 255], 0.2], push: [0, 0, 0] },
   };
-  const BASE = { light: [243, 243, 245], dark: [22, 22, 26] };
   const SECONDARY = 0.78; // titre d'un onglet en veille : texte principal à 78 %
 
   // Contraste le plus faible entre les textes de la barre et les surfaces où ils
@@ -167,13 +183,13 @@
   function palette(input, dark, show = 0) {
     const theme = input && Array.isArray(input.colors) && typeof input.intensity === 'number' ? input : normalize(input);
     const isDark = theme.mode === 'auto' ? !!dark : theme.mode === 'dark';
-    const base = isDark ? BASE.dark : BASE.light;
-    const t = tintOf(theme, isDark);
-    let stops = theme.colors.length ? theme.colors.map((c) => mix(rgb(c), base, t)) : [base];
+    let stops = theme.colors.length ? theme.colors.map((c) => stopOf(c, isDark, theme.intensity)) : [NEUTRAL[isDark ? 'dark' : 'light']];
     // Famille de texte : celle qui se lit le mieux sur la moyenne du fond.
     const mean = stops.reduce((a, s) => a + lum(s), 0) / stops.length;
     const name = mean < 0.2 ? 'dark' : 'light';
-    const fam = FAMILY[name];
+    // Texte clair : blanc teinté par la couleur principale (#dddfff relevé dans Arc).
+    const first = theme.colors.length && hexToHsv(theme.colors[0]);
+    let fam = name === 'dark' && first && first.s >= 0.04 ? { ...FAMILY.dark, fg: rgb(hsvToHex(first.h, Math.min(0.13, first.s * 0.37), 1)) } : FAMILY[name];
     // Un arrêt trop proche du texte (zone moyenne, illisible des deux côtés) est
     // éloigné, par petits pas, jusqu'à ce que tout texte y soit lisible.
     // (Les arrêts sont arrondis à l'octet avant chaque mesure : c'est la couleur affichée.)
@@ -183,15 +199,19 @@
     const through = show > 0 ? clamp(show, 0, 0.5) : 0;
     const seen = (c) => (through ? [c, ...BACKDROP[dark ? 'dark' : 'light'].map((b) => whole(over(b, through, c)))] : [c]);
     const worstSeen = (c, alpha) => Math.min(...seen(c).map((x) => worst(x, fam, alpha)));
-    stops = stops.map((s) => {
+    const push = () => stops.map((s) => {
       let c = whole(s);
       for (let i = 0; i < 80 && worstSeen(c, DIM_MAX) < TARGET; i++) c = whole(mix(fam.push, c, 0.04));
       return c;
     });
+    let pushed = push();
+    // Texte teinté illisible même sur le fond le plus éloigné : retour au texte neutre.
+    if (fam !== FAMILY[name] && pushed.some((c) => worstSeen(c, DIM_MAX) < TARGET)) { fam = FAMILY[name]; pushed = push(); }
+    stops = pushed;
     // Texte discret : l'opacité la plus faible qui reste lisible partout.
     let dim = fam.dim;
     while (dim < DIM_MAX && stops.some((s) => worstSeen(s, dim) < TARGET)) dim = Math.round((dim + 0.01) * 100) / 100;
-    const accent = rgb(theme.accent);
+    const accent = rgb(focusOf(theme.accent));
     // Couleur employée comme texte sur une pastille (compteur du bouclier, « Non
     // sécurisé ») : rapprochée du texte tant qu'elle ne s'y lit pas.
     const legible = (color) => {
@@ -203,11 +223,33 @@
     // Texte posé sur l'accent (ligne choisie de la barre de commande) : blanc, sauf sur un accent pâle.
     const onAccent = contrast([255, 255, 255], accent) >= 3 ? [255, 255, 255] : [20, 20, 22];
     const rgba = (c, a) => `rgba(${c.map(Math.round).join(', ')}, ${a})`;
+    // Variables qu'Arc donne aux pages (mêmes noms, lus par les Boosts et quelques sites),
+    // en « #RRGGBBAA ». Rôles d'après arc.net/colors.html ; les valeurs sont celles de Radian.
+    const AA = (c, a = 1) => (hex(c) + Math.round(a * 255).toString(16).padStart(2, '0')).toUpperCase();
+    const on = (a) => AA(over(fam.ink, a, stops[0]));
+    const max = name === 'dark' ? [255, 255, 255] : [0, 0, 0];
+    const page = {
+      '--arc-palette-title': AA(fam.fg),
+      '--arc-palette-subtitle': on(dim),
+      '--arc-palette-background': AA(stops[0]),
+      '--arc-palette-backgroundExtra': on(fam.pill),
+      '--arc-palette-foregroundPrimary': AA(fam.fg),
+      '--arc-palette-foregroundSecondary': on(dim),
+      '--arc-palette-foregroundTertiary': on(fam.faint),
+      '--arc-palette-focus': AA(accent),
+      '--arc-palette-hover': AA(fam.ink, fam.hover),
+      '--arc-palette-cutoutColor': AA(onAccent),
+      '--arc-palette-maxContrastColor': AA(max),
+      '--arc-palette-minContrastColor': AA(max.map((v) => 255 - v)),
+      '--arc-background-simple-color': AA(stops[0]),
+    };
+    // Une variable par arrêt (pas de color1 pour un thème d'une couleur, comme dans Arc).
+    stops.forEach((s, i) => { page['--arc-background-gradient-color' + i] = AA(s); page['--arc-background-gradient-overlay-color' + i] = AA(s); });
     return {
       dark: isDark,
       family: name,
       stops: stops.map(hex),
-      accent: theme.accent,
+      accent: hex(accent),
       onAccent: hex(onAccent),
       accentText: hex(accentText),
       warn: hex(legible([194, 65, 12])),
@@ -219,13 +261,15 @@
       hover: rgba(fam.ink, fam.hover),
       pill: rgba(fam.ink, fam.pill),
       line: rgba(fam.ink, fam.line),
-      active: fam.active[1] === 1 ? hex(fam.active[0]) : rgba(fam.active[0], fam.active[1]),
+      // Onglet choisi, en clair : blanc à peine teinté par le fond (#fff5f4 sur corail dans Arc).
+      active: fam.active[1] === 1 ? hex(mix(fam.active[0], stops[0], 0.9)) : rgba(fam.active[0], fam.active[1]),
       activeShadow: name === 'light' ? '0 1px 3px rgba(0, 0, 0, 0.13), 0 0 0 0.5px rgba(0, 0, 0, 0.05)' : 'none',
       grain: theme.grain,
       texture: theme.texture,
       // Contraste le plus faible de la barre (texte principal, onglet en veille, texte discret).
       // (Barre translucide : sur le fond tel qu'il s'affiche, aux deux extrêmes de l'arrière-plan.)
       contrast: Math.min(...stops.map((s) => worstSeen(s, dim))),
+      page,
     };
   }
 
@@ -233,7 +277,8 @@
   function paint(p, alpha = 1) {
     const c = (h) => (alpha >= 1 ? h : `rgba(${rgb(h).join(', ')}, ${alpha})`);
     if (p.stops.length === 1) return c(p.stops[0]);
-    return `linear-gradient(160deg, ${p.stops.map(c).join(', ')})`;
+    // 131° : du haut à gauche au bas à droite, l'angle relevé dans Arc.
+    return `linear-gradient(131deg, ${p.stops.map(c).join(', ')})`;
   }
 
   // Variables CSS d'une palette (fond compris), à poser sur un élément.
@@ -255,12 +300,14 @@
       '--active-shadow': p.activeShadow,
       '--bg': p.stops[0],
       '--paint': paint(p, alpha),
-      '--grain': String(p.grain),
+      // Force de la texture : la molette à fond donne 40 % (au-delà, le grain écrase la couleur).
+      // shortcut: plafond choisi à l'œil, non mesuré dans Arc ; à revoir avec une capture d'Arc grain au maximum.
+      '--grain': String(Math.round(p.grain * GRAIN_MAX * 1000) / 1000),
       '--texture': `url("textures/${p.texture}.png")`,
     };
   }
   // Celles qui ne concernent que le texte et les surfaces (pas le fond).
   const TEXT_VARS = ['--accent', '--on-accent', '--accent-text', '--warn', '--danger', '--fg', '--secondary', '--dim', '--faint', '--hover', '--pill', '--line', '--active', '--active-shadow'];
 
-  return { BACKDROP, DEFAULT_COLOR, TEXTURES, MODES, MAX_COLORS, MIN_CONTRAST, PALETTES, PRESETS, TEXT_VARS, isHex, rgb, hex, mix, over, lum, contrast, hsvToHex, hexToHsv, normalize, apply, tintOf, palette, paint, cssVars };
+  return { BACKDROP, DEFAULT_COLOR, FIRST, NEUTRAL, GRAIN_MAX, TEXTURES, MODES, MAX_COLORS, MIN_CONTRAST, SWATCHES, PRESETS, TEXT_VARS, isHex, rgb, hex, mix, over, lum, contrast, hsvToHex, hexToHsv, normalize, apply, stopOf, palette, paint, cssVars };
 });

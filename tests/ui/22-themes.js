@@ -1,5 +1,6 @@
-// Thème d'un Espace : éditeur (nuancier à points, une à trois couleurs, thème par
-// défaut, intensité, textures, apparence, thèmes et nuanciers prêts), application
+// Thème d'un Espace : sélecteur disposé comme celui d'Arc (champ de couleurs à
+// poignées, zéro à trois couleurs, thème par défaut, pastilles par pages, vague
+// d'intensité, molette de grain, apparence), application
 // immédiate à la barre, lisibilité du texte sur toutes les couleurs, fondu entre
 // deux Espaces, couleurs des vues flottantes.
 //   ORBE_DOC_SHOTS=<dossier> : enregistre aussi les captures du LISEZMOI.
@@ -84,17 +85,20 @@ module.exports = {
     await ctx.principal(({ w }) => { const tab = w.createTab('http://127.0.0.1:9/veille', { index: w.space.today.length }); tab.title = 'En veille'; w.changed(); });
     await jusqua(async () => (await shell.locator('#today .row.tab').count()) === 4, 'quatre onglets');
 
-    await t.verifier('l’éditeur s’ouvre : nuancier, 3 apparences, 8 thèmes, 27 teintes en trois familles de neuf, 4 textures', async () => {
+    await t.verifier('le sélecteur s’ouvre comme celui d’Arc : apparence claire / auto / sombre, champ à poignées, pastilles par neuf, vague et molette', async () => {
       await ouvrirEditeur();
       const m = await modal.evaluate(() => ({
         points: document.querySelectorAll('#theme-wheel .dot').length,
         modes: [...document.querySelectorAll('#theme-modes .mode')].map((b) => b.dataset.mode),
-        themes: document.querySelectorAll('#theme-presets .preset').length,
-        familles: ['pastel', 'drab', 'grey'].map((f) => document.querySelectorAll(`#theme-palettes .sw-color[data-family=${f}]`).length),
-        textures: [...document.querySelectorAll('#theme-textures .tx')].map((b) => b.dataset.tx),
-        visible: (() => { const r = document.getElementById('theme').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && r.width > 250; })(),
+        pastilles: document.querySelectorAll('#theme-presets .swatch').length,
+        choisie: document.querySelectorAll('#theme-presets .swatch.sel').length,
+        fleches: [document.getElementById('theme-prev').disabled, document.getElementById('theme-next').disabled],
+        reglages: [!!document.querySelector('#theme-wave input[type=range]'), !!document.querySelector('#theme-dial input[type=range]')],
+        grille: document.getElementById('theme-grid').width > 0,
+        visible: (() => { const r = document.getElementById('theme').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && r.width > 200; })(),
       }));
-      assert.deepEqual(m, { points: 1, modes: ['auto', 'light', 'dark'], themes: 8, familles: [9, 9, 9], textures: ['grain', 'sand', 'tweed', 'denim'], visible: true });
+      // Premier Espace : le thème à deux couleurs relevé dans Arc, sur la dernière page de pastilles.
+      assert.deepEqual(m, { points: 2, modes: ['light', 'auto', 'dark'], pastilles: 9, choisie: 1, fleches: [false, true], reglages: [true, true], grille: true, visible: true });
     });
 
     await t.verifier('déplacer un point du nuancier à la souris change la couleur de l’Espace, tout de suite', async () => {
@@ -102,7 +106,7 @@ module.exports = {
       // (Le panneau finit de paraître : on attend que le nuancier ne bouge plus.)
       const roue = (await ctx.centre(modal.locator('#theme-wheel'))).box;
       const point = await ctx.centre(modal.locator('#theme-wheel .dot').first());
-      // Vers la droite du cercle, à mi-rayon : teinte 90°, saturation 0,5.
+      // Vers la droite du champ, à mi-rayon : teinte 90°, saturation 0,4 (le bord vaut 0,8).
       const cible = { x: roue.x + roue.width * 0.75, y: roue.y + roue.height * 0.5 };
       await modal.mouse.move(point.x, point.y);
       await modal.mouse.down();
@@ -110,7 +114,7 @@ module.exports = {
       const enRoute = (await espace()).color;
       await modal.mouse.move(cible.x, cible.y, { steps: 4 });
       await modal.mouse.up();
-      await jusqua(async () => { const hsv = Theme.hexToHsv((await espace()).color); return Math.abs(hsv.h - 90) < 4 && Math.abs(hsv.s - 0.5) < 0.04; }, 'teinte 90°, saturation 0,5');
+      await jusqua(async () => { const hsv = Theme.hexToHsv((await espace()).color); return Math.abs(hsv.h - 90) < 4 && Math.abs(hsv.s - 0.4) < 0.04; }, 'teinte 90°, saturation 0,4');
       assert.notEqual(enRoute, avant, 'la couleur suit le point pendant le geste');
       await applique((await palette()).stops);
       // Le point est resté sous le pointeur.
@@ -119,6 +123,8 @@ module.exports = {
     });
 
     await t.verifier('« + » ajoute une deuxième puis une troisième couleur : dégradé à trois arrêts, pas davantage', async () => {
+      await ctx.clic(modal, '#theme-less');
+      await jusqua(async () => !(await espace()).color2, 'une seule couleur');
       await ctx.clic(modal, '#theme-more');
       await jusqua(async () => !!(await espace()).color2, 'deuxième couleur');
       await ctx.clic(modal, '#theme-more');
@@ -130,7 +136,7 @@ module.exports = {
       const p = await palette();
       assert.equal(p.stops.length, 3);
       await applique(p.stops);
-      assert.match((await rendu()).fond, /^linear-gradient\(160deg/);
+      assert.match((await rendu()).fond, /^linear-gradient\(131deg/);
       await lisible('dégradé à trois couleurs');
     });
 
@@ -144,10 +150,10 @@ module.exports = {
       assert.deepEqual([e.color, e.color2, e.color3], [Theme.DEFAULT_COLOR, '', '']);
       const p = await palette();
       assert.equal(p.stops.length, 1);
-      assert.ok(['#f3f3f5', '#16161a'].includes(p.stops[0]), 'fond neutre : ' + p.stops[0]);
+      assert.ok(['#eeeeee', '#373737'].includes(p.stops[0]), 'fond neutre : ' + p.stops[0]);
       await applique(p.stops);
       assert.equal(await modal.locator('#theme-less').isDisabled(), true);
-      assert.equal(await modal.locator('#theme-plain').isVisible(), true, 'le nuancier annonce le thème par défaut');
+      assert.equal(await modal.locator('#theme-plain').isVisible(), true, 'le champ annonce le thème par défaut');
       await lisible('thème par défaut');
       // Un clic dans le nuancier repose une première couleur.
       const roue = (await ctx.centre(modal.locator('#theme-wheel'))).box;
@@ -155,10 +161,14 @@ module.exports = {
       await jusqua(async () => (await espace()).plain !== true && (await modal.locator('#theme-wheel .dot').count()) === 1, 'une couleur reposée');
     });
 
-    await t.verifier('une teinte des nuanciers s’applique au point choisi ; l’intensité renforce ou allège le fond', async () => {
-      await ctx.clic(modal, '#theme-palettes .sw-color[data-family=drab] >> nth=5');
-      await jusqua(async () => (await espace()).color === Theme.PALETTES.drab[5], 'teinte terne appliquée');
-      const dist = async () => { const p = await palette(); const base = p.dark ? [22, 22, 26] : [243, 243, 245]; const s = Theme.rgb(p.stops[0]); return Math.hypot(...s.map((v, i) => v - base[i])); };
+    await t.verifier('les flèches font défiler les pastilles ; une pastille s’applique d’un clic ; l’intensité renforce ou allège le fond', async () => {
+      await ctx.clic(modal, '#theme-prev');
+      await ctx.clic(modal, '#theme-prev');
+      await jusqua(() => modal.evaluate(() => document.getElementById('theme-prev').disabled), 'première page');
+      await ctx.clic(modal, '#theme-presets .swatch >> nth=5');
+      await jusqua(async () => (await espace()).color === Theme.SWATCHES[0][5][0], 'pastille appliquée');
+      assert.equal(await modal.locator('#theme-presets .swatch.sel').count(), 1);
+      const dist = async () => { const p = await palette(); const base = Theme.NEUTRAL[p.dark ? 'dark' : 'light']; const s = Theme.rgb(p.stops[0]); return Math.hypot(...s.map((v, i) => v - base[i])); };
       const fixer = async (v) => {
         await modal.locator('#theme-intensity').evaluate((el, x) => { el.value = String(x); el.dispatchEvent(new Event('input', { bubbles: true })); }, v);
         await jusqua(async () => (await espace()).intensity === v / 100, 'intensité ' + v);
@@ -168,31 +178,30 @@ module.exports = {
       const faible = await fixer(10);
       const moyenne = await fixer(50);
       const forte = await fixer(95);
-      assert.ok(faible < moyenne && moyenne < forte, `le fond s’éloigne de la base avec l’intensité : ${faible.toFixed(0)} < ${moyenne.toFixed(0)} < ${forte.toFixed(0)}`);
+      assert.ok(faible < moyenne && moyenne < forte, `le fond s’éloigne du gris neutre avec l’intensité : ${faible.toFixed(0)} < ${moyenne.toFixed(0)} < ${forte.toFixed(0)}`);
       await lisible('intensité forte');
       await fixer(50);
     });
 
-    await t.verifier('quatre textures : chacune pose son carreau sous l’interface, à la force réglée ; force nulle, plus de texture', async () => {
-      for (const nom of Theme.TEXTURES) {
-        await ctx.clic(modal, `#theme-textures .tx[data-tx=${nom}]`);
-        await jusqua(async () => (await espace()).texture === nom, 'texture ' + nom);
-        const r = await jusqua(async () => { const x = await rendu(); return x.grainy && x.texture.includes(`textures/${nom}.png`) ? x : null; }, 'carreau ' + nom);
-        assert.equal(r.melange, 'overlay');
-        assert.ok(Math.abs(r.force - (await espace()).grain) < 0.011 && r.force > 0, 'force ' + r.force);
-        // Le carreau existe et se charge : 192 px de côté.
-        assert.equal(await shell.evaluate((n) => new Promise((res) => { const i = new Image(); i.onload = () => res(i.naturalWidth); i.onerror = () => res(0); i.src = `textures/${n}.png`; }), nom), 192);
-      }
-      const regle = async (v) => {
-        await modal.locator('#theme-grain').evaluate((el, x) => { el.value = String(x); el.dispatchEvent(new Event('input', { bubbles: true })); }, v);
-        await jusqua(async () => (await espace()).grain === v / 100, 'force ' + v);
-      };
-      await regle(60);
-      await jusqua(async () => Math.abs((await rendu()).force - 0.6) < 0.011, 'force 0,6 affichée');
-      // La texture est sous l'interface : elle ne recouvre ni les lignes ni le texte.
+    await t.verifier('la molette de grain se tourne à la souris : le grain se pose sous l’interface ; à zéro, plus de grain', async () => {
+      const r = (await ctx.centre(modal.locator('#theme-dial'))).box;
+      const cx = r.x + r.width / 2;
+      const cy = r.y + r.height / 2;
+      // 0,6 : repère à −135° + 0,6 × 270° = 27° du haut.
+      const a = (27 * Math.PI) / 180;
+      await modal.mouse.move(cx, cy - 6);
+      await modal.mouse.down();
+      await modal.mouse.move(cx + Math.sin(a) * 40, cy - Math.cos(a) * 40, { steps: 6 });
+      await modal.mouse.up();
+      await jusqua(async () => Math.abs((await espace()).grain - 0.6) <= 0.02, 'grain 0,6');
+      const g = (await espace()).grain;
+      const x = await jusqua(async () => { const y = await rendu(); return y.grainy && Math.abs(y.force - g * Theme.GRAIN_MAX) < 0.011 ? y : null; }, 'grain affiché');
+      assert.equal(x.melange, 'overlay');
+      assert.match(x.texture, /textures\/\w+\.png/);
+      // Le grain est sous l'interface : il ne recouvre ni les lignes ni le texte.
       assert.equal(await shell.evaluate(() => getComputedStyle(document.body, '::before').zIndex), '-1');
-      await regle(0);
-      await jusqua(async () => !(await rendu()).grainy, 'texture retirée');
+      await modal.locator('#theme-grain').evaluate((el) => { el.value = '0'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+      await jusqua(async () => (await espace()).grain === 0 && !(await rendu()).grainy, 'grain retiré');
     });
 
     await t.avecEcran('verifier', 'apparence de l’Espace (automatique, claire, sombre) : l’icône s’anime, la barre et les panneaux suivent', async () => {
@@ -205,27 +214,33 @@ module.exports = {
         await jusqua(async () => (await rendu()).famille === mode, 'barre ' + mode);
         await jusqua(() => modal.evaluate((m) => document.documentElement.dataset.scheme === m, mode), 'panneau ' + mode);
         const fg = await shell.evaluate(() => getComputedStyle(document.querySelector('#sidebar .row.tab.active .title')).color);
-        assert.equal(fg, mode === 'dark' ? 'rgb(243, 243, 245)' : 'rgb(29, 29, 31)');
+        assert.equal(fg, `rgb(${Theme.rgb((await palette()).fg).join(', ')})`);
         await lisible('apparence ' + mode);
       }
     });
 
-    await t.verifier('les huit thèmes prêts s’appliquent d’un clic et restent lisibles, en clair comme en sombre', async () => {
+    await t.verifier('les pastilles de la première page et un dégradé de la dernière s’appliquent et restent lisibles, en clair comme en sombre', async () => {
       const mini = [];
-      for (const preset of Theme.PRESETS) {
-        await ctx.clic(modal, `#theme-presets .preset[data-preset=${preset.id}]`);
-        await jusqua(async () => { const e = await espace(); return e.color === preset.colors[0] && e.texture === preset.texture && e.grain === preset.grain; }, 'thème ' + preset.id);
+      const essayer = async (i, page) => {
+        const colors = Theme.SWATCHES[page][i];
+        await ctx.clic(modal, `#theme-presets .swatch >> nth=${i}`);
+        await jusqua(async () => { const e = await espace(); return colors.length ? Theme.normalize(e).colors.join() === colors.join() : e.plain === true; }, 'pastille ' + (colors.join(' ') || 'neutre'));
         for (const mode of ['light', 'dark']) {
           await regler({ mode });
           await applique((await palette()).stops);
-          mini.push(await lisible(`thème ${preset.id} (${mode})`));
+          mini.push(await lisible(`pastille ${colors.join(' ') || 'neutre'} (${mode})`));
         }
-      }
-      console.log(`    contraste le plus faible sur les 16 combinaisons : ${Math.min(...mini).toFixed(2)}`);
+      };
+      for (let i = 0; i < 9; i++) await essayer(i, 0);
+      await ctx.clic(modal, '#theme-next');
+      await ctx.clic(modal, '#theme-next');
+      await essayer(0, 2);
+      assert.equal((await rendu()).arrets.length, 2, 'dégradé à deux couleurs');
+      console.log(`    contraste le plus faible sur les 20 combinaisons : ${Math.min(...mini).toFixed(2)}`);
       await regler({ mode: 'auto' });
     });
 
-    await ctx.clic(modal, '#theme-done');
+    await modal.keyboard.press('Escape');
     await jusqua(async () => !(await editeurOuvert()), 'éditeur fermé');
 
     await t.verifier('couleurs au hasard (une à trois, toute intensité, clair et sombre) : le texte de la barre garde un contraste d’au moins 4,5', async () => {
@@ -272,21 +287,22 @@ module.exports = {
         return { ligne: getComputedStyle(sel).backgroundColor, panneau: getComputedStyle(document.getElementById('command')).backgroundColor };
       });
       assert.equal(m.ligne, 'rgb(16, 185, 129)', 'ligne choisie à la couleur de l’Espace');
-      // Panneau : base claire (250, 250, 252) teintée à 9 % par l'accent.
+      // Panneau : gris neutre, sans la couleur de l'Espace (relevé dans Arc).
       const p = rvb(m.panneau);
-      assert.ok(p[0] < 240 && p[1] > p[0] + 4 && p[1] >= p[2], 'panneau teinté de vert : ' + m.panneau);
+      assert.ok(Math.max(...p) - Math.min(...p) < 2, 'panneau neutre : ' + m.panneau);
       await modal.keyboard.press('Escape');
       await jusqua(async () => !(await ctx.commandeOuverte()), 'barre refermée');
-      // Message : pilule sombre teintée.
+      // Message : pilule à la couleur de l’Espace.
       await ctx.principal(({ w }) => w.toast('Essai de message'));
       const toast = await ctx.attendrePage('overlay.html#toast');
       await jusqua(() => toast.evaluate(() => document.getElementById('toast').textContent === 'Essai de message' && getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() === '#10b981'), 'message aux couleurs de l’Espace');
       const fond = rvb(await toast.evaluate(() => getComputedStyle(document.getElementById('toast')).backgroundColor));
       assert.ok(fond[1] > fond[0] + 15 && fond[1] > fond[2], 'pilule teintée de vert : ' + fond.map(Math.round).join(', '));
-      assert.ok(Theme.contrast([255, 255, 255], fond) >= 4.5, 'texte du message lisible');
+      const texte = rvb(await toast.evaluate(() => getComputedStyle(document.getElementById('toast')).color));
+      assert.ok(Theme.contrast(texte, fond) >= 4.5, 'texte du message lisible : ' + texte.join(', '));
     });
 
-    await t.verifier('d’un Espace à l’autre : le fond de l’autre Espace se fond par-dessus pendant le glissement, sa liste a déjà ses couleurs', async () => {
+    await t.verifier('d’un Espace à l’autre : au clic, les couleurs de l’autre Espace d’un coup (comme dans Arc) pendant que sa liste glisse', async () => {
       await regler({ colors: ['#f5d98b'], intensity: 0.8, mode: 'light', grain: 0.3, texture: 'sand' });
       await ctx.menu('spaces.new');
       await ctx.creerEspace('Nuit');
@@ -309,9 +325,9 @@ module.exports = {
           const tint = document.getElementById('tint');
           const o = Number(getComputedStyle(tint).opacity);
           const g = document.querySelector('#pager .ghost');
-          if (!slide || !g || !(o > 0.05 && o < 0.95)) return null;
+          if (!slide || !g || !(o > 0.05)) return null;
           return { o, fond: getComputedStyle(tint).backgroundColor, grain: tint.classList.contains('grainy'), texture: getComputedStyle(tint, '::after').backgroundImage, fantome: getComputedStyle(g).getPropertyValue('--fg').trim(), corps: getComputedStyle(document.body).backgroundImage };
-        }), 'fondu en cours');
+        }), 'glissement en cours');
         // La teinte porte le fond (clair, sable) du premier Espace ; le fond courant est encore celui de « Nuit ».
         assert.match(milieu.texture, /textures\/sand\.png/);
         assert.equal(milieu.grain, true);

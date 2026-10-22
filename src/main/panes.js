@@ -8,6 +8,7 @@ const prefs = require('./prefs');
 const shortcuts = require('./shortcuts');
 const commands = require('./commands');
 const boosts = require('./boosts');
+const Theme = require('../renderer/theme');
 const adblock = require('./adblock');
 const sessions = require('./sessions');
 const win = require('./window');
@@ -184,7 +185,11 @@ function extraCss(wc) {
     }
     if (space && COLOR.test(space.color || '')) {
       const second = COLOR.test(space.color2 || '') ? space.color2 : space.color;
-      css += `:root { --radian-theme-color: ${space.color}; --radian-theme-color-2: ${second}; --radian-theme-dark: ${nativeTheme.shouldUseDarkColors ? 1 : 0}; }\n`;
+      // Les variables d'Arc (--arc-palette-*, --arc-background-*), lues par les Boosts
+      // écrits pour Arc ; les noms --radian-theme-* restent pour les anciens.
+      const p = Theme.palette(space, nativeTheme.shouldUseDarkColors);
+      const arc = Object.entries(p.page).map(([k, v]) => `${k}: ${v}; `).join('');
+      css += `:root { ${arc}--radian-theme-color: ${space.color}; --radian-theme-color-2: ${second}; --radian-theme-dark: ${p.dark ? 1 : 0}; }\n`;
     }
   }
   return css;

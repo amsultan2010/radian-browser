@@ -55,7 +55,7 @@ function drawColors() {
     b.dataset.color = c;
     b.title = c;
     b.setAttribute('aria-pressed', String(c === info.color));
-    b.onclick = async () => { await O.send('theme', { color: c }); info.color = c; drawColors(); };
+    b.onclick = async () => { await O.send('theme', { colors: [c] }); info.color = c; drawColors(); };
     box.appendChild(b);
   }
 }
