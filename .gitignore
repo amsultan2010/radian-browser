@@ -6,3 +6,4 @@ dist/
 .claude/
 parity/captures/**/*.mov
 parity/captures/**/*.mp4
+parity/captures/_raw/
