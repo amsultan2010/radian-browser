@@ -239,7 +239,7 @@ function isMeetingUrl(input) {
 // plusieurs onglets : `total` compte chaque processus une fois, `of(id)` ne rend
 // que ce qui est propre à l'onglet. Sous Windows la mémoire privée est connue ;
 // ailleurs c'est la mémoire résidente, qui compte aussi les pages partagées
-// (relevé sur macOS : 60 Mo de trop par processus léger, voir docs/suivi/ameliorations.md).
+// (relevé sur macOS : 60 Mo de trop par processus léger, voir docs/orbe/suivi/ameliorations.md).
 // Mémoire d'un processus, en Mo : son empreinte réelle quand elle est connue (Windows :
 // `privateBytes` ; macOS : relevé récent d'empreinte.js), sinon sa mémoire résidente.
 function processMb(m) {
@@ -947,7 +947,7 @@ class OrbeWindow {
   // animation du système (voir `place`) : un appel par page, aucun minuteur. La
   // largeur de la page rétrécit dans le même mouvement, mais la page n'est remise
   // en page qu'une fois, à l'arrivée (mesuré). Comme dans Arc, la barre revient en
-  // 400 ms et part en 280 ms ; en partant, la page s'élargit dans le même mouvement.
+  // 50 ms et part en 60 ms ; en partant, la page s'élargit dans le même mouvement.
   animateTo(target) {
     const from = this.p;
     this.p = target;
@@ -987,12 +987,12 @@ class OrbeWindow {
       this.layout();
       this.floatView.setVisible(true);
     } else if (this.floatView) {
-      // Le temps que la barre glisse hors de l'écran (--sidebar-out de base.css, plus une image).
+      // Le temps que la barre glisse hors de l'écran (--sidebar-reveal-out de base.css, plus une image).
       this.floatTimer = setTimeout(() => {
         if (this.win.isDestroyed() || this.peek || !this.floatView) return;
         this.floatView.setVisible(false);
         try { this.win.contentView.removeChildView(this.floatView); } catch {}
-      }, motion(MOTION.sidebarOut) + 20);
+      }, motion(MOTION.revealOut) + 20);
     }
     OrbeWindow.pushAll();
   }
@@ -1010,8 +1010,8 @@ class OrbeWindow {
     const y = pt.y - b.y;
     const inside = y >= 0 && y <= b.height;
     if (!this.peek && inside && x >= -2 && x <= 5) this.setPeek(true);
-    // Le pointeur revient sur la page (la carte flottante finit à sidebarWidth + 4) : elle repart.
-    else if (this.peek && (!inside || x > this.sidebarWidth + 10 || x < -40)) this.setPeek(false);
+    // Le pointeur sort de la barre flottante (posée à 5 pt du bord, shell.css) pour la page : elle repart.
+    else if (this.peek && (!inside || x > this.sidebarWidth + 5 || x < -40)) this.setPeek(false);
   }
 
   setSidebarWidth(w) {

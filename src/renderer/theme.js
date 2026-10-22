@@ -29,7 +29,7 @@
     [['#9aa3f2', '#f26ef2'], ['#f8a37a', '#f1acd3'], ['#94bbd5', '#97dfa6'], ['#edda87', '#d67c76'], ['#a183a1', '#6e7388'], ['#86e0cf', '#a7b4f6'], ['#f7c873', '#f59e86'], ['#c9a7f5', '#8fd3f0'], ['#d8a6bd', '#e19a74']],
   ];
   // Thème du premier Espace : celui mesuré dans Arc (en sombre, #232537 → #371937 en sRGB ;
-  // les relevés de parity/captures/colors/spec.md sont des valeurs d'écran, converties).
+  // les relevés de docs/parity/captures/colors/spec.md sont des valeurs d'écran, converties).
   const FIRST = ['#9aa3f2', '#f26ef2'];
 
   // Thèmes prêts à l'emploi (couleurs, intensité, texture).

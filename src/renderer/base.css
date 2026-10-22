@@ -19,17 +19,21 @@
      partent et arrivent ensemble. */
   --ease-out: cubic-bezier(0, 0, 0.58, 1);
   --ease-in: cubic-bezier(0.42, 0, 1, 1);
-  /* Barre latérale, relevée image par image dans les vidéos d'Arc (parity/web-research.md §3.3).
-     Elle part en 280 ms, très vite au départ (30 % du trajet en 33 ms, 94 % à 220 ms) ;
-     elle revient en 400 ms, à la courbe ease-out du système, celle des pages qui
-     glissent avec elle (src/main/motion.js, MOTION.sidebarIn / sidebarOut). */
-  --sidebar-out: 280ms cubic-bezier(0.05, 0.35, 0.58, 1);
-  --sidebar-in: 400ms var(--ease-out);
+  /* Barre latérale, relevée image par image (60 i/s) dans Arc 1.170 (⌘S) : elle revient en
+     70 ms et part en 74 ms, sans dépassement. Ici la courbe ease-out du système, celle des pages
+     qui glissent avec elle, aux durées qui en suivent le mieux le trajet (src/main/motion.js,
+     MOTION.sidebarIn / sidebarOut) : bord de la barre et bord de la page restent collés. */
+  --sidebar-out: 60ms var(--ease-out);
+  --sidebar-in: 50ms var(--ease-out);
+  /* Barre flottante (survol du bord gauche), relevée de même : elle entre en 240 ms avec un
+     dépassement de 1,5 % (≈ 3 pt), repart en 90 ms (MOTION.revealOut). Courbes ajustées au relevé. */
+  --sidebar-reveal: 240ms cubic-bezier(0.3, 1.22, 0.32, 1);
+  --sidebar-reveal-out: 90ms cubic-bezier(0.31, 0.52, 0.69, 1.03);
   /* Ressorts (durée + courbe, calculés par scripts/make-springs.js) : un ressort
      amorti décrit comme dans SwiftUI par sa réponse et son amortissement.
      Usage : `transition: transform var(--spring-snappy)`. */
-  /* snappy — réponse 0,22 s, amortissement 0,9, sans dépassement visible : lignes, panneaux, états pressés. */
-  --spring-snappy: 200ms linear(0, 0.025, 0.085, 0.167, 0.258, 0.352, 0.442, 0.527, 0.604, 0.672, 0.732, 0.783, 0.826, 0.862, 0.892, 0.916, 0.936, 0.952, 0.964, 0.974, 0.982, 0.987, 0.992, 0.995, 1);
+  /* snappy — réponse 0,1 s, amortissement 1, sans dépassement : lignes, panneaux, états pressés (relevé dans Arc). */
+  --spring-snappy: 120ms linear(0, 0.04, 0.131, 0.243, 0.358, 0.466, 0.562, 0.645, 0.715, 0.774, 0.821, 0.859, 0.89, 0.914, 0.934, 0.949, 0.96, 0.97, 0.977, 0.982, 0.986, 0.99, 0.992, 0.994, 1);
   /* smooth — réponse 0,3 s, amortissement 1, sans dépassement : grands déplacements (lecteur miniature). */
   --spring-smooth: 360ms linear(0, 0.04, 0.131, 0.243, 0.358, 0.466, 0.562, 0.645, 0.715, 0.774, 0.821, 0.859, 0.89, 0.914, 0.934, 0.949, 0.96, 0.97, 0.977, 0.982, 0.986, 0.99, 0.992, 0.994, 1);
   /* bouncy — réponse 0,3 s, amortissement 0,7, dépassement 4,6 % : éléments relâchés (tuile, pastille d'Espace, message). */

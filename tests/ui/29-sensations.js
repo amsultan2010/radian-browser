@@ -100,7 +100,7 @@ module.exports = {
       try {
         await icone.hover();
         const a = await jusqua(() => shell.evaluate(`(() => { const el = document.getElementById('lib-peek'); const a = el && el.getAnimations()[0]; const r = el && el.querySelector('.lp-row'); const b = r && r.getAnimations().find((x) => x.animationName === 'lp-row'); return a && b ? { nom: a.animationName, props: (${PROPS})(a), duree: a.effect.getTiming().duration, ligne: (${PROPS})(b), dureeLigne: b.effect.getTiming().duration } : null; })()`), 'panneau en cours d’apparition', 8000);
-        assert.deepEqual(a, { nom: 'lp-in', props: ['opacity', 'transform'], duree: 340, ligne: ['opacity', 'transform'], dureeLigne: 200 }); // --spring-bouncy, --spring-snappy
+        assert.deepEqual(a, { nom: 'lp-in', props: ['opacity', 'transform'], duree: 340, ligne: ['opacity', 'transform'], dureeLigne: 120 }); // --spring-bouncy, --spring-snappy
         const m = await mesurer(700);
         console.log(`    fichiers récents (apparition) : ${m.images} images, médiane ${m.mediane} ms, 95e centile ${m.p95} ms, ${m.misesEnPage} mise(s) en page`);
         assert.ok(m.misesEnPage <= 1, 'mises en page pendant l’apparition : ' + m.misesEnPage);

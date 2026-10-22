@@ -8,9 +8,9 @@
 // `linear()`, que le moteur interpole entre les points. Chaque variable réunit la
 // durée et la courbe : `transition: transform var(--spring-snappy)`.
 const SPRINGS = [
-  // Panneaux, lignes, états pressés : vif comme dans Arc, un rien sous-amorti (dépassement
-  // de 0,15 %, invisible sur une ligne), donc plus prompt à se poser qu'un amortissement critique.
-  { name: 'snappy', response: 0.22, damping: 0.9 },
+  // Panneaux, lignes, états pressés : relevé dans Arc 1.170 (60 i/s) sur les lignes qui
+  // glissent d'un cran quand un onglet s'ouvre ou se ferme — posées en ≈ 110 ms, sans dépassement.
+  { name: 'snappy', response: 0.1, damping: 1 },
   // Grands déplacements (lecteur miniature, messages) : même caractère, plus posé.
   { name: 'smooth', response: 0.3, damping: 1 },
   // Éléments ludiques (tuile relâchée, icône d'Espace) : léger dépassement (≈ 5 %).

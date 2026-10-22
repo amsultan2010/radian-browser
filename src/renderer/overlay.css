@@ -392,7 +392,7 @@ body.peek-out #backdrop, body.peek-out #peek { animation: fade-out var(--peek-ms
 /* Zone de dépôt pour créer une vue scindée en glissant un onglet sur la page. */
 #drop { position: fixed; inset: 0; display: flex; justify-content: flex-end; }
 #drop::before { content: ''; position: absolute; inset: 0; }
-#drop-label { width: 50%; margin: 10px; border-radius: 12px; border: 2px dashed transparent; display: grid; place-items: center; color: transparent; font-size: 15px; font-weight: 600; transition: all 120ms; }
+#drop-label { width: 50%; margin: 10px; border-radius: 12px; border: 2px dashed transparent; display: grid; place-items: center; color: transparent; font-size: 15px; font-weight: 600; transition: all 200ms var(--ease-out); } /* Arc : l'aperçu du dépôt s'ouvre en ≈ 200 ms, ease-out */
 #drop.over #drop-label { background: color-mix(in srgb, var(--accent) 30%, rgba(0, 0, 0, 0.35)); border-color: var(--accent); color: #fff; }
 /* L'onglet glissé, devenu bulle au milieu du côté visé ; au dépôt, elle rebondit puis s'efface avec la zone. */
 .drop-bubble { display: flex; align-items: center; gap: 8px; max-width: min(80%, 320px); height: 38px; padding: 0 16px 0 12px; border-radius: 19px; background: color-mix(in srgb, var(--accent) 70%, #000 10%); color: #fff; font-size: 13px; font-weight: 600; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); opacity: 0; transform: scale(0.6); }

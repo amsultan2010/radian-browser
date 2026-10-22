@@ -3,7 +3,7 @@
 // la souris, y compris avec 400 lignes (coût par mouvement, mises en page).
 const assert = require('node:assert/strict');
 
-const PAS = 41; // une ligne (37) et l'écart qui la sépare de la suivante (4)
+const PAS = 41; // une ligne (36) et l'écart qui la sépare de la suivante (5), comme dans Arc
 
 module.exports = {
   nom: 'Lignes qui s’écartent pendant le glisser',
@@ -98,7 +98,7 @@ module.exports = {
       assert.equal(haut.lignes['Page A'].opacite, 0, 'la ligne emportée laisse sa place');
       assert.equal(haut.place.genre, 'slot');
       assert.equal(haut.place.y, avant['Page E'].y, 'la place libre est là où se trouvait la première ligne');
-      assert.equal(haut.place.bas - haut.place.y, 37);
+      assert.equal(haut.place.bas - haut.place.y, 36);
       assert.ok(placeLibre(haut), 'aucune ligne ne recouvre la place libre');
       assert.ok(Math.abs(haut.lignes['Page E'].duree - 0.14) < 0.001, 'glissement de 140 ms : ' + haut.lignes['Page E'].duree);
       // Plus bas : seules les lignes entre la cible et l'origine restent décalées.
@@ -142,10 +142,10 @@ module.exports = {
     await t.verifier('vers les épinglés vides : une place s’ouvre sous le nom de l’Espace, sans que la liste change de taille', async () => {
       const [depart, e] = await saisir(await ctx.centre(ligne('Page B')), async () => [await ctx.centre(shell.locator('#pinned'), 0.5, 0.5)]);
       assert.equal(depart.epingles.bas - depart.epingles.y, 4, 'la zone vide ne s’agrandit pas pendant le glisser');
-      // 33 et non 41 : la liste vide occupe déjà 4 points, et une ligne seule n'a pas d'écart.
-      assert.deepEqual(decalages(e), { divider: 33, 'b-newtab': 33, 'Page D': 33, 'Page C': 33, 'Page A': 33, 'Page E': 33, 'Page B': 0 });
+      // 32 et non 41 : la liste vide occupe déjà 4 points, et une ligne seule n'a pas d'écart (5).
+      assert.deepEqual(decalages(e), { divider: 32, 'b-newtab': 32, 'Page D': 32, 'Page C': 32, 'Page A': 32, 'Page E': 32, 'Page B': 0 });
       assert.equal(e.place.y, e.epingles.y);
-      assert.equal(e.place.bas - e.place.y, 37);
+      assert.equal(e.place.bas - e.place.y, 36);
       assert.ok(placeLibre(e));
       await lacher();
       await jusqua(async () => (await ctx.titres('#pinned')).join() === 'Page B', 'B épinglé');
@@ -191,7 +191,7 @@ module.exports = {
       assert.equal(e.lignes['Page A'].dy, -PAS, 'A remonte dans la place de Saisie');
       assert.equal(e.lignes['Page C'].dy, -2 * PAS, 'C remonte de deux crans');
       assert.equal(e.lignes['Page Saisie'].opacite + e.lignes['Page D'].opacite, 0, 'les deux lignes emportées laissent leur place');
-      assert.equal(e.place.bas - e.place.y, 2 * PAS - 4, 'place pour deux lignes');
+      assert.equal(e.place.bas - e.place.y, 2 * PAS - 5, 'place pour deux lignes');
       assert.equal(e.place.y, naturel(depart)['Page A'].y + PAS);
       assert.ok(placeLibre(e));
       await lacher();

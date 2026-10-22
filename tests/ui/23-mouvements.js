@@ -5,7 +5,7 @@
 // vérifie qu'aucune mise en page n'a lieu pendant qu'il se joue, et la cadence.
 const assert = require('node:assert/strict');
 
-const PAS = 41; // une ligne (37) et l'écart qui la sépare de la suivante (4)
+const PAS = 41; // une ligne (36) et l'écart qui la sépare de la suivante (5), comme dans Arc
 
 module.exports = {
   nom: 'Mouvements',
@@ -67,7 +67,7 @@ module.exports = {
       for (const g of glissent) {
         assert.deepEqual(g.props, ['transform']);
         assert.ok(g.dy > 0 && g.dy <= PAS, 'en route depuis un cran plus bas : ' + g.dy);
-        assert.equal(g.duree, 200); // --spring-snappy (base.css)
+        assert.equal(g.duree, 120); // --spring-snappy (base.css)
         assert.equal(g.courbe, 'linear(', 'courbe de ressort');
       }
       await repos();
@@ -125,7 +125,7 @@ module.exports = {
         await ctx.vitesseAnimations(1);
         await repos();
         assert.equal(await ouvert(), false);
-        assert.equal((await hauts())['Page E'], e0 - PAS, 'la liste est remontée de la hauteur du contenu (37 + 4)');
+        assert.equal((await hauts())['Page E'], e0 - PAS, 'la liste est remontée de la hauteur du contenu (36 + 5)');
         await ctx.vitesseAnimations(0.2);
         await ctx.clic(shell, tete);
         const deplie = await jusqua(async () => { const a = await enCours(); return a.some((x) => x.ligne === 'Page B') ? a : null; }, 'ouverture en cours');

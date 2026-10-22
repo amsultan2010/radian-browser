@@ -1,11 +1,14 @@
 // Mouvements des vues : durées, pose animée par le système, suivi des vols.
 const { systemPreferences } = require('electron');
 
-// Durées en millisecondes. Barre latérale : cotes relevées image par image dans les
-// vidéos d'Arc (parity/web-research.md §3.3) : elle part en 280 ms, revient en 400 ms
-// (courbe ease-out du système, la plus proche des deux relevés). Vue scindée par
-// dépôt d'un onglet : la page s'écarte en 200 ms. Aperçu : ouverture 200 ms, fermeture 150 ms.
-const MOTION = { sidebarIn: 400, sidebarOut: 280, split: 200, peekIn: 200, peekOut: 150, peekExpand: 220, peekBack: 180 };
+// Durées en millisecondes. Barre latérale : relevée image par image (60 i/s) dans Arc 1.170
+// lui-même (⌘S, bord de la carte) : elle revient en 70 ms, cubic-bezier(0, 0.64, 0.57, 1), et
+// part en 74 ms, cubic-bezier(0, 0.39, 0.38, 1), sans dépassement (les 280 / 400 ms de
+// docs/parity/web-research.md §3.3 viennent de vidéos promotionnelles). Le système n'offre
+// que quatre courbes : ease-out en 50 et 60 ms est le plus proche de ces trajets (8 pt d'écart
+// moyen). Barre flottante : elle repart en 90 ms (--sidebar-reveal-out de base.css). Vue
+// scindée par dépôt d'un onglet : la page s'écarte en 200 ms. Aperçu : ouverture 200 ms, fermeture 150 ms.
+const MOTION = { sidebarIn: 50, sidebarOut: 60, revealOut: 90, split: 200, peekIn: 200, peekOut: 150, peekExpand: 220, peekBack: 180 };
 const stats = { animated: 0, direct: 0 }; // appels à setBounds, pour les mesures
 let nativeAnim = true;
 

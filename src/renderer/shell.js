@@ -908,9 +908,10 @@ const PAGER = {
   freshMin: 4, // …plus tant de pixels (les frémissements de fin d'inertie ne comptent pas)
   // Ressorts du glissement : réponse (s), amortissement critique. Relevés dans Arc : au
   // balayage, les listes se posent en 0,33 à 0,42 s (≈ 390 ms) ; au clic ou au raccourci,
-  // seule la liste glisse, en ≈ 170 ms — la page et les couleurs changent d'un coup.
+  // seule la liste glisse — la page et les couleurs changent d'un coup. Ce dernier, relevé
+  // à 60 i/s dans Arc 1.170 (⌃1–9, ⌥⌘→) : ressort de réponse 0,2 s, 97 % du trajet à 170 ms.
   response: 0.32,
-  cut: 0.135,
+  cut: 0.2,
   elastic: 0.55, // raideur de l'élastique au bout de la rangée
   // Nouvel Espace au bout de la rangée : un geste voulu, en deux temps. Tirer d'autant (px,
   // relâchement déduit) au-delà du dernier Espace ARME la pastille « + » (elle prend la

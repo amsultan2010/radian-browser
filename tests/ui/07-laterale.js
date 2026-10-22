@@ -115,7 +115,7 @@ module.exports = {
       await shell.mouse.move(300, 424, { steps: 4 });
       await shell.mouse.up();
       await ctx.sleep(150);
-      // La page s'élargit en 280 ms, comme dans Arc : son arrivée est attendue.
+      // La page s'élargit en 60 ms, comme dans Arc : son arrivée est attendue.
       const e = await jusqua(async () => { const x = await ctx.etat(); return x.vuePage.x === 10 ? x : null; }, 'page à 10 px du bord');
       assert.equal(e.lateraleVisible, false);
       assert.equal(e.largeur, 228, 'la largeur réglée est conservée');

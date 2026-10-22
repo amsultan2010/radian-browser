@@ -211,7 +211,7 @@ module.exports = async function selftest(ctx) {
 
   // Barre latérale
   const x0 = win.live.get(w.activeId).view.getBounds().x;
-  // Les pages glissent (280 ms à l'aller, 400 ms au retour) : leur arrivée est attendue.
+  // Les pages glissent (60 ms à l'aller, 50 ms au retour, comme dans Arc) : leur arrivée est attendue.
   const arrived = () => until(() => !win.inFlight(win.live.get(w.activeId).view), 'arrivée de la page', 6000);
   w.run('toggleSidebar');
   await arrived();
@@ -250,7 +250,7 @@ module.exports = async function selftest(ctx) {
     const same = (r1, r2) => r1.x === r2.x && r1.y === r2.y && r1.width === r2.width && r1.height === r2.height;
     const pane = (i = 0) => w.pageRect(w.paneRects(w.contentRect(), w.visibleIds())[i]);
     const docked = pane();
-    // Arrivée des pages : attendue, jamais supposée. Le trajet demandé dure 280 ou 400 ms,
+    // Arrivée des pages : attendue, jamais supposée. Le trajet demandé dure 50 ou 60 ms,
     // mais il ne commence qu'à la première image composée : sur une machine lente
     // il finit bien plus tard.
     const flying = () => w.visibleIds().some((x) => win.inFlight(win.live.get(x).view));
@@ -319,7 +319,7 @@ module.exports = async function selftest(ctx) {
       const late = view().getBounds();
       Date.now = () => realNow() + 60e3;
       // L'horloge reste avancée jusqu'à l'arrivée : le départ de la barre est lui aussi animé
-      // (280 ms), et la fin de ce trajet est datée par elle.
+      // (60 ms), et la fin de ce trajet est datée par elle.
       try { w.toggleSidebar(false); await settled(); await sleep(400); } finally { Date.now = realNow; }
       check('trajet plus long que prévu (machine lente) : masquer la barre en plein vol laisse la page à la pleine largeur', same(late, hidden) && same(view().getBounds(), hidden) && !flying(), JSON.stringify({ lue: view().getBounds(), attendue: hidden, enVol: late }));
       w.toggleSidebar(true);
