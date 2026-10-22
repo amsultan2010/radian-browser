@@ -1,21 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="768" viewBox="136 136 768 768">
   <defs>
-    <path id="radian-stem" d="M192 533V107H278A102 102 0 0 1 278 311H192"/>
-    <path id="radian-leg" d="M192 311L457 533"/>
-    <path id="radian-ribbon" d="M80 343A264 264 0 0 0 560 280"/>
-    <mask id="radian-over" maskUnits="userSpaceOnUse" x="0" y="0" width="640" height="640">
-      <use href="#radian-ribbon" fill="none" stroke="#fff" stroke-width="100" stroke-linecap="round"/>
-    </mask>
+    <filter id="radian-sticker-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.24"/>
+    </filter>
   </defs>
-  <g fill="none" stroke-width="100" stroke-linecap="round" stroke-linejoin="round">
-    <use href="#radian-stem" stroke="#FF6378"/>
-    <path d="M192 445V533" stroke="#1A007F"/>
-    <use href="#radian-leg" stroke="#FF6378"/>
-    <path d="M80 343A264 264 0 0 0 372.8 462.5" stroke="#1942CD"/>
-    <path d="M372.8 462.5A264 264 0 0 0 560 280" stroke="#FF9396"/>
-    <g mask="url(#radian-over)">
-      <use href="#radian-leg" stroke="#ED4A5F"/>
-      <use href="#radian-stem" stroke="#0229C0"/>
-    </g>
+  <g fill="none" stroke="#FFFCEA" stroke-width="180" stroke-linecap="round" stroke-linejoin="round" filter="url(#radian-sticker-shadow)">
+    <path d="M370.3 697V326H474.3A112 140 0 0 1 546.3 573.2L608.2 697"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394"/>
+  </g>
+  <defs>
+    <mask id="radian-band" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><path d="M284.3 493A275 275 0 0 0 755.7 394" fill="none" stroke="#fff" stroke-width="128" stroke-linecap="round"/></mask>
+    <clipPath id="radian-left"><path d="M56.1 -523.3L1129.5 1623.3L56.1 2160L-1017.2 13.3Z"/></clipPath>
+    <clipPath id="radian-right"><path d="M56.1 -523.3L1129.5 1623.3L2202.8 1086.6L1129.5 -1060Z"/></clipPath>
+    <clipPath id="radian-stem"><rect x="306.3" y="0" width="128" height="1024"/></clipPath>
+  </defs>
+  <g fill="none" stroke-width="128" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M370.3 697V326" stroke="#FF6378"/>
+    <path d="M370.3 559.8V697" stroke="#1A007F"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#1942CD" clip-path="url(#radian-left)"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#FF9396" clip-path="url(#radian-right)"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#0229C0" clip-path="url(#radian-stem)"/>
+    <path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#FF6378"/>
+    <path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#ED4A5F" mask="url(#radian-band)"/>
   </g>
 </svg>
