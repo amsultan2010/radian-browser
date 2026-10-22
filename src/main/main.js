@@ -91,6 +91,20 @@ if (SELFTEST) {
   fs.mkdirSync(dl, { recursive: true });
   app.setPath('downloads', dl);
 }
+// ORBE_BACKGROUND=1 (dev only): test runs that leave the Mac usable. No Dock icon, no
+// focus stealing, and windows are invisible and click-through; capturePage and
+// sendInputEvent still work because the compositor keeps rendering.
+// shortcut: a window created with `show: true` skips this until its next show(); fine for current callers.
+if (process.env.ORBE_BACKGROUND === '1' && !app.isPackaged) {
+  const { BaseWindow } = require('electron');
+  app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+  if (process.platform === 'darwin') app.setActivationPolicy('accessory');
+  const showInactive = BaseWindow.prototype.showInactive;
+  BaseWindow.prototype.show = function () { this.setOpacity(0); this.setIgnoreMouseEvents(true); showInactive.call(this); };
+  BaseWindow.prototype.focus = function () {};
+  BaseWindow.prototype.moveTop = function () {};
+  app.focus = () => {};
+}
 sessions.registerScheme();
 // Hors macOS, un lien ouvert avec Orbe arrive en argument de la ligne de commande.
 if (!platform.isMac) for (const x of process.argv.slice(1)) if (/^https?:\/\//i.test(x)) pendingUrls.push(x);
