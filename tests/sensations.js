@@ -149,10 +149,11 @@ module.exports = async function sensationsTests(ctx) {
     console.log(`  – barre translucide, ${N} thèmes au hasard : contraste le plus faible ${worst.toFixed(2)} (calculé pour un fond opaque : ${before.toFixed(2)}, ${failing} thème(s) sous 4,5)`);
     check('barre translucide : texte lisible (4,5 au moins) sur le fond tel qu’il s’affiche, du plus sombre au plus clair de ce qui peut être derrière — 3 000 thèmes au hasard',
       worst >= 4.5 && failing > 0, `${worst.toFixed(3)} pour ${worstOf} ; avant : ${failing} en défaut`);
-    const base = { color: '#7c6cf0' };
-    check('barre translucide : le thème d’origine garde son fond ; fond opaque : palette inchangée',
-      Theme.palette(base, true, SHOW).stops.join() === Theme.palette(base, true).stops.join() && Theme.palette(base, false, SHOW).stops.join() === Theme.palette(base, false).stops.join()
-      && JSON.stringify(Theme.palette(base, true, 0)) === JSON.stringify(Theme.palette(base, true)));
+    // (En clair, le pastel du premier Espace est un peu éclairci quand la barre est translucide.)
+    const base = { color: Theme.FIRST[0], color2: Theme.FIRST[1] };
+    check('barre translucide : le thème du premier Espace garde son fond sombre ; fond opaque : palette inchangée',
+      Theme.palette(base, true, SHOW).stops.join() === Theme.palette(base, true).stops.join()
+      && JSON.stringify(Theme.palette(base, true, 0)) === JSON.stringify(Theme.palette(base, true)) && JSON.stringify(Theme.palette(base, false, 0)) === JSON.stringify(Theme.palette(base, false)));
     // La barre latérale applique bien ce calcul selon le réglage.
     const dark = require('electron').nativeTheme.shouldUseDarkColors;
     const translucent0 = store.state.settings.translucent;

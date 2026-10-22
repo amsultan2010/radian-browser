@@ -67,7 +67,7 @@ module.exports = {
       for (const g of glissent) {
         assert.deepEqual(g.props, ['transform']);
         assert.ok(g.dy > 0 && g.dy <= PAS, 'en route depuis un cran plus bas : ' + g.dy);
-        assert.equal(g.duree, 240);
+        assert.equal(g.duree, 200); // --spring-snappy (base.css)
         assert.equal(g.courbe, 'linear(', 'courbe de ressort');
       }
       await repos();
@@ -389,7 +389,7 @@ module.exports = {
         const row = document.querySelector('#today .row.tab');
         return { corps: cs(document.body).fontSize, optique: cs(document.body).fontOpticalSizing, crenage: cs(document.body).fontKerning, rendu: cs(document.body).textRendering, lissage: cs(document.body).webkitFontSmoothing, ligne: [cs(row).fontSize, cs(row).fontWeight], bouclier: cs(document.getElementById('shield')).fontVariantNumeric };
       });
-      assert.deepEqual(m, { corps: '13px', optique: 'auto', crenage: 'normal', rendu: 'auto', lissage: 'antialiased', ligne: ['14px', '500'], bouclier: 'tabular-nums' });
+      assert.deepEqual(m, { corps: '13px', optique: 'auto', crenage: 'normal', rendu: 'auto', lissage: 'antialiased', ligne: ['14px', '400'], bouclier: 'tabular-nums' });
       await ctx.principal(({ w }) => w.toast('Zoom 110 %'));
       const toast = await ctx.attendrePage('overlay.html#toast');
       assert.equal(await toast.evaluate(() => getComputedStyle(document.getElementById('toast')).fontVariantNumeric), 'tabular-nums');

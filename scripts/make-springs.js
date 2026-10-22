@@ -8,9 +8,10 @@
 // `linear()`, que le moteur interpole entre les points. Chaque variable réunit la
 // durée et la courbe : `transition: transform var(--spring-snappy)`.
 const SPRINGS = [
-  // Panneaux, lignes, états pressés : net, sans dépassement.
-  { name: 'snappy', response: 0.2, damping: 1 },
-  // Grands déplacements (barre flottante, messages) : même caractère, plus posé.
+  // Panneaux, lignes, états pressés : vif comme dans Arc, un rien sous-amorti (dépassement
+  // de 0,15 %, invisible sur une ligne), donc plus prompt à se poser qu'un amortissement critique.
+  { name: 'snappy', response: 0.22, damping: 0.9 },
+  // Grands déplacements (lecteur miniature, messages) : même caractère, plus posé.
   { name: 'smooth', response: 0.3, damping: 1 },
   // Éléments ludiques (tuile relâchée, icône d'Espace) : léger dépassement (≈ 5 %).
   { name: 'bouncy', response: 0.3, damping: 0.7 },
