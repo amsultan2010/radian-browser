@@ -18,7 +18,7 @@ This file is the hand-off for a new session. Read it top to bottom before writin
 
 ### Why not the other engines (settled, don't reopen)
 
-- **Compiling Chromium** (how Arc, Stedding and Mori are built) needs full Xcode, about 150 GB free and multi-hour builds. This Mac has 17 GB free. Full research: [reports/Arc clone browser build paths.md](reports/Arc%20clone%20browser%20build%20paths.md).
+- **Compiling Chromium** (how Arc, Stedding and Mori are built) needs full Xcode, about 150 GB free and multi-hour builds. This Mac has 17 GB free. Full research: [research/arc-clone-build-paths.md](research/arc-clone-build-paths.md).
 - **CEF**: on macOS, putting a CEF browser inside our own window forces its "Alloy" mode, which has no Chrome extensions (stated in CEF's `cef_types_mac.h`). Mori tried CEF and abandoned it in June 2026.
 - **WebKit (Swift + WKWebView, e.g. Nook)**: native, but Safari's engine. Sites behave differently, extension support is weaker, there are no iCloud passkeys, and the best base (Nook) is GPL-3.
 - **Firefox/Gecko (Zen)**: needs 30 GB+ to build, no Netflix, Firefox add-ons only.
@@ -31,7 +31,7 @@ Things to know about Orbe's code:
 
 - Its UI and code are **French**: file names, identifiers, comments, strings and docs. We switch the default language to English. We rename identifiers to English only when we touch a file anyway, never as a bulk refactor.
 - It pins Electron `44.7.0` and its DRM build `44.5.1+wvcus` (castLabs) in `package.json` under `"orbe"`. Scripts download Electron themselves, so there are no npm dependencies.
-- Its layout: `src/main` (61 files), `src/renderer` (47), `src/preload`, `src/shared`, `scripts/` (build, dev, `make-springs.js`, `mesures.js`, `make-sounds.js`), `tests/`, `docs/` (including `analyse-arc.md`, `extensions.md`, `mots-de-passe.md`, `securite-navigation.md`, `feuille-de-route.md`).
+- Its layout: `src/main` (61 files), `src/renderer` (47), `src/preload`, `src/shared`, `scripts/` (build, dev, `make-springs.js`, `mesures.js`, `make-sounds.js`), `tests/`, `docs/` (now `docs/orbe/`, including `analyse-arc.md`, `extensions.md`, `mots-de-passe.md`, `securite-navigation.md`, `feuille-de-route.md`).
 - It was built in about two weeks by one developer, probably with an AI agent. Treat quality as unknown until Phase 1 says otherwise.
 
 ## Electron's known gaps and our workaround for each
@@ -54,9 +54,9 @@ Things to know about Orbe's code:
 
 ## What we already know about Arc (collected 2026-10-22)
 
-- **Feature ledger**: [parity/features.md](parity/features.md) lists 78 features from public docs and release notes (30 P0 = noticed on day one, 23 P1, 25 P2), with triggers, defaults, edge cases and sources. Removed Arc features are listed separately; don't build those.
-- **Visual spec**: [parity/visual-spec.md](parity/visual-spec.md). No public source gives exact pixel sizes or animation timings; the file ends with a list of things to measure in the real app.
-- **Menus and layout**: [parity/menus.md](parity/menus.md) has every menu item from Arc 1.170.0's menu bar, measured window layout, Arc's module list and its AppleScript dictionary.
+- **Feature ledger**: [docs/parity/features.md](parity/features.md) lists 78 features from public docs and release notes (30 P0 = noticed on day one, 23 P1, 25 P2), with triggers, defaults, edge cases and sources. Removed Arc features are listed separately; don't build those.
+- **Visual spec**: [docs/parity/visual-spec.md](parity/visual-spec.md). No public source gives exact pixel sizes or animation timings; the file ends with a list of things to measure in the real app.
+- **Menus and layout**: [docs/parity/menus.md](parity/menus.md) has every menu item from Arc 1.170.0's menu bar, measured window layout, Arc's module list and its AppleScript dictionary.
   - Sidebar is 228 pt from the window edge to the page. The page card is inset 10 pt top, right and bottom, with about an 8 pt corner radius.
   - Traffic-light close button frame is at (12,16). The toolbar row has 32×32 buttons at y=8: sidebar toggle at x=77, back at 122, forward at 156, reload at 190.
   - URL field: x 8–220, y 46–82.
@@ -90,7 +90,7 @@ REA (the reverse-engineer-anything MCP server) is the observation toolkit. Use i
 
 Other capture tools:
 
-- The computer-use MCP can read Arc's menus (`app_menu`) and take window screenshots (`app_screenshot`, `app_zoom`) at "read" tier without any extra permission. This is how `parity/menus.md` was made.
+- The computer-use MCP can read Arc's menus (`app_menu`) and take window screenshots (`app_screenshot`, `app_zoom`) at "read" tier without any extra permission. This is how `docs/parity/menus.md` was made.
 - For animation timing, record the screen (`screencapture -v`) and step through frames with `ffmpeg`. Install ffmpeg only if needed; it's about 100 MB.
 
 ## Phases
@@ -99,7 +99,7 @@ Each phase ends with its check passing and a commit.
 
 ### Phase 0 — Bring Orbe in
 1. Branch `orbe-import`. Add Orbe as the `upstream` remote and merge its history (`git merge --allow-unrelated-histories upstream/main`), so its future fixes can be pulled later.
-2. Keep `PLAN.md`, `parity/`, `reports/` and `research_notes/`; resolve any `.gitignore` conflict by merging both lists.
+2. Keep `PLAN.md`, `parity/`, `reports/` and `research_notes/` (now `docs/plan.md`, `docs/parity/` and `docs/research/`); resolve any `.gitignore` conflict by merging both lists.
 3. Rename Orbe → Radian everywhere a user can see it: app name, bundle id `com.radian.browser`, user-data folder, menus, About window, window titles. Default language English.
 4. Check: `npm start` opens Radian in English, and `npm test` passes.
 
@@ -112,10 +112,10 @@ Run on the DRM build (castLabs), since that's what ships:
 4. **Arc import**: import this Mac's Arc data and compare spaces, pins, folders, favorites, history and passwords one to one.
 5. **Passkeys**: create and use a Touch ID passkey on a demo site (webauthn.io).
 
-Write the results to `parity/gate-results.md`. If Google sign-in can't be made to work, stop and rethink before Phase 2.
+Write the results to `docs/parity/gate-results.md`. If Google sign-in can't be made to work, stop and rethink before Phase 2.
 
 ### Phase 2 — Audit Orbe against Arc
-Walk through all 78 features in `parity/features.md` in both apps. Add a status column (done / partial / missing / differs) and a note for each. P0 rows come first.
+Walk through all 78 features in `docs/parity/features.md` in both apps. Add a status column (done / partial / missing / differs) and a note for each. P0 rows come first.
 
 ### Phase 3 — Capture Arc (before 2026-12-22)
 For every P0 and P1 feature, record:
@@ -137,7 +137,7 @@ For every P0 and P1 feature, record:
   - theme change;
   - loading glow.
 
-Store under `parity/captures/<feature>/` (images, plus a `spec.md` with the numbers). Commit the specs; keep large videos out of git (`.gitignore`).
+Store under `docs/parity/captures/<feature>/` (images, plus a `spec.md` with the numbers). Commit the specs; keep large videos out of git (`.gitignore`).
 
 ### Phase 4 — Visual parity
 Design tokens first (spacing, radii, type scale, colours, shadows, theme gradient and grain), then each surface: sidebar, URL row, favorites grid, tab rows, folders, bottom bar, page card, command bar, menus, settings, Library, Little Arc window, Peek, split view, and the rebuilt Chrome popups from gap #9. Check: screenshot diff against Phase 3 captures, scenario by scenario.
@@ -146,7 +146,7 @@ Design tokens first (spacing, radii, type scale, colours, shadows, theme gradien
 Rebuild every animation from Phase 3's numbers (Orbe already has `scripts/make-springs.js`). Check: side-by-side frame comparison against Arc recordings.
 
 ### Phase 6 — Feature gaps
-Everything Phase 2 marked partial, missing or differs, in P0 → P1 → P2 order. This includes Arc's exact keyboard shortcuts and menu items from `parity/menus.md`, and the AppleScript dictionary (P2).
+Everything Phase 2 marked partial, missing or differs, in P0 → P1 → P2 order. This includes Arc's exact keyboard shortcuts and menu items from `docs/parity/menus.md`, and the AppleScript dictionary (P2).
 
 ### Phase 7 — Engine work from the gaps table
 Extension API gaps (#3), native messaging, Safe Browsing (#6), tab sleep (#8), passkey entitlement application (#4), auto-updater (#7).
@@ -165,7 +165,8 @@ Own app icon. Signing and notarization once the Apple Developer account exists. 
 
 ## Files in this repo
 
-- `PLAN.md`: this plan.
-- `parity/features.md`, `parity/visual-spec.md`, `parity/menus.md`: what Arc is and does.
-- `reports/Arc clone browser build paths.md` and `research_notes/Arc clone browser build paths/`: the engine research behind the decisions above.
+- `docs/plan.md`: this plan.
+- `docs/parity/features.md`, `docs/parity/visual-spec.md`, `docs/parity/menus.md`, `docs/parity/web-research.md` and `docs/parity/captures/`: what Arc is and does.
+- `docs/research/arc-clone-build-paths.md` and `docs/research/arc-clone-build-paths/`: the engine research behind the decisions above.
+- `docs/orbe/`: Orbe's original French docs.
 - No app code yet; Phase 0 brings in Orbe's.

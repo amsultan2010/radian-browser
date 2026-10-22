@@ -5,7 +5,7 @@
 // sauvegarde » remet l'une d'elles en place et relance Orbe.
 // L'historique (history.json) n'en fait pas partie.
 //
-// Confidentialité et sécurité (voir docs/securite-navigation.md, « Sauvegardes ») :
+// Confidentialité et sécurité (voir docs/orbe/securite-navigation.md, « Sauvegardes ») :
 //  - une sauvegarde contient tout l'état (onglets, archive, liste des
 //    téléchargements, notes, autorisations des sites, Boosts) : le dossier n'est
 //    lisible que par l'utilisateur (0700), chaque fichier aussi (0600) ;

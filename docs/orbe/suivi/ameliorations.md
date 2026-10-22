@@ -436,7 +436,7 @@ Lecture :
   (b) répondre plus vite ne change rien non plus (0,25 µs) ;
   (c) **à mesurer** : charger la liste comme règles `declarativeNetRequest` d'une extension
   interne, si Electron 44 les applique (Chromium filtre alors dans le service réseau, sans
-  JavaScript). Vérifier d'abord la prise en charge réelle : l'étude `docs/etude-extensions-et-distribution.md`
+  JavaScript). Vérifier d'abord la prise en charge réelle : l'étude `docs/orbe/etude-extensions-et-distribution.md`
   est le bon endroit pour la consigner.
   *Gain attendu* : jusqu'à −14 ms par tranche de 150 requêtes et un fil principal plus calme
   pendant les chargements. *Risque* : élevé si (c) (le compteur par onglet et la liste
@@ -806,7 +806,7 @@ Variantes dans un même processus, 40 tours alternés, deux séries, charge 4,5�
 *Sécurité.* PERF-10 retire du code des pages web (et des service workers des sites) au lieu d'en
 ajouter ; l'enregistrement a lieu avant le chargement de la première extension
 (`extensions.hooks.equip`), avec un filet sur `extension-loaded`. PERF-11 et PERF-12 : rien n'est
-modifié ; les garanties de `docs/mots-de-passe.md` sont intactes.
+modifié ; les garanties de `docs/orbe/mots-de-passe.md` sont intactes.
 
 ### Barre de commande (PERF-5, PERF-6)
 

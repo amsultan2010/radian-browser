@@ -88,7 +88,7 @@ toutes ses garanties.
 | « Effacer » emporte plus que demandé | Cookies et données : l'origine de l'onglet seulement (`clearStorageData({ origin })`). Le cache HTTP n'est pas rangé par site dans Chromium : le bouton dit qu'il vide celui de tout le profil. |
 
 Ce que le panneau ne propose pas : accès des extensions site par site et extensions en
-navigation privée, qu'Electron ne permet pas de faire respecter (voir `docs/extensions.md`).
+navigation privée, qu'Electron ne permet pas de faire respecter (voir `docs/orbe/extensions.md`).
 
 ## Téléchargements multiples (`downloadGate` dans `src/main/permissions.js`)
 

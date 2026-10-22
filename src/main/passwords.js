@@ -1,4 +1,4 @@
-// Gestionnaire de mots de passe intégré. Modèle de menace : docs/mots-de-passe.md.
+// Gestionnaire de mots de passe intégré. Modèle de menace : docs/orbe/mots-de-passe.md.
 //
 // Trois règles tiennent tout le reste :
 //   1. Le coffre est un fichier à part (passwords.json), chiffré en entier par

@@ -80,7 +80,7 @@ Other site tokens: radii 2/4/8/12/16/32/9999px, and three shadows (small `0 5px 
 
 ### 2.1 TBC's own HTML replica of an Arc window (farewell page)
 
-TBC drew this window at 1337 × 887 CSS px in a coral Space. I rendered it locally to check it. The values line up closely with the in-app measurements in `menus.md` and in Orbe's `docs/analyse-arc.md`, so treat it as the best reference we have. All rows are documented in [ARC] and [ARC-CSS]; the cross-check column cites [MENUS] and [ORBE].
+TBC drew this window at 1337 × 887 CSS px in a coral Space. I rendered it locally to check it. The values line up closely with the in-app measurements in `menus.md` and in Orbe's `docs/orbe/analyse-arc.md`, so treat it as the best reference we have. All rows are documented in [ARC] and [ARC-CSS]; the cross-check column cites [MENUS] and [ORBE].
 
 | Element | Value in the replica | Cross-check |
 |---|---|---|
@@ -375,5 +375,5 @@ Community (third party):
 Local and in-repo:
 
 [LOCAL]: /Applications/Arc.app (1.170.0). File names and media properties only, read from `ARC_SoundEffects`, `ARC_GlowProgressLoadingIndicator`, `ARC_WindowThemeUI`, `ARC_SpaceStyleEditor` and `ARC_WelcomeToArcFeature` (its onboarding clips were frame-analysed in a temp folder). Nothing was copied into the repo.
-[MENUS]: parity/menus.md
-[ORBE]: docs/analyse-arc.md
+[MENUS]: menus.md
+[ORBE]: ../orbe/analyse-arc.md

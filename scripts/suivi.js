@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Suivi : coche des points de docs/suivi/*.md et affiche le bilan.
+// Suivi : coche des points de docs/orbe/suivi/*.md et affiche le bilan.
 //   node scripts/suivi.js                      -> bilan par état
 //   node scripts/suivi.js fait BL-10 CMD-4 "note"  -> passe ces points à ✅ (la note remplace la dernière colonne)
 const fs = require('fs');
 const path = require('path');
 
-const dir = path.join(__dirname, '..', 'docs', 'suivi');
+const dir = path.join(__dirname, '..', 'docs', 'orbe', 'suivi');
 const files = fs.readdirSync(dir).filter((f) => f.endsWith('.md') && f !== 'README.md');
 const STATES = ['✅', '🟡', '⬜', '➖'];
 const [cmd, ...rest] = process.argv.slice(2);

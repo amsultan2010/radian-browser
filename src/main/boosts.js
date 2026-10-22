@@ -3,7 +3,7 @@
 // d'éléments masqués (« Zap »), du CSS libre et, si l'utilisateur l'a permis, du
 // JavaScript. Appliqué à chaque chargement, dans les onglets seulement.
 //
-// Sécurité (voir docs/securite-navigation.md, « Boosts ») :
+// Sécurité (voir docs/orbe/securite-navigation.md, « Boosts ») :
 //  - le CSS de l'apparence est fabriqué ici, à partir de valeurs bornées ou
 //    choisies dans une liste : rien de ce que contient un Boost n'y est recopié ;
 //  - un sélecteur de Zap vient de la page (clic) ou d'un fichier importé : il est

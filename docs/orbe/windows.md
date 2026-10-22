@@ -142,7 +142,7 @@ relit leur état (`node scripts/build-win.js --fuses`). L'intégration continue
 le met à l'épreuve : `ELECTRON_RUN_AS_NODE=1 Orbe.exe script.js` n'exécute pas
 le script, `NODE_OPTIONS=--require` ne charge rien, `--inspect` et
 `--inspect-brk` n'ouvrent aucun port — alors que le moteur d'origine, pris
-comme témoin, obéit. Voir `docs/mots-de-passe.md`.
+comme témoin, obéit. Voir `docs/orbe/mots-de-passe.md`.
 
 ## Navigateur par défaut
 

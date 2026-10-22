@@ -12,7 +12,7 @@ const isWin = process.platform === 'win32';
 // --- Raccourcis clavier -------------------------------------------------------
 // Les commandes sont écrites une fois, avec les raccourcis d'Arc pour macOS.
 // Ailleurs, ⌘ devient Ctrl ; les cas où cela ne suffit pas (touche déjà prise
-// par Ctrl, usage établi sous Windows) sont listés ici. Voir docs/windows.md.
+// par Ctrl, usage établi sous Windows) sont listés ici. Voir docs/orbe/windows.md.
 const WIN_ACCEL = {
   'Cmd+Y': 'Ctrl+H', // Historique (Ctrl+Y rétablit une frappe sous Windows)
   'Shift+Cmd+J': 'Ctrl+J', // Téléchargements

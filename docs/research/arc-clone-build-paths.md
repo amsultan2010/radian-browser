@@ -14,7 +14,7 @@ The shortest path to the closest result:
 - Fork Stedding (BSD-3).
 - Build it on a rented Scaleway M4-M (10-core M4, 32 GB, 1 TB), with Claude Code working on that machine over SSH.
 - Port Mori's MIT-licensed SwiftUI code where native feel matters.
-- Skip the CEF spike in `PLAN.md`, because Mori already ran that experiment in public and abandoned it.
+- Skip the CEF spike in `docs/plan.md`, because Mori already ran that experiment in public and abandoned it.
 - Avoid GPL-3 bases unless Radian itself will be GPL-3.
 
 The deadline is Arc's. It stops working on **2026-12-22** ([Arc](https://resources.arc.net/hc/en-us/articles/44412972248471-Arc-Sunset-Key-Dates-and-What-to-Expect)). The next 61 days should go to recording Arc's behaviour so tests can compare Radian against it. That work needs no engine decision and can start on the laptop today.
@@ -129,7 +129,7 @@ The laptop then only runs the finished app. Chromium's Arm Mac guide says a non-
 
 ## Chromium wins on Arc-likeness; Electron, CEF and WebKit each fall short somewhere different
 
-Arc for Mac is a Swift app built on Chromium. Its shell sits on the Arc Development Kit (ADK), an internal SDK that The Browser Company said it could not open-source without exposing Dia's foundation ([heise](https://heise.de/-10414231)). `PLAN.md`'s own inspection of Arc 1.170.0 found the same split: a Swift shell over a 591 MB Chromium framework. Only a Chromium fork reproduces that architecture. Every other engine trades away something Arc users take for granted.
+Arc for Mac is a Swift app built on Chromium. Its shell sits on the Arc Development Kit (ADK), an internal SDK that The Browser Company said it could not open-source without exposing Dia's foundation ([heise](https://heise.de/-10414231)). `docs/plan.md`'s own inspection of Arc 1.170.0 found the same split: a Swift shell over a 591 MB Chromium framework. Only a Chromium fork reproduces that architecture. Every other engine trades away something Arc users take for granted.
 
 | | Chromium fork | CEF Chrome style | Electron + castLabs ECS | Swift + WKWebView (Nook) | Gecko (Zen) |
 |---|---|---|---|---|---|
@@ -147,7 +147,7 @@ Arc for Mac is a Swift app built on Chromium. Its shell sits on the Arc Developm
 
 CEF's macOS header is explicit: "Alloy style will always be used if… |parent_view| is provided" ([cef_types_mac.h](https://github.com/chromiumembedded/cef/blob/master/include/internal/cef_types_mac.h)). Alloy style blocks `chrome://extensions` and supports only extension features that work below the UI ([cef#3859](https://github.com/chromiumembedded/cef/issues/3859)). Chrome style needs CEF's Views framework, and "a Chrome style Window can host at most one Chrome style BrowserView" ([cef_types_runtime.h](https://github.com/chromiumembedded/cef/blob/master/include/internal/cef_types_runtime.h)). That conflicts directly with Arc's split view and with a sidebar owned by SwiftUI. The macOS half of the request to embed Chrome style in your own windows is still open ([cef#3294](https://github.com/chromiumembedded/cef/issues/3294)).
 
-Mori ran exactly the spike that `PLAN.md` proposes, in public. It built SwiftUI around CEF 148 with parent NSViews. Its own source comment conceded that "Chrome's built-in extension runtime is therefore not available on this surface". Two weeks after open-sourcing, it moved to compiling its UI into Chromium's `chrome` target ([MoriBrowserView.mm](https://github.com/FujiwaraChoki/mori-browser/blob/6f999a2403ae2bb514017e98838939aa8cafdbaf/Sources/Bridge/MoriBrowserView.mm); [BUILDING.md](https://github.com/FujiwaraChoki/mori-browser/blob/main/BUILDING.md)).
+Mori ran exactly the spike that `docs/plan.md` proposes, in public. It built SwiftUI around CEF 148 with parent NSViews. Its own source comment conceded that "Chrome's built-in extension runtime is therefore not available on this surface". Two weeks after open-sourcing, it moved to compiling its UI into Chromium's `chrome` target ([MoriBrowserView.mm](https://github.com/FujiwaraChoki/mori-browser/blob/6f999a2403ae2bb514017e98838939aa8cafdbaf/Sources/Bridge/MoriBrowserView.mm); [BUILDING.md](https://github.com/FujiwaraChoki/mori-browser/blob/main/BUILDING.md)).
 
 The best case for CEF is that Chrome style gives you Chrome's real extension system and password manager with no compile at all. Nobody has shipped an Arc layout on it. And Google's 2019 sign-in block names CEF by name ([Google Security Blog](https://security.googleblog.com/2019/04/better-protection-against-man-in-middle.html)).
 
@@ -169,9 +169,9 @@ Other gaps:
 - **Memory.** There is no API to discard a background tab ([electron#38278](https://github.com/electron/electron/issues/38278)).
 - **Google sign-in.** A 2026 team using ECS removed the "Electron" token from the user agent and added Chrome's client hints, and Google still blocked sign-in ([castlabs#224](https://github.com/castlabs/electron-releases/issues/224)).
 
-### WebKit can now run Chrome extensions, which undercuts `PLAN.md`'s stated reason for rejecting it
+### WebKit can now run Chrome extensions, which undercuts `docs/plan.md`'s stated reason for rejecting it
 
-`PLAN.md` rejected WebKit because it "can't run Chrome extensions". That stopped being true on macOS 15.4, when Apple shipped `WKWebExtension` ([Apple](https://developer.apple.com/documentation/webkit/wkwebextension)). Nook installs `.crx` files straight from the Chrome Web Store through an "Add to Nook" button ([Nook ExtensionManager](https://github.com/nook-browser/Nook/blob/develop/Nook/Managers/ExtensionManager/CLAUDE.md)).
+`docs/plan.md` rejected WebKit because it "can't run Chrome extensions". That stopped being true on macOS 15.4, when Apple shipped `WKWebExtension` ([Apple](https://developer.apple.com/documentation/webkit/wkwebextension)). Nook installs `.crx` files straight from the Chrome Web Store through an "Add to Nook" button ([Nook ExtensionManager](https://github.com/nook-browser/Nook/blob/develop/Nook/Managers/ExtensionManager/CLAUDE.md)).
 
 Nook still documents what a WebKit host cannot do ([Nook ExtensionManager](https://github.com/nook-browser/Nook/blob/develop/Nook/Managers/ExtensionManager/CLAUDE.md)):
 
@@ -207,7 +207,7 @@ That gives the final order. The Chromium fork comes first. Electron with ECS edg
 
 Arc stops working on 2026-12-22, and engine work can start later. Arc can only be measured before then. Over those 61 days:
 
-- Record every interaction that `PLAN.md` lists: sidebar collapse, Little Arc, split view, Peek, the command bar and space swipes.
+- Record every interaction that `docs/plan.md` lists: sidebar collapse, Little Arc, split view, Peek, the command bar and space swipes.
 - Save scripted screenshots for later visual comparison with Radian.
 - Export real `StorableSidebar.json` files to test the importer.
 - Record Arc's energy use with the per-process `proc_pid_rusage` energy counter that Nook documents. That gives Radian a battery target taken from the real app ([Nook CLAUDE.md](https://github.com/nook-browser/Nook/blob/develop/CLAUDE.md)).
@@ -266,7 +266,7 @@ The bases not to fork, and why:
 
 Chromium's difficulty has changed character. Agents now write most of these browsers' code, so writing the code is no longer the bottleneck. A solo developer with Claude Code can carry an 83-patch Chromium fork across two platforms in two months. What still decides the outcome is infrastructure and licensing: a machine with Xcode, about 150 GB and 32 GB of RAM, which rents for €7 a day; and a Widevine agreement only a company can sign. That is why most hobby Arc clones are Electron apps. Their authors avoided the build machine, not the C++, and so took on an extension layer that breaks with each Electron major version. The cheapest way past both problems is to rent the machine and inherit Stedding's patch series, not to work around either.
 
-Two less obvious points follow. First, `PLAN.md`'s CEF-versus-Chromium spike has already been run in public. Mori's CEF code comment and its migration two weeks later are the result, so Radian can skip it. Second, `PLAN.md` gave the wrong reason for rejecting WebKit. WebKit can now run Chrome Web Store extensions; it loses on extension fidelity, passkeys and engine behaviour instead. For "identical to Arc" the conclusion stands, but Nook becomes a serious fallback if Chromium proves too costly to maintain.
+Two less obvious points follow. First, `docs/plan.md`'s CEF-versus-Chromium spike has already been run in public. Mori's CEF code comment and its migration two weeks later are the result, so Radian can skip it. Second, `docs/plan.md` gave the wrong reason for rejecting WebKit. WebKit can now run Chrome Web Store extensions; it loses on extension fidelity, passkeys and engine behaviour instead. For "identical to Arc" the conclusion stands, but Nook becomes a serious fallback if Chromium proves too costly to maintain.
 
 Some things are still unknown:
 

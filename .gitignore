@@ -4,6 +4,6 @@ dist/
 .DS_Store
 *.log
 .claude/
-parity/captures/**/*.mov
-parity/captures/**/*.mp4
-parity/captures/_raw/
+docs/parity/captures/**/*.mov
+docs/parity/captures/**/*.mp4
+docs/parity/captures/_raw/

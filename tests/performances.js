@@ -1,4 +1,4 @@
-// Vitesse et mémoire : ce que les améliorations de docs/suivi/ameliorations.md
+// Vitesse et mémoire : ce que les améliorations de docs/orbe/suivi/ameliorations.md
 // garantissent, vérifié par des faits (processus, écouteurs, requêtes), jamais
 // par des durées, qui varient avec la charge de la machine.
 // Appelé par tests/selftest.js, ou seul :

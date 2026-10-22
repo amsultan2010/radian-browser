@@ -17,7 +17,7 @@
 //  - rien n'est retenu par Orbe : Chromium garde l'identification pour la session.
 // À FAIRE : proposer les comptes du gestionnaire de mots de passe (il faudrait
 // une clé par hôte + domaine et passer par le déverrouillage du coffre ; pas
-// trivial, donc laissé de côté — voir docs/securite-navigation.md).
+// trivial, donc laissé de côté — voir docs/orbe/securite-navigation.md).
 const { app } = require('electron');
 const sheets = require('./sheets');
 

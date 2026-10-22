@@ -856,7 +856,7 @@ All of these are turned on in Settings > Max, together or one by one ([MAX]).
 - What: Imports bookmarks, logins and history at onboarding. Arc then suggests Favorites and pinned tabs from the imported history.
 - Trigger: Onboarding, or Arc > Import from Another Browser.
 - Defaults: Part of onboarding.
-- Edge cases: Radian's key importer is "from Arc" (see PLAN.md). The data-export article lists what Arc can export.
+- Edge cases: Radian's key importer is "from Arc" (see [docs/plan.md](../plan.md)). The data-export article lists what Arc can export.
 - Sources: [RN22] [RN23] [EXP]
 
 ### 69. Session restore

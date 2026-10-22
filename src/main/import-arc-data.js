@@ -6,7 +6,7 @@
 // (commande « importArcData », après une fenêtre qui dit ce qui sera lu), et jamais
 // pendant un essai sur les vrais profils (`env.root` est vide en mode test).
 //
-// Règles tenues ici, à relire avant d'y toucher (voir aussi docs/mots-de-passe.md) :
+// Règles tenues ici, à relire avant d'y toucher (voir aussi docs/orbe/mots-de-passe.md) :
 //  - Arc n'est jamais modifié : chaque base est COPIÉE dans un dossier temporaire privé
 //    (0700), lue par le `sqlite3` du système en lecture seule, puis la copie est effacée.
 //  - La clé qui déchiffre les mots de passe et les cookies d'Arc est dans le trousseau
@@ -14,7 +14,7 @@
 //    l'outil du système `/usr/bin/security`, donc c'est « security » que la fenêtre de macOS
 //    nomme, pas Orbe. « Toujours autoriser » y laisserait l'accès ouvert à tout programme du
 //    compte : la fenêtre d'Orbe l'explique avant, le bilan le redit si l'accès est resté
-//    ouvert (relecture de sécurité, constat H1 ; voir docs/mots-de-passe.md). La clé dérivée
+//    ouvert (relecture de sécurité, constat H1 ; voir docs/orbe/mots-de-passe.md). La clé dérivée
 //    est effacée à la fin ; le secret lu et les mots de passe sont des chaînes JavaScript, que
 //    rien ne permet d'effacer. Sans la clé, seul l'historique (en clair chez Arc) est repris.
 //  - Tout ce qui est lu est une donnée étrangère — un autre programme du compte a pu écrire

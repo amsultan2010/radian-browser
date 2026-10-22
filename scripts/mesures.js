@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Mesures de vitesse et de mémoire d'Orbe (voir docs/suivi/ameliorations.md).
+// Mesures de vitesse et de mémoire d'Orbe (voir docs/orbe/suivi/ameliorations.md).
 //   node scripts/mesures.js <mesure> [--tours 8] [--variante <nom>]… [--arbre <dossier>]… [--app <Orbe.app>] [--avec "--drapeau=…"] [--historique 8500] [--onglets 300] [--espaces 13] [--profils 10] [--pause 0] [--naturel 1] [--visible 1]
 // Mesures : demarrage, modale, coque, memoire, navigation, commande, etat, voisins, gestes, repos (tests/mesures.js).
 // --espaces / --profils : les onglets du profil sont répartis dans autant d'Espaces et de profils

@@ -1,4 +1,4 @@
-// Correctifs de la revue de sécurité (docs/securite-navigation.md, « Revue d'octobre 2026 ») :
+// Correctifs de la revue de sécurité (docs/orbe/securite-navigation.md, « Revue d'octobre 2026 ») :
 // quarantaine des téléchargements, sauvegardes de l'état, aiguillage des liens,
 // Boosts (navigation privée, exécution, sélecteurs, relecture d'un import),
 // décodage d'images, adresses affichées à l'étroit, copie en Markdown.
