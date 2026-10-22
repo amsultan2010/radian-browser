@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>Radian</title>
+<link rel="stylesheet" href="base.css">
+<style>
+/* Vues d'Orbe posées par-dessus la page : liste des comptes, proposition
+   d'enregistrement. Elles ne font pas partie de la page, qui ne peut ni les
+   lire ni les habiller. */
+.box { position: fixed; inset: 6px; border-radius: 12px; background: var(--panel); border: 0.5px solid var(--panel-line); box-shadow: 0 3px 10px rgba(0, 0, 0, 0.24); overflow: hidden; backdrop-filter: blur(20px); }
+#pick { overflow-y: auto; padding: 4px; }
+.acc.key-sel { background: var(--accent); color: #fff; }
+.acc.key-sel .sub, .acc.key-sel .key { color: rgba(255, 255, 255, 0.85); }
+.acc { display: flex; align-items: center; gap: 10px; width: 100%; height: 40px; padding: 0 10px; border-radius: 8px; text-align: left; }
+.acc:hover, .acc:focus-visible { background: var(--hover); outline: 0; }
+.acc .key { width: 26px; height: 26px; border-radius: 8px; background: var(--pill); display: grid; place-items: center; flex: none; }
+.acc .txt { min-width: 0; flex: 1; }
+.acc .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acc .sub { color: var(--dim); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acc.related .sub { color: #c2410c; }
+.acc.manage { height: 34px; color: var(--dim); border-top: 0.5px solid var(--line); border-radius: 0 0 8px 8px; margin-top: 2px; }
+#save { padding: 12px 14px; display: flex; flex-direction: column; gap: 9px; }
+#save-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+#save-user { height: 30px; border-radius: 8px; border: 0; outline: 0; background: var(--pill); padding: 0 10px; user-select: text; }
+#save-user:focus { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); }
+.row { display: flex; gap: 6px; justify-content: flex-end; margin-top: auto; }
+.b { height: 28px; padding: 0 11px; border-radius: 7px; background: var(--pill); font-weight: 500; white-space: nowrap; }
+.b:hover { background: color-mix(in srgb, var(--pill) 60%, var(--faint)); }
+.b.primary { background: var(--accent); color: #fff; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-key" viewBox="0 0 16 16"><circle cx="5.4" cy="10.6" r="2.6"/><path d="m7.3 8.7 5.2-5.2M10.6 5.4l1.6 1.6M12.5 3.5l1.2 1.2"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 16 16"><path d="M8 2.5v3M8 10.5v3M2.5 8h3M10.5 8h3M4.4 4.4l1.8 1.8M9.8 9.8l1.8 1.8M11.6 4.4 9.8 6.2M6.2 9.8l-1.8 1.8"/></symbol>
+</svg>
+<div id="pick" class="box" hidden></div>
+<div id="save" class="box" hidden>
+  <div id="save-title"></div>
+  <input id="save-user" spellcheck="false" autocomplete="off" data-t-ph="pw.username">
+  <div class="row">
+    <button class="b" id="save-never" data-t="pw.never"></button>
+    <button class="b" id="save-later" data-t="pw.later"></button>
+    <button class="b primary" id="save-ok"></button>
+  </div>
+</div>
+<script src="common.js"></script>
+<script src="pw-overlay.js"></script>
+</body>
+</html>

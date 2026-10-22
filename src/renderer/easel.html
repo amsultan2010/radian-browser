@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'">
+<title>Radian</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="easel.css">
+</head>
+<body>
+<div id="stage">
+  <div id="world"><svg id="ink" width="1" height="1"><path id="ink-path"/></svg></div>
+  <div id="marquee" hidden></div>
+  <!-- Guides d'alignement : affichés pendant un déplacement aimanté. -->
+  <div id="guide-x" class="guide" hidden></div>
+  <div id="guide-y" class="guide" hidden></div>
+  <div id="selbox" hidden>
+    <i class="h" data-h="nw"></i><i class="h" data-h="n"></i><i class="h" data-h="ne"></i><i class="h" data-h="e"></i>
+    <i class="h" data-h="se"></i><i class="h" data-h="s"></i><i class="h" data-h="sw"></i><i class="h" data-h="w"></i>
+    <i class="h end" data-h="a"></i><i class="h end" data-h="b"></i>
+  </div>
+  <div id="hint" data-t="easel.hint" hidden></div>
+</div>
+
+<header id="top" class="float">
+  <input id="title" maxlength="120" spellcheck="false" data-t-ph="easel.untitled">
+  <span id="saved"></span>
+  <button id="b-export" data-t-title="easel.export"><svg class="i" viewBox="0 0 16 16"><path d="M8 10V2.500M5 5.500l3-3 3 3M3 9.500V13h10V9.500"/></svg></button>
+</header>
+
+<div id="style" class="float" hidden>
+  <span id="swatches"></span>
+  <span class="sep" data-for="shape"></span>
+  <button data-do="fill" data-for="shape" data-t-title="easel.fill"><svg class="i" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="9" rx="2" fill="currentColor" fill-opacity=".35"/></svg></button>
+  <button data-do="thick" data-for="stroke" data-t-title="easel.thick"><svg class="i" viewBox="0 0 16 16"><path d="M2.5 4.5h11" stroke-width="1.2"/><path d="M2.5 10.5h11" stroke-width="3.4"/></svg></button>
+  <button data-do="smaller" data-for="text" data-t-title="easel.smaller"><svg class="i" viewBox="0 0 16 16"><path d="M5 12l3-8 3 8M6.2 9.5h3.6" stroke-width="1.3"/></svg></button>
+  <button data-do="bigger" data-for="text" data-t-title="easel.bigger"><svg class="i" viewBox="0 0 16 16"><path d="M3 13.5l5-11 5 11M5 9.5h6"/></svg></button>
+  <input id="alt" data-for="image" maxlength="500" spellcheck="true" data-t-ph="easel.alt" data-t-title="easel.altHint">
+  <span class="sep" data-for="sel"></span>
+  <button data-do="front" data-for="sel" data-t-title="easel.front"><svg class="i" viewBox="0 0 16 16"><path d="M3 2.5h10M8 14V6M4.5 9L8 5.5 11.5 9"/></svg></button>
+  <button data-do="back" data-for="sel" data-t-title="easel.back"><svg class="i" viewBox="0 0 16 16"><path d="M3 13.5h10M8 2v8M4.5 7L8 10.5 11.5 7"/></svg></button>
+  <button data-do="duplicate" data-for="sel" data-t-title="easel.duplicate"><svg class="i" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 3.5v-1h-8v8h1"/></svg></button>
+  <button data-do="delete" data-for="sel" data-t-title="easel.delete"><svg class="i" viewBox="0 0 16 16"><path d="M3 4.5h10M6 4.5V3h4v1.5M4.5 4.5l.5 9h6l.5-9"/></svg></button>
+</div>
+
+<nav id="tools" class="float">
+  <button data-tool="select" data-t-title="easel.t.select"><svg class="i" viewBox="0 0 16 16"><path d="M3.5 2.5l9 4.6-3.9 1.2-1.3 3.9z"/></svg></button>
+  <button data-tool="hand" data-t-title="easel.t.hand"><svg class="i" viewBox="0 0 16 16"><path d="M5.5 8V4a1 1 0 012 0v3.5m0-.5V3a1 1 0 012 0v4.5m0-.5V4a1 1 0 012 0v5.5c0 3-1.6 5-4.2 5-2 0-3-1-3.9-2.7L3 9.300a1 1 0 011.700-1L5.500 9.500"/></svg></button>
+  <span class="sep"></span>
+  <button data-tool="text" data-t-title="easel.t.text"><svg class="i" viewBox="0 0 16 16"><path d="M3.5 4.500V3h9v1.500M8 3v10M6.300 13h3.400"/></svg></button>
+  <button data-tool="note" data-t-title="easel.t.note"><svg class="i" viewBox="0 0 16 16"><path d="M3 3h10v6.500L9.500 13H3zM13 9.500H9.500V13"/></svg></button>
+  <button data-tool="rect" data-t-title="easel.t.rect"><svg class="i" viewBox="0 0 16 16"><rect x="2.500" y="3.500" width="11" height="9" rx="1.500"/></svg></button>
+  <button data-tool="ellipse" data-t-title="easel.t.ellipse"><svg class="i" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.500"/></svg></button>
+  <button data-tool="arrow" data-t-title="easel.t.arrow"><svg class="i" viewBox="0 0 16 16"><path d="M3 13L13 3M7.500 3H13v5.500"/></svg></button>
+  <button data-tool="pen" data-t-title="easel.t.pen"><svg class="i" viewBox="0 0 16 16"><path d="M2.500 13.500l1-3.500 7-7 2.500 2.500-7 7zM9.500 4l2.500 2.500"/></svg></button>
+  <button id="b-image" data-t-title="easel.t.image"><svg class="i" viewBox="0 0 16 16"><rect x="2.500" y="3" width="11" height="10" rx="1.500"/><circle cx="6" cy="6.500" r="1"/><path d="M2.500 11l3-2.500 2.500 2 2.500-3 3 3.500"/></svg></button>
+  <span class="sep"></span>
+  <button id="b-undo" data-t-title="easel.undo"><svg class="i" viewBox="0 0 16 16"><path d="M5.500 3.500l-3 3 3 3M2.500 6.500h6.500a3.500 3.500 0 010 7H6.500"/></svg></button>
+  <button id="b-redo" data-t-title="easel.redo"><svg class="i" viewBox="0 0 16 16"><path d="M10.500 3.500l3 3-3 3M13.500 6.500H7a3.500 3.500 0 000 7h2.500"/></svg></button>
+</nav>
+
+<div id="zoom" class="float">
+  <button id="zoom-out">−</button>
+  <button id="zoom-val" data-t-title="easel.zoomReset">100 %</button>
+  <button id="zoom-in">+</button>
+  <button id="fit" data-t-title="easel.fit"><svg class="i" viewBox="0 0 16 16"><path d="M3 6V3h3M10 3h3v3M13 10v3h-3M6 13H3v-3"/></svg></button>
+</div>
+
+<div id="gone" hidden><span data-t="easel.deleted"></span></div>
+<input type="file" id="file" accept="image/*" multiple hidden>
+<script src="common.js"></script>
+<script src="easel.js"></script>
+</body>
+</html>

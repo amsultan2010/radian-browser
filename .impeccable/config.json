@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "src/renderer/shell.html"
+        ],
+        "createdAt": "2026-10-22T22:34:51.148Z",
+        "reason": "Claude decided: mini audio player scrolling title replicates Arc's documented sidebar player (docs/parity/visual-spec.md §2)"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/renderer/shell.css"
+        ],
+        "createdAt": "2026-10-22T23:10:28.017Z",
+        "reason": "Claude decided: L600 is the Developer Mode yellow-and-black stripe, which replicates Arc's documented Developer Mode outline (docs/parity/visual-spec.md §1)"
+      }
+    ]
+  }
+}

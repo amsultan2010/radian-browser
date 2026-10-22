@@ -1,0 +1,5 @@
+# Mêmes fins de ligne partout (les listes et les tests comparent du texte).
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.icns binary

@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+<title></title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="page.css">
+<style>
+main { display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 18vh; }
+.mark { width: 60px; height: 60px; border-radius: 50%; border: 8px solid var(--faint); border-right-color: transparent; transform: rotate(-35deg); margin-bottom: 26px; }
+p { color: var(--dim); max-width: 460px; word-break: break-word; user-select: text; }
+a.btn { display: inline-grid; place-items: center; text-decoration: none; color: #fff; margin-top: 10px; height: 32px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="mark"></div>
+  <h1 id="title"></h1>
+  <p id="url"></p>
+  <p id="desc"></p>
+  <a id="retry" class="btn primary"></a>
+</main>
+<script src="error.js"></script>
+</body>
+</html>

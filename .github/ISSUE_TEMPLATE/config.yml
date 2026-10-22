@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/amsultan2010/radian-browser/security/advisories/new
+    about: Report vulnerabilities privately, never in a public issue. Read SECURITY.md first.
+  - name: Contributing guide
+    url: https://github.com/amsultan2010/radian-browser/blob/main/CONTRIBUTING.md
+    about: Read this before opening a pull request.

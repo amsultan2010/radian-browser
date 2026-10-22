@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'">
+<title>Radian</title>
+<link rel="stylesheet" href="base.css">
+<style>
+/* Feuille d'onglet : une vue d'Orbe posée par-dessus une page (voir
+   src/main/sheets.js). Elle ne fait pas partie de la page. */
+body { display: grid; place-items: center; background: rgba(0, 0, 0, 0.28); padding: 18px; }
+body.cover { background: var(--base); }
+/* Bulle ancrée : en haut de la page, du côté de la barre latérale (adresse, cadenas, bouclier). */
+body.anchor { place-items: start; padding: 10px 12px; background: rgba(0, 0, 0, 0.16); }
+body.anchor #card { width: min(400px, 100%); position: relative; overflow: visible; }
+body.anchor #card::before { content: ''; position: absolute; top: -6px; left: 22px; width: 12px; height: 12px; background: var(--panel); border-left: 0.5px solid var(--panel-line); border-top: 0.5px solid var(--panel-line); transform: rotate(45deg); }
+body.anchor.control #card { width: min(430px, 100%); overflow: auto; }
+body.anchor.control #card::before { display: none; }
+p.hint { font-size: 12px; }
+.quick { display: flex; gap: 6px; flex-wrap: wrap; }
+.b.small { height: 26px; padding: 0 10px; font-size: 12px; }
+.item input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--accent); flex: none; }
+.item .badge { font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 8px; background: var(--accent); color: #fff; }
+.item .grow > div:first-child { overflow: hidden; text-overflow: ellipsis; }
+body.empty { background: transparent; }
+#card { width: min(460px, 100%); max-height: 100%; overflow: auto; background: var(--panel); border: 0.5px solid var(--panel-line); border-radius: 14px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.12); padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 10px; }
+body.cover #card { background: none; border: 0; box-shadow: none; width: min(560px, 100%); padding: 0; }
+body.wide #card { width: min(680px, 100%); }
+#head { display: flex; align-items: center; gap: 10px; }
+#mark { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--pill); color: var(--dim); flex: none; }
+#mark.warn { background: color-mix(in srgb, #dc2626 16%, transparent); color: #dc2626; }
+body.cover #mark { width: 46px; height: 46px; border-radius: 14px; }
+body.cover #mark svg { width: 24px; height: 24px; }
+body.cover #head { flex-direction: column; align-items: flex-start; gap: 14px; }
+h1 { font-size: 15px; font-weight: 600; margin: 0; overflow-wrap: anywhere; }
+body.cover h1 { font-size: 22px; letter-spacing: -0.01em; }
+#site { color: var(--dim); font-size: 12px; overflow-wrap: anywhere; user-select: text; }
+#site b { color: var(--fg); font-weight: 600; }
+p { margin: 0; color: var(--dim); overflow-wrap: anywhere; }
+p.strong { color: var(--fg); }
+p.warn { color: #c2410c; }
+.quote { background: var(--pill); border-radius: 8px; padding: 7px 10px; color: var(--fg); user-select: text; max-height: 84px; overflow: auto; overflow-wrap: anywhere; }
+.buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; flex-wrap: wrap; }
+body.cover .buttons { justify-content: flex-start; }
+.b { height: 30px; padding: 0 14px; border-radius: 8px; background: var(--pill); font-weight: 500; white-space: nowrap; }
+.b:hover { background: color-mix(in srgb, var(--pill) 60%, var(--faint)); }
+.b:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 1px; }
+.b.primary { background: var(--accent); color: #fff; }
+.b.danger { color: #dc2626; }
+.b.link { background: none; padding: 0 2px; color: var(--dim); text-decoration: underline; }
+.b[disabled] { opacity: 0.45; pointer-events: none; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field span { color: var(--dim); font-size: 12px; }
+.field input { height: 32px; border-radius: 8px; border: 0; outline: 0; background: var(--pill); padding: 0 10px; user-select: text; }
+.field input:focus { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); }
+label.check { display: flex; align-items: center; gap: 8px; color: var(--dim); }
+label.check input { width: 15px; height: 15px; accent-color: var(--accent); }
+.rows { display: grid; grid-template-columns: max-content 1fr; gap: 5px 14px; font-size: 12px; }
+.rows dt { color: var(--dim); }
+.rows dd { margin: 0; user-select: text; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.list { display: flex; flex-direction: column; border-radius: 10px; background: var(--pill); overflow: hidden; }
+.item { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 6px 10px; }
+.item + .item { border-top: 0.5px solid var(--line); }
+.item .grow { flex: 1; min-width: 0; }
+.item .sub { color: var(--dim); font-size: 12px; }
+.item.pick:hover, .item.pick.sel { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.state { font-size: 12px; font-weight: 600; }
+.state.yes { color: #15803d; }
+.state.no { color: #dc2626; }
+h2 { font-size: 11px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: 0.04em; margin: 6px 0 0; }
+/* Choix de ce qui est partagé : une grille de vignettes. */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; max-height: 44vh; overflow: auto; padding: 2px; }
+.src { display: flex; flex-direction: column; gap: 6px; padding: 7px; border-radius: 10px; background: var(--pill); text-align: left; }
+.src:hover { background: color-mix(in srgb, var(--pill) 60%, var(--faint)); }
+.src.sel { box-shadow: 0 0 0 2px var(--accent); }
+.src .thumb { height: 86px; border-radius: 6px; background: rgba(0, 0, 0, 0.18); display: grid; place-items: center; overflow: hidden; color: var(--dim); }
+.src .thumb img { max-width: 100%; max-height: 86px; display: block; }
+.src .name { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</head>
+<body class="empty">
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3.6" y="7.2" width="8.8" height="6" rx="1.6"/><path d="M5.6 7.2V5.4a2.4 2.4 0 0 1 4.8 0v1.8"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 16 16"><path d="M8 2.6 14 13H2z"/><path d="M8 6.6v3M8 11.3h.01"/></symbol>
+  <symbol id="i-screen" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="8" rx="1.6"/><path d="M6 13.4h4M8 11v2.4"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 16 16"><rect x="1.8" y="4.4" width="8.6" height="7.2" rx="1.6"/><path d="m10.4 7 3.8-2v6l-3.8-2"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 16 16"><rect x="6" y="2.2" width="4" height="7" rx="2"/><path d="M3.8 7.6a4.2 4.2 0 0 0 8.4 0M8 11.8v2"/></symbol>
+  <symbol id="i-key" viewBox="0 0 16 16"><circle cx="5.4" cy="10.6" r="2.6"/><path d="m7.3 8.7 5.2-5.2M10.6 5.4l1.6 1.6M12.5 3.5l1.2 1.2"/></symbol>
+  <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.6"/><path d="M8 7.4v3.4M8 5.2h.01"/></symbol>
+  <symbol id="i-out" viewBox="0 0 16 16"><path d="M9.5 3h3.5v3.5M13 3 7.6 8.4M11.6 9.4v2.4a1.2 1.2 0 0 1-1.2 1.2H4.2A1.2 1.2 0 0 1 3 11.8V5.6a1.2 1.2 0 0 1 1.2-1.2h2.4"/></symbol>
+  <symbol id="i-sad" viewBox="0 0 16 16"><rect x="2.4" y="2.4" width="11.2" height="11.2" rx="2.6"/><path d="M5.8 6.4h.01M10.2 6.4h.01M5.6 11c1.4-1.6 3.4-1.6 4.8 0"/></symbol>
+</svg>
+<div id="card" hidden>
+  <div id="head"><span id="mark"><svg class="i"><use id="mark-icon" href="#i-info"/></svg></span><div><h1 id="title"></h1><div id="site"></div></div></div>
+  <div id="body"></div>
+  <div class="buttons" id="buttons"></div>
+</div>
+<script src="common.js"></script>
+<script src="sheet.js"></script>
+</body>
+</html>

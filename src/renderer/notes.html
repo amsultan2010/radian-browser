@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'">
+<title>Notes</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="page.css">
+<style>
+html, body { overflow: hidden; }
+body { display: flex; height: 100vh; }
+#list { width: 240px; flex: none; overflow: auto; padding: 14px 8px; border-right: 0.5px solid var(--line); display: flex; flex-direction: column; gap: 2px; }
+#new { margin: 0 4px 10px; height: 32px; }
+.note { padding: 8px 10px; border-radius: 9px; }
+.note:hover { background: var(--hover); }
+.note.on { background: var(--pill); }
+.note b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.note span { color: var(--dim); font-size: 11.5px; }
+#pane { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#bar { height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 16px; flex: none; color: var(--dim); font-size: 12px; position: relative; }
+#tools { display: flex; align-items: center; gap: 2px; margin-right: auto; }
+#tools[hidden] { display: none; }
+#tools button { min-width: 28px; height: 28px; padding: 0 7px; border-radius: 7px; color: var(--dim); font-size: 13px; font-weight: 600; transition: background 120ms, color 120ms, transform 120ms var(--ease-out, ease-out); }
+#tools button:hover { background: var(--hover); color: var(--fg); }
+#tools button:active { transform: scale(0.94); }
+#tools button.on { background: var(--pill); color: var(--fg); }
+#tools button[data-do=i] { font-style: italic; font-family: Georgia, serif; }
+#tools i.sep { width: 0.5px; height: 16px; background: var(--line); margin: 0 4px; }
+#link { position: absolute; left: 16px; top: 6px; height: 32px; width: min(360px, 60%); display: flex; }
+#link[hidden] { display: none; }
+#href { flex: 1; min-width: 0; height: 32px; border-radius: 9px; border: 0; outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); background: var(--base); color: var(--fg); padding: 0 10px; user-select: text; }
+#editor { flex: 1; overflow: auto; outline: 0; padding: 10px 9% 60px; font-size: 16px; line-height: 1.6; user-select: text; cursor: text; }
+#editor:empty::before { content: attr(data-ph); color: var(--faint); }
+#editor p, #editor h1, #editor h2, #editor h3, #editor ul, #editor ol { margin: 0; text-transform: none; color: inherit; }
+#editor h1, #editor > p:first-child { font-size: 28px; line-height: 1.3; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 8px; }
+#editor h2 { font-size: 21px; line-height: 1.35; font-weight: 700; letter-spacing: -0.01em; margin: 14px 0 4px; }
+#editor h3 { font-size: 17px; font-weight: 700; letter-spacing: 0; margin: 10px 0 2px; }
+#editor ul, #editor ol { padding-left: 26px; }
+#editor ul.todo { list-style: none; }
+#editor ul.todo > li { position: relative; }
+#editor ul.todo > li::before { content: ''; position: absolute; left: -24px; top: 0.36em; width: 15px; height: 15px; border-radius: 5px; border: 1.5px solid var(--faint); box-sizing: border-box; cursor: default; transition: background 120ms, border-color 120ms, transform 160ms var(--ease-out, ease-out); }
+#editor ul.todo > li[data-done]::before { background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 15'%3E%3Cpath d='M3.6 7.8l2.6 2.6 5-5.6' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 15px no-repeat; border-color: var(--accent); transform: scale(1.06); }
+#editor ul.todo > li[data-done] { color: var(--dim); text-decoration: line-through; text-decoration-color: var(--faint); }
+#editor a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; cursor: text; }
+@media (prefers-reduced-motion: reduce) { #tools button, #editor ul.todo > li::before { transition: none; } }
+#none { margin: auto; color: var(--dim); }
+</style>
+</head>
+<body>
+<div id="list"><button class="btn primary" id="new" data-t="notes.new"></button><div id="items"></div></div>
+<div id="pane">
+  <div id="bar">
+    <div id="tools" role="toolbar" hidden>
+      <button data-do="b" data-t-title="notes.bold"><b>B</b></button>
+      <button data-do="i" data-t-title="notes.italic">I</button>
+      <i class="sep"></i>
+      <button data-do="h1" data-t-title="notes.h1">H1</button>
+      <button data-do="h2" data-t-title="notes.h2">H2</button>
+      <button data-do="h3" data-t-title="notes.h3">H3</button>
+      <i class="sep"></i>
+      <button data-do="ul" data-t-title="notes.ul">•</button>
+      <button data-do="ol" data-t-title="notes.ol">1.</button>
+      <button data-do="todo" data-t-title="notes.todo">☑</button>
+      <i class="sep"></i>
+      <button data-do="link" data-t-title="notes.link">↗</button>
+    </div>
+    <div id="link" hidden><input id="href" type="text" spellcheck="false" autocomplete="off" data-t-ph="notes.linkPh"></div>
+    <span id="saved"></span><button class="btn" id="del" data-t="set.profileDelete"></button></div>
+  <div id="editor" contenteditable="false" spellcheck="true"></div>
+</div>
+<script src="common.js"></script>
+<script src="notes.js"></script>
+</body>
+</html>

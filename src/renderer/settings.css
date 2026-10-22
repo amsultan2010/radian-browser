@@ -1,0 +1,107 @@
+/* Fenêtre des réglages : barre de volets en haut (comme les préférences de
+   macOS et d'Arc), un volet affiché à la fois ; la fenêtre prend sa hauteur. */
+html, body { background: transparent; overflow: hidden; height: 100%; }
+body { display: flex; flex-direction: column; background: color-mix(in srgb, var(--base) 84%, transparent); }
+html.win body { background: var(--base); }
+
+/* --- Barre des volets -------------------------------------------------------- */
+#bar { flex: none; padding: 30px 8px 8px; -webkit-app-region: drag; border-bottom: 0.5px solid var(--line); }
+html.win #bar { padding-top: 34px; }
+#tabs { display: flex; justify-content: center; gap: 2px; }
+#tabs button {
+  -webkit-app-region: no-drag;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  min-width: 62px; padding: 6px 4px 5px; border-radius: 8px;
+  color: var(--dim); font-size: 11px; font-weight: 500; white-space: nowrap;
+  transition: background-color var(--press), color var(--press);
+}
+#tabs button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+#tabs button:hover { background: var(--hover); color: var(--fg); }
+#tabs button[aria-selected="true"] { background: var(--pill); color: var(--accent); }
+
+/* --- Volets ------------------------------------------------------------------- */
+#panes { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; max-width: none; margin: 0; padding: 0; }
+.pane { padding: 4px 26px 22px; animation: pane-in 160ms var(--ease-out); }
+@keyframes pane-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pane { animation: none; } }
+.pane h2 { margin: 18px 4px 7px; }
+.pane h2:first-child { margin-top: 14px; }
+.pane .card + .card { margin-top: 10px; }
+.note { margin: 8px 4px 0; font-size: 12px; user-select: text; }
+.note.first { margin: 0 4px 10px; }
+.foot { margin: 18px 0 0; text-align: center; }
+.line .sub.wrap, .line .sub.path { white-space: normal; }
+.line .sub.path { user-select: text; word-break: break-all; }
+.line .grow > div:first-child, .line span.grow { user-select: text; }
+.line input.search { flex: 1; min-width: 0; }
+
+/* Interrupteurs : toute case à cocher d'un volet. */
+.pane input[type=checkbox] {
+  appearance: none; flex: none; position: relative; width: 34px; height: 20px; margin: 0;
+  border-radius: 10px; background: var(--faint); transition: background-color 140ms var(--ease-out);
+}
+.pane input[type=checkbox]::after {
+  content: ''; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); transition: transform 140ms var(--ease-out);
+}
+.pane input[type=checkbox]:checked { background: var(--accent); }
+.pane input[type=checkbox]:checked::after { transform: translateX(14px); }
+.pane input[type=checkbox]:disabled { opacity: 0.45; }
+@media (prefers-reduced-motion: reduce) { .pane input[type=checkbox], .pane input[type=checkbox]::after { transition: none; } }
+
+/* Repères de focus au clavier, partout. */
+#tabs button:focus-visible, .pane .btn:focus-visible, .pane select:focus-visible, .pane input[type=checkbox]:focus-visible,
+.key-btn:focus-visible, .icon-btn:focus-visible, .pname:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent); outline-offset: 1px;
+}
+.pane select { max-width: 280px; }
+.pane input[type=range] { width: 160px; accent-color: var(--accent); }
+.btn:disabled { opacity: 0.45; }
+
+/* --- Mises à jour ---------------------------------------------------------------- */
+#update-headline { font-weight: 600; }
+#update-notes { margin: 0; padding: 10px 14px; max-height: 150px; overflow: auto; white-space: pre-wrap; word-break: break-word; font: 12px/1.5 inherit; font-family: inherit; color: var(--dim); border-top: 0.5px solid var(--line); user-select: text; outline: none; }
+#update-notes:empty { display: none; }
+#update-new > .line:last-child { border-bottom: 0.5px solid var(--line); }
+
+/* --- Import depuis un navigateur ---------------------------------------------------- */
+.imp-controls { display: flex; align-items: center; gap: 6px; flex: none; }
+.imp-controls select { max-width: 190px; }
+.imp-name { font-weight: 500; }
+
+/* --- Profils -------------------------------------------------------------------- */
+.profile .head .pname { font-size: 14px; font-weight: 600; }
+
+/* --- Raccourcis ----------------------------------------------------------------- */
+.keys-top { display: flex; gap: 10px; align-items: center; padding-top: 14px; }
+.keys-top .search { margin: 0; flex: 1; }
+#keys-list { max-height: 330px; overflow-y: auto; border-radius: 12px; outline: none; scroll-padding: 34px 0 8px; }
+#keys-list h3 { margin: 0; padding: 12px 5px 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--dim); }
+#keys-list h3:first-child { padding-top: 2px; }
+#keys-list .card { border-radius: 10px; margin: 0 1px 2px; }
+/* Barres de défilement fines, de la couleur de l'interface. */
+#panes::-webkit-scrollbar, #keys-list::-webkit-scrollbar { width: 8px; }
+#panes::-webkit-scrollbar-thumb, #keys-list::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+#panes::-webkit-scrollbar-track, #keys-list::-webkit-scrollbar-track { background: transparent; }
+#keys-list { padding-right: 4px; margin-right: -12px; }
+#keys-list .line { min-height: 36px; padding: 4px 8px 4px 14px; gap: 6px; }
+.key-row.flash { animation: key-flash 900ms var(--ease-out); }
+@keyframes key-flash { from { background: color-mix(in srgb, var(--accent) 26%, transparent); } to { background: transparent; } }
+.key-btn {
+  min-width: 74px; height: 26px; padding: 0 10px; border-radius: 7px; background: var(--pill);
+  font: 12px -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: 0.02em; white-space: nowrap;
+}
+html.win .key-btn { font-family: inherit; }
+.key-btn:hover { background: color-mix(in srgb, var(--pill) 60%, var(--faint)); }
+.key-btn.none { color: var(--faint); }
+.key-btn.recording { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); outline: 2px solid var(--accent); }
+.key-btn[disabled] { background: none; color: var(--dim); }
+.icon-btn { width: 24px; height: 24px; border-radius: 6px; color: var(--dim); font-size: 14px; line-height: 1; }
+.icon-btn:hover { background: var(--hover); color: var(--fg); }
+.icon-btn.ghost { visibility: hidden; }
+.key-msg { display: flex; align-items: center; gap: 8px; padding: 7px 8px 8px 14px; font-size: 12px; background: color-mix(in srgb, var(--accent) 9%, transparent); border-top: 0.5px solid var(--line); }
+.key-msg .grow { flex: 1; user-select: text; }
+.key-msg.error { background: color-mix(in srgb, #ef4444 10%, transparent); }
+.key-row.changed .label::after { content: ''; display: inline-block; width: 5px; height: 5px; margin-left: 6px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
+#keys-list .empty { padding: 28px 0; }
+#littleKeys:empty { display: none; }

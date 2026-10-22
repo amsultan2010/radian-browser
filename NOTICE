@@ -1,0 +1,54 @@
+Radian
+Copyright (c) 2026 Abdullah Sultan
+https://github.com/amsultan2010/radian-browser
+
+Radian is released under the MIT License (see LICENSE). It includes or uses
+the third-party work listed below.
+
+--------------------------------------------------------------------------------
+Orbe
+https://github.com/amadoubaui/orbe
+Copyright (c) 2026 Amadou Ba (PIXEWORK)
+License: MIT
+
+Radian is a fork of Orbe. Most of Radian's code, its original sounds
+(scripts/make-sounds.js), theme textures (scripts/make-textures.js) and the
+documents in docs/orbe/ come from Orbe. Orbe's copyright notice is kept in
+LICENSE, as its MIT license requires.
+
+--------------------------------------------------------------------------------
+Ad and tracker blocklist (assets/blocklist.txt)
+
+Merged from the lists below, which keep their own licenses. The full notice is
+at the top of assets/blocklist.txt.
+
+- Anudeep's Blacklist (adservers), https://github.com/anudeepND/blacklist
+  Copyright (c) 2018 Anudeep ND. License: MIT.
+- AdAway default blocklist, https://github.com/AdAway/adaway.github.io
+  Kicelo, Dominik Schuermann and contributors. License: CC BY 3.0
+  (https://creativecommons.org/licenses/by/3.0/).
+- Steven Black's ad-hoc list, https://github.com/StevenBlack/hosts
+  Copyright (c) Steven Black. License: MIT.
+
+--------------------------------------------------------------------------------
+Downloaded at development or run time (not stored in this repository)
+
+- Electron, https://www.electronjs.org. License: MIT.
+  Electron bundles Chromium (https://www.chromium.org) and other open-source
+  components; their licenses ship inside every Electron build
+  (LICENSES.chromium.html).
+- castLabs Electron for Content Security (ECS),
+  https://github.com/castlabs/electron-releases. Used only for the optional
+  Widevine build (ORBE_DRM=1). License: MIT. The Widevine module it installs
+  has its own terms.
+- playwright-core, https://github.com/microsoft/playwright. Used only by the
+  UI tests. License: Apache-2.0.
+
+--------------------------------------------------------------------------------
+Arc
+
+Radian recreates the look and behaviour of Arc by The Browser Company, by
+observing the app and its public documentation. Radian contains no code,
+icons, images, sounds or other assets from Arc. Radian is not affiliated with,
+endorsed by or sponsored by The Browser Company. Arc is a trademark of The
+Browser Company.

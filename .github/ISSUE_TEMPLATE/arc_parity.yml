@@ -1,0 +1,93 @@
+name: Radian differs from Arc
+description: Radian looks, moves or behaves differently from Arc, or is missing an Arc feature.
+title: "[Arc]: "
+labels: ["arc-parity"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Radian should feel exactly like Arc, apart from the name, logo, icons and sounds. Every difference you spot helps.
+
+        Describe what you **observed** in Arc: screenshots, screen recordings, measurements, Arc's help pages or release notes. Please don't attach anything taken from Arc's app bundle (code, icons, images, sounds or animation files): Radian can't use it.
+
+        Check [docs/parity/features.md](https://github.com/amsultan2010/radian-browser/blob/main/docs/parity/features.md) and [existing issues](https://github.com/amsultan2010/radian-browser/issues?q=label%3Aarc-parity) first.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of difference
+      options:
+        - Looks different (size, spacing, colour, font, icon)
+        - Moves differently (animation timing or curve)
+        - Behaves differently
+        - Shortcut or menu item differs
+        - Missing Arc feature
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Sidebar and Spaces
+        - Tabs and archive
+        - Command Bar
+        - Peek, Split View or Little Radian
+        - Themes and motion
+        - Library, Easels, Notes or Boosts
+        - Extensions
+        - Menus and shortcuts
+        - Settings
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: arc
+    attributes:
+      label: What Arc does
+      description: As precisely as you can. Measurements, timings and links to Arc's help or release notes are very welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: radian
+    attributes:
+      label: What Radian does
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to see it
+      description: The same steps in both apps.
+      placeholder: |
+        1. Press ⌘T
+        2. Type "git"
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots or recordings
+      description: Ideally Arc and Radian side by side, at the same window size. Drag files here.
+
+  - type: input
+    id: versions
+    attributes:
+      label: Arc version, Radian commit and macOS version
+      placeholder: Arc 1.170.0, Radian 892ffa4, macOS 26.1
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: pr
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd like to fix this myself and open a pull request

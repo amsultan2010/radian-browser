@@ -1,0 +1,37 @@
+{
+  "name": "radian",
+  "productName": "Radian",
+  "version": "0.15.5",
+  "description": "Radian — an open-source macOS browser that works like Arc. Built on Orbe.",
+  "main": "src/main/main.js",
+  "license": "MIT",
+  "author": "Abdullah Sultan",
+  "repository": "github:amsultan2010/radian-browser",
+  "homepage": "https://github.com/amsultan2010/radian-browser#readme",
+  "bugs": {
+    "url": "https://github.com/amsultan2010/radian-browser/issues"
+  },
+  "keywords": [
+    "browser",
+    "web-browser",
+    "arc",
+    "arc-browser",
+    "electron",
+    "chromium",
+    "macos",
+    "sidebar",
+    "spaces"
+  ],
+  "scripts": {
+    "start": "node scripts/dev.js",
+    "test": "node scripts/dev.js --selftest",
+    "test:ui": "node scripts/test-ui.js",
+    "test:ext": "node scripts/test-ext.js",
+    "build": "node scripts/build-mac.js",
+    "build:win": "node scripts/build-win.js"
+  },
+  "orbe": {
+    "electron": "44.7.0",
+    "electronDrm": "44.5.1+wvcus"
+  }
+}

@@ -1,0 +1,56 @@
+name: Feature request
+description: Suggest something new or an improvement that is not an Arc feature.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. Before you submit:
+
+        - If Arc already does this, use the **Radian differs from Arc** template instead.
+        - Accounts, sync, AI features and Windows support are out of scope for now.
+        - Search [existing issues](https://github.com/amsultan2010/radian-browser/issues) first.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What are you trying to do that you can't today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How should it work? Be as specific as you can about the interface and shortcuts.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Browsing and tabs
+        - Interface and themes
+        - Privacy and security
+        - Extensions
+        - Performance
+        - Developer experience (tests, docs, CI)
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: pr
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd like to build this myself and open a pull request

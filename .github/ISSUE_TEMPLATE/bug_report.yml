@@ -1,0 +1,103 @@
+name: Bug report
+description: Something in Radian is broken, crashes or behaves incorrectly.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Before you submit:
+
+        - Search [existing issues](https://github.com/amsultan2010/radian-browser/issues) to avoid duplicates.
+        - Check the bug still happens on the latest commit of `main`.
+        - If Radian works but does something differently from Arc, use the **Radian differs from Arc** template instead.
+        - Security problems go to [Security Advisories](https://github.com/amsultan2010/radian-browser/security/advisories/new), not here.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened
+      description: A clear description of the bug. Include error messages or screenshots if you have them.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: The shortest steps that trigger the bug.
+      placeholder: |
+        1. Open a new Space
+        2. Drag a tab onto a folder
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Sidebar and Spaces
+        - Tabs and archive
+        - Command Bar
+        - Peek, Split View or Little Radian
+        - Themes and motion
+        - Library, Easels, Notes or Boosts
+        - Extensions
+        - Import from Arc or other browsers
+        - Passwords, privacy or ad blocker
+        - Build, tests or development setup
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Radian version or commit
+      description: The commit you built from (`git rev-parse --short HEAD`), or the version in Radian → About Radian.
+      placeholder: "892ffa4"
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and Mac
+      placeholder: macOS 26.1, MacBook Air M3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: build
+    attributes:
+      label: How you run Radian
+      options:
+        - npm start
+        - ORBE_DRM=1 npm start (Widevine build)
+        - Built app (npm run build)
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs (optional)
+      description: Terminal output from `npm start`, or the DevTools console of the page.
+      render: shell
+
+  - type: checkboxes
+    id: pr
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd like to fix this myself and open a pull request
