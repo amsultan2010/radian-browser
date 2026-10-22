@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'">
+<title>Orbe</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="panel.css">
+</head>
+<body>
+<!-- Panneau latéral d'une extension : poignée de largeur, en-tête. La page de
+     l'extension est une autre vue, posée par-dessus sous l'en-tête. -->
+<div id="panel" hidden>
+  <div id="grip"></div>
+  <div id="card">
+    <div id="head">
+      <img id="icon" alt="" hidden>
+      <span id="title"></span>
+      <button id="close" type="button"><svg viewBox="0 0 16 16"><path d="m4.8 4.8 6.4 6.4m0-6.4-6.4 6.4"/></svg></button>
+    </div>
+  </div>
+</div>
+<!-- Bandeau : une extension pilote l'onglet par le débogueur. -->
+<div id="banner" hidden>
+  <span id="dot"></span>
+  <span id="text"></span>
+  <button id="stop" type="button"></button>
+</div>
+<script src="panel.js"></script>
+</body>
+</html>

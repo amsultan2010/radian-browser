@@ -1,3 +1,8 @@
 node_modules/
 out/
+dist/
 .DS_Store
+*.log
+.claude/
+parity/captures/**/*.mov
+parity/captures/**/*.mp4

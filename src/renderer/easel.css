@@ -1,0 +1,181 @@
+/* Tableau : un plan infini et quelques barres flottantes. */
+:root {
+  --c-ink: var(--fg);
+  --c-red: #e5484d;
+  --c-orange: #f2711c;
+  --c-yellow: #e0a800;
+  --c-green: #30a46c;
+  --c-blue: #3b82f6;
+  --c-purple: #7c6cf0;
+  --paper: #ffffff;
+  --dot: rgba(0, 0, 0, 0.13);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --paper: #2a2a30; --dot: rgba(255, 255, 255, 0.13); }
+}
+
+html, body { background: var(--base); }
+
+/* ---- Plan ---------------------------------------------------------------- */
+#stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  background-image: radial-gradient(var(--dot) 1px, transparent 1.4px);
+  background-size: 24px 24px;
+  cursor: default;
+}
+#stage[data-tool=hand], #stage.space { cursor: grab; }
+#stage.panning { cursor: grabbing; }
+#stage[data-tool=text], #stage[data-tool=note], #stage[data-tool=rect], #stage[data-tool=ellipse], #stage[data-tool=arrow], #stage[data-tool=pen] { cursor: crosshair; }
+
+/* Tout le contenu suit une seule transformation : déplacer ou zoomer la vue ne
+   touche à aucun élément. */
+#world { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; }
+
+.it { position: absolute; left: 0; top: 0; --c: var(--c-ink); }
+/* --z : zoom de la vue, pour un contour de sélection d'épaisseur constante à l'écran. */
+.it.sel { outline: calc(1.5px / var(--z, 1)) solid var(--accent); outline-offset: calc(1px / var(--z, 1)); }
+.it.arrow.sel { outline: 0; }
+#stage:not([data-tool=select]) .it { pointer-events: none; }
+#stage:not([data-tool=select]) .it * { pointer-events: none !important; }
+
+.it.rect, .it.ellipse { border: 2px solid var(--c); border-radius: 6px; }
+.it.ellipse { border-radius: 50%; }
+.it.filled { background: color-mix(in srgb, var(--c) 20%, transparent); }
+
+.it.text { color: var(--c); line-height: 1.3; padding: 2px 4px; }
+.it.note {
+  padding: 12px;
+  border-radius: 4px;
+  overflow: hidden;
+  line-height: 1.35;
+  color: #1d1d1f;
+  background: color-mix(in srgb, var(--c) 34%, #fffdf4);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 6px 14px rgba(0, 0, 0, 0.1);
+}
+.tx { outline: 0; white-space: pre-wrap; overflow-wrap: anywhere; min-height: 1.3em; }
+.it.note .tx { height: 100%; }
+.it.editing { cursor: text; }
+.it.editing .tx { user-select: text; cursor: text; }
+.it.text.editing { outline: calc(1.5px / var(--z, 1)) dashed var(--accent); }
+
+.it.image { background: var(--pill); border-radius: 4px; }
+.it.image img { display: block; width: 100%; height: 100%; border-radius: 4px; -webkit-user-drag: none; pointer-events: none; }
+.it.image.captured { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14), 0 8px 22px rgba(0, 0, 0, 0.14); }
+/* Lien vers la page d'origine d'une capture. */
+.src {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 5px);
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  color: var(--dim);
+  background: var(--pill);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.src:hover { color: var(--fg); background: color-mix(in srgb, var(--pill) 60%, var(--faint)); }
+.src svg { width: 11px; height: 11px; flex: none; }
+
+.it.arrow, .it.pen { pointer-events: none; }
+.it svg.g { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
+.it svg.g .ln { fill: none; stroke: var(--c); stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.it svg.g .head { fill: var(--c); stroke: var(--c); stroke-linejoin: round; pointer-events: none; }
+.it svg.g .hit { fill: none; stroke: transparent; stroke-width: 16; stroke-linecap: round; pointer-events: stroke; }
+.it.pen .ln, .it.pen .hit { vector-effect: non-scaling-stroke; }
+
+#ink { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 100000; }
+#ink-path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---- Sélection ------------------------------------------------------------- */
+#marquee, #selbox { position: absolute; left: 0; top: 0; pointer-events: none; }
+#marquee { border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 2px; }
+#selbox { border: 1px solid var(--accent); }
+/* Guides d'alignement : un trait sur toute la hauteur ou la largeur du plan. */
+.guide { position: absolute; left: 0; top: 0; pointer-events: none; background: #f0368c; z-index: 5; }
+#guide-x { width: 1px; height: 100%; }
+#guide-y { height: 1px; width: 100%; }
+#alt { width: 190px; height: 26px; border: 0; outline: 0; border-radius: 7px; background: var(--pill); padding: 0 8px; font-size: 12.5px; user-select: text; }
+#alt:focus { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); }
+#b-export { width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center; }
+#b-export:hover { background: var(--hover); }
+#selbox[data-mode=arrow] { border-color: transparent; }
+.h {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 3px;
+  background: var(--paper);
+  border: 1.5px solid var(--accent);
+  pointer-events: auto;
+}
+.h[data-h=nw] { left: 0; top: 0; cursor: nwse-resize; }
+.h[data-h=n] { left: 50%; top: 0; cursor: ns-resize; }
+.h[data-h=ne] { left: 100%; top: 0; cursor: nesw-resize; }
+.h[data-h=e] { left: 100%; top: 50%; cursor: ew-resize; }
+.h[data-h=se] { left: 100%; top: 100%; cursor: nwse-resize; }
+.h[data-h=s] { left: 50%; top: 100%; cursor: ns-resize; }
+.h[data-h=sw] { left: 0; top: 100%; cursor: nesw-resize; }
+.h[data-h=w] { left: 0; top: 50%; cursor: ew-resize; }
+.h.end { display: none; border-radius: 50%; cursor: move; }
+#selbox[data-mode=multi] .h { display: none; }
+#selbox[data-mode=text] .h:not([data-h=e]):not([data-h=w]) { display: none; }
+#selbox[data-mode=image] .h:is([data-h=n], [data-h=s], [data-h=e], [data-h=w]) { display: none; }
+#selbox[data-mode=arrow] .h { display: none; }
+#selbox[data-mode=arrow] .h.end { display: block; }
+#stage:not([data-tool=select]) #selbox { display: none; }
+
+#hint { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); color: var(--faint); font-size: 15px; pointer-events: none; text-align: center; }
+
+/* ---- Barres flottantes ----------------------------------------------------- */
+.float {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 0.5px solid var(--panel-line);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14), 0 1px 3px rgba(0, 0, 0, 0.08);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+.float button { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--dim); }
+.float button:hover { background: var(--hover); color: var(--fg); }
+.float button.on { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--fg); }
+.float button:disabled { opacity: 0.35; pointer-events: none; }
+.float .sep { width: 0.5px; height: 18px; margin: 0 4px; background: var(--line); }
+
+#top { left: 14px; top: 14px; padding: 4px 10px 4px 6px; gap: 8px; max-width: 46vw; }
+#title { width: 220px; max-width: 100%; height: 28px; border: 0; outline: 0; background: none; padding: 0 6px; border-radius: 7px; font-weight: 600; font-size: 14px; user-select: text; }
+#title:hover { background: var(--hover); }
+#title:focus { background: var(--pill); }
+#title::placeholder { color: var(--dim); }
+#saved { color: var(--faint); font-size: 11.5px; white-space: nowrap; }
+
+#tools { left: 50%; bottom: 18px; transform: translateX(-50%); }
+#style { left: 50%; top: 14px; transform: translateX(-50%); }
+/* Avec le champ du texte alternatif, la barre est plus large : elle passe sous le titre pour ne pas le recouvrir. */
+#style.wide { top: 62px; }
+#zoom { right: 14px; bottom: 18px; }
+#zoom button { color: var(--fg); font-size: 15px; }
+#zoom #zoom-val { width: 54px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--dim); }
+
+#swatches { display: flex; gap: 2px; }
+.sw { position: relative; }
+.sw::after { content: ''; width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 0.5px var(--line); }
+.float button.sw.on { background: none; }
+.sw.on::after { box-shadow: 0 0 0 2px var(--panel), 0 0 0 3.5px var(--c); }
+
+#gone { position: fixed; inset: 0; display: grid; place-items: center; background: var(--base); color: var(--dim); font-size: 15px; z-index: 10; }

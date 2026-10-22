@@ -1,0 +1,22 @@
+{
+  "name": "orbe",
+  "productName": "Orbe",
+  "version": "0.15.5",
+  "description": "Orbe — un navigateur Chromium à barre latérale, en français, inspiré d'Arc.",
+  "main": "src/main/main.js",
+  "license": "MIT",
+  "author": "Amadou Ba (PIXEWORK)",
+  "repository": "github:amadoubaui/orbe",
+  "scripts": {
+    "start": "node scripts/dev.js",
+    "test": "node scripts/dev.js --selftest",
+    "test:ui": "node scripts/test-ui.js",
+    "test:ext": "node scripts/test-ext.js",
+    "build": "node scripts/build-mac.js",
+    "build:win": "node scripts/build-win.js"
+  },
+  "orbe": {
+    "electron": "44.7.0",
+    "electronDrm": "44.5.1+wvcus"
+  }
+}

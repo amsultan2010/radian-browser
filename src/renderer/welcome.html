@@ -1,0 +1,183 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; media-src 'self'">
+<title>Orbe</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="page.css">
+<style>
+/* Accueil du premier lancement : cinq étapes courtes, chacune facultative. */
+html, body { height: 100%; }
+body { display: flex; flex-direction: column; }
+main { flex: 1; width: 100%; max-width: 600px; padding: 7vh 28px 16px; display: flex; flex-direction: column; }
+.step { display: none; flex-direction: column; animation: step-in 320ms var(--ease-out, ease-out); }
+.step.on { display: flex; }
+@keyframes step-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+h1 { font-size: 28px; margin-bottom: 8px; }
+.lead { color: var(--dim); font-size: 15px; margin: 0 0 22px; line-height: 1.5; }
+.line { min-height: 56px; }
+.line b { display: block; font-weight: 600; }
+.sub.wrap { white-space: normal; display: block; margin-top: 4px; line-height: 1.45; }
+.card + .card { margin-top: 12px; }
+
+/* L'orbe : anneau blanc sur un fond qui tourne lentement, halo de couleurs à l'ouverture. */
+.orb { position: relative; width: 84px; height: 84px; margin: 4vh 0 30px; }
+.orb .halo { position: absolute; inset: -34px; border-radius: 50%; background: conic-gradient(from 0deg, #7c6cf0, #06b6d4, #10b981, #f59e0b, #ec4899, #7c6cf0); filter: blur(30px); opacity: 0.55; animation: halo-in 1400ms var(--ease-out, ease-out) both, turn 14s linear infinite; }
+.orb .mark { position: absolute; inset: 0; border-radius: 22px; background: linear-gradient(140deg, #8f7dff, #2a1f8f); display: grid; place-items: center; box-shadow: 0 10px 30px rgba(60, 40, 180, 0.35); animation: mark-in 700ms var(--ease-out, ease-out) both; }
+.orb .mark i { width: 38px; height: 38px; border-radius: 50%; border: 7px solid #fff; border-top-color: transparent; transform: rotate(8deg); animation: ring-in 1100ms cubic-bezier(0.3, 1.4, 0.5, 1) 120ms both, ring-breathe 5200ms ease-in-out 1300ms infinite; }
+/* La vague : trois anneaux partent du logo à l'ouverture, l'un après l'autre (transformation et opacité). */
+.orb .wave { position: absolute; inset: 0; border-radius: 22px; border: 1.5px solid color-mix(in srgb, var(--accent) 70%, #fff); opacity: 0; pointer-events: none; animation: wave 1800ms var(--ease-out, ease-out) both; }
+.orb .wave:nth-child(2) { animation-delay: 260ms; }
+.orb .wave:nth-child(3) { animation-delay: 520ms; }
+.orb .wave:nth-child(4) { animation-delay: 780ms; }
+@keyframes wave { 0% { opacity: 0; transform: scale(0.9); } 18% { opacity: 0.55; } 100% { opacity: 0; transform: scale(2.3); } }
+@keyframes ring-in { from { transform: rotate(-262deg) scale(0.6); opacity: 0; } to { transform: rotate(8deg); opacity: 1; } }
+@keyframes ring-breathe { 0%, 100% { transform: rotate(8deg) scale(1); } 50% { transform: rotate(20deg) scale(1.05); } }
+/* Musique de l'accueil : un bouton pour la couper, en haut à droite. */
+#music { position: fixed; top: 14px; right: 16px; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: var(--dim); transition: background 120ms, color 120ms, transform var(--spring-bouncy); }
+#music[hidden] { display: none; }
+#music:hover { background: var(--hover); color: var(--fg); }
+#music:active { transform: scale(0.9); transition: transform var(--press); }
+#music svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+#music .off { display: none; }
+#music[aria-pressed=false] .on { display: none; }
+#music[aria-pressed=false] .off { display: inline; }
+#music.playing .on { animation: music-beat 900ms ease-in-out infinite; transform-box: fill-box; transform-origin: 0 50%; }
+@keyframes music-beat { 0%, 100% { transform: scaleX(1); opacity: 1; } 50% { transform: scaleX(0.6); opacity: 0.55; } }
+@keyframes halo-in { from { opacity: 0; transform: scale(0.4) rotate(-90deg); } to { opacity: 0.55; } }
+@keyframes mark-in { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: none; } }
+@keyframes turn { to { rotate: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .demo b { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .step, .orb .halo, .orb .mark, .orb .mark i, #music.playing .on { animation: none; } .orb .wave { display: none; } }
+
+#langs { display: flex; gap: 8px; margin: 0; }
+#langs .btn[aria-pressed=true] { background: var(--accent); color: #fff; }
+
+/* Couleurs. */
+#colors { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; padding: 18px; }
+#colors button { aspect-ratio: 1; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); transition: transform 140ms var(--ease-out, ease-out), box-shadow 140ms; }
+#colors button:hover { transform: scale(1.08); }
+#colors button[aria-pressed=true] { box-shadow: 0 0 0 3px var(--base), 0 0 0 5px var(--c); }
+#colors button:focus-visible { outline: 2px solid var(--fg); outline-offset: 4px; }
+
+.support { border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+.support .line { align-items: center; padding: 14px; }
+.tips { display: grid; grid-template-columns: 1fr 1fr; }
+.tips .line { border-top: 0.5px solid var(--line); min-height: 48px; }
+.tips .line:nth-child(-n+2) { border-top: 0; }
+.tips .line:nth-child(odd) { border-right: 0.5px solid var(--line); }
+/* Premiers gestes : chaque astuce a sa petite démonstration animée, dessinée ici (aucune
+   vidéo) : une fenêtre d'Orbe en réduction — barre latérale à gauche, page à droite.
+   Boucles de 4,2 s, transformations et opacité seulement ; figées par « Réduire les animations ». */
+.demo { position: relative; flex: none; width: 64px; height: 42px; border-radius: 7px; overflow: hidden; background: color-mix(in srgb, var(--accent) 16%, var(--base)); box-shadow: 0 0 0 0.5px var(--line); }
+.demo b { position: absolute; display: block; }
+.demo .pg { left: 21px; top: 2px; right: 2px; bottom: 2px; border-radius: 4px; background: var(--active); box-shadow: 0 0 0 0.5px var(--line); }
+.demo .r { left: 3px; width: 15px; height: 4px; border-radius: 2px; background: color-mix(in srgb, var(--fg) 26%, transparent); }
+.demo .r1 { top: 6px; } .demo .r2 { top: 13px; } .demo .r3 { top: 23px; } .demo .r4 { top: 30px; }
+.demo .hot { background: var(--accent); }
+.demo .rule { left: 3px; top: 19.500px; width: 15px; height: 1px; background: var(--line); }
+.d-tab .cmd { left: 27px; top: 14px; width: 28px; height: 9px; border-radius: 3px; background: var(--accent); box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25); animation: d-pop 4200ms var(--ease-out, ease-out) infinite both; }
+.d-tab .r3 { animation: d-new 4200ms var(--ease-out, ease-out) infinite both; }
+.d-pin .r3 { animation: d-pin 4200ms var(--ease, ease) infinite both; }
+.d-space .lists { left: 0; top: 0; width: 42px; height: 42px; animation: d-slide 4200ms var(--ease, ease) infinite both; }
+.d-space .lists .two { left: 24px; background: #f59e0b; opacity: 0.75; }
+.d-space .dot { bottom: 3px; width: 3px; height: 3px; border-radius: 50%; background: color-mix(in srgb, var(--fg) 30%, transparent); }
+.d-space .dot.a { left: 6px; animation: d-dot-a 4200ms linear infinite both; } .d-space .dot.b { left: 12px; animation: d-dot-b 4200ms linear infinite both; }
+.d-space .mask { left: 20px; top: 0; width: 44px; height: 42px; background: color-mix(in srgb, var(--accent) 16%, var(--base)); }
+.d-split .p2 { left: 43px; top: 2px; width: 19px; bottom: 2px; border-radius: 4px; background: var(--active); box-shadow: 0 0 0 0.5px var(--line), -1.500px 0 0 color-mix(in srgb, var(--accent) 16%, var(--base)); animation: d-split 4200ms var(--ease, ease) infinite both; }
+.d-side .sb { left: 0; top: 0; width: 21px; height: 42px; animation: d-side 4200ms var(--ease, ease) infinite both; }
+.d-side .pg { transform-origin: 100% 50%; animation: d-grow 4200ms var(--ease, ease) infinite both; }
+.d-little .lw { left: 30px; top: 9px; width: 28px; height: 24px; border-radius: 4px; background: var(--active); box-shadow: 0 0 0 0.5px var(--line), 0 4px 10px rgba(0, 0, 0, 0.3); animation: d-pop 4200ms var(--ease-out, ease-out) infinite both; }
+.d-little .lw::before { content: ''; position: absolute; left: 3px; top: 3px; right: 3px; height: 3px; border-radius: 2px; background: var(--accent); }
+@keyframes d-pop { 0%, 12% { opacity: 0; transform: scale(0.7) translateY(3px); } 22%, 78% { opacity: 1; transform: none; } 88%, 100% { opacity: 0; transform: scale(0.9); } }
+@keyframes d-new { 0%, 48% { opacity: 0; transform: translateY(-5px); } 60%, 88% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
+@keyframes d-pin { 0%, 22% { transform: none; opacity: 1; } 40%, 84% { transform: translateY(-10px); opacity: 1; } 92% { transform: translateY(-10px); opacity: 0; } 93% { transform: none; opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes d-slide { 0%, 24% { transform: none; } 40%, 80% { transform: translateX(-21px); } 96%, 100% { transform: none; } }
+@keyframes d-dot-a { 0%, 30% { opacity: 1; transform: scale(1.5); } 40%, 84% { opacity: 0.5; transform: none; } 96%, 100% { opacity: 1; transform: scale(1.5); } }
+@keyframes d-dot-b { 0%, 30% { opacity: 0.5; transform: none; } 40%, 84% { opacity: 1; transform: scale(1.5); } 96%, 100% { opacity: 0.5; transform: none; } }
+@keyframes d-split { 0%, 22% { transform: translateX(24px); } 38%, 82% { transform: none; } 96%, 100% { transform: translateX(24px); } }
+@keyframes d-side { 0%, 22% { transform: none; } 36%, 80% { transform: translateX(-22px); } 94%, 100% { transform: none; } }
+@keyframes d-grow { 0%, 22% { transform: none; } 36%, 80% { transform: scaleX(1.46); } 94%, 100% { transform: none; } }
+.tips .line { gap: 10px; }
+.imp-controls { display: flex; align-items: center; gap: 6px; flex: none; flex-wrap: wrap; justify-content: flex-end; }
+.imp-controls select { max-width: 170px; }
+
+/* Pied : passer, points d'étape, retour et suite. */
+footer { flex: none; width: 100%; max-width: 600px; margin: 0 auto; padding: 14px 28px 26px; display: flex; align-items: center; gap: 10px; }
+#dots { flex: 1; display: flex; justify-content: center; gap: 7px; }
+#dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); transition: background-color 200ms, transform 200ms; }
+#dots i.on { background: var(--accent); transform: scale(1.25); }
+#skip { color: var(--dim); background: none; }
+#skip:hover { color: var(--fg); background: var(--hover); }
+footer .btn { height: 32px; padding: 0 16px; }
+#back[hidden] { display: block; visibility: hidden; }
+</style>
+</head>
+<body>
+<button id="music" aria-pressed="true" data-t-title="welcome.music" hidden><svg viewBox="0 0 16 16"><path d="M3 6.4h2L7.800 4v8L5 9.600H3z"/><path class="on" d="M10 6.200a2.600 2.600 0 0 1 0 3.600M11.600 4.600a4.800 4.800 0 0 1 0 6.800"/><path class="off" d="m10.400 6.400 3.200 3.200m0-3.200-3.200 3.200"/></svg></button>
+<main>
+  <section class="step on" data-step="hello">
+    <div class="orb"><div class="halo"></div><div class="wave"></div><div class="wave"></div><div class="wave"></div><div class="mark"><i></i></div></div>
+    <h1 data-t="welcome.title"></h1>
+    <p class="lead" data-t="welcome.lead"></p>
+    <p class="lead" data-t="welcome.tour"></p>
+    <p id="langs"><button class="btn" data-lang="fr">Français</button><button class="btn" data-lang="en">English</button></p>
+  </section>
+
+  <section class="step" data-step="import">
+    <h1 data-t="welcome.importTitle"></h1>
+    <p class="lead" data-t="welcome.importLead"></p>
+    <div class="card" id="row-import">
+      <div class="line"><div class="grow"><b data-t="welcome.import"></b><span class="sub wrap" data-t="welcome.importHint"></span></div><button class="btn" data-cmd="importArc" data-t="imp.btn"></button></div>
+    </div>
+    <div class="card" id="welcome-browsers"></div>
+    <p class="muted" style="font-size:12px;margin:10px 4px 0" data-t="welcome.importNote"></p>
+  </section>
+
+  <section class="step" data-step="theme">
+    <h1 data-t="welcome.themeTitle"></h1>
+    <p class="lead" data-t="welcome.themeLead"></p>
+    <div class="card"><div id="colors" role="group"></div></div>
+  </section>
+
+  <section class="step" data-step="default">
+    <h1 data-t="welcome.defaultTitle"></h1>
+    <p class="lead" data-t="welcome.defaultLead"></p>
+    <div class="card">
+      <div class="line"><div class="grow"><b data-t="set.default"></b><span class="sub wrap" id="default-state"></span></div><button class="btn primary" id="make-default" data-cmd="defaultBrowser" data-t="set.makeDefault"></button></div>
+      <div class="line"><div class="grow"><b data-t="set.title"></b><span class="sub wrap" data-t="welcome.settingsHint"></span></div><button class="btn" data-cmd="settings" data-key="settings">⌘,</button></div>
+    </div>
+  </section>
+
+  <section class="step" data-step="ready">
+    <h1 data-t="welcome.readyTitle"></h1>
+    <p class="lead" data-t="welcome.readyLead"></p>
+    <div class="card tips">
+      <div class="line"><i class="demo d-tab" aria-hidden="true"><b class="pg"></b><b class="r r1"></b><b class="r r2"></b><b class="rule"></b><b class="r r3 hot"></b><b class="cmd"></b></i><span class="grow" data-t="welcome.tipTab"></span><kbd data-key="newTab">⌘T</kbd></div>
+      <div class="line"><i class="demo d-pin" aria-hidden="true"><b class="pg"></b><b class="r r1"></b><b class="rule"></b><b class="r r3 hot"></b><b class="r r4"></b></i><span class="grow" data-t="welcome.tipPin"></span><kbd data-key="togglePin">⌘D</kbd></div>
+      <div class="line"><i class="demo d-space" aria-hidden="true"><b class="lists"><b class="r r1 hot"></b><b class="r r2 hot"></b><b class="r r3 hot"></b><b class="r r1 two"></b><b class="r r2 two"></b><b class="r r3 two"></b></b><b class="mask"></b><b class="pg"></b><b class="dot a"></b><b class="dot b"></b></i><span class="grow" data-t="welcome.tipSpace"></span><kbd data-key="nextSpace">⌥⌘→</kbd></div>
+      <div class="line"><i class="demo d-split" aria-hidden="true"><b class="pg"></b><b class="r r1"></b><b class="r r2 hot"></b><b class="r r3"></b><b class="p2"></b></i><span class="grow" data-t="welcome.tipSplit"></span><kbd data-key="addSplit">⌃⇧=</kbd></div>
+      <div class="line"><i class="demo d-side" aria-hidden="true"><b class="pg"></b><b class="sb"><b class="r r1"></b><b class="r r2 hot"></b><b class="r r3"></b></b></i><span class="grow" data-t="view.hideSidebar"></span><kbd data-key="toggleSidebar">⌘S</kbd></div>
+      <div class="line"><i class="demo d-little" aria-hidden="true"><b class="pg"></b><b class="r r1"></b><b class="r r2"></b><b class="lw"></b></i><span class="grow" data-t="file.newLittle"></span><kbd data-key="newLittle">⌥⌘N</kbd></div>
+    </div>
+    <p style="margin:12px 0 14px"><button class="btn" data-cmd="shortcuts" data-t="help.shortcuts"></button></p>
+    <div class="card support">
+      <div class="line">
+        <div class="grow"><b data-t="support.title"></b><span class="sub wrap" data-t="support.body"></span></div>
+        <button class="btn primary" data-cmd="support" data-t="support.button"></button>
+      </div>
+    </div>
+  </section>
+</main>
+<footer>
+  <button class="btn" id="skip" data-t="welcome.skip"></button>
+  <div id="dots"></div>
+  <button class="btn" id="back" data-t="welcome.back" hidden></button>
+  <button class="btn primary" id="next"></button>
+</footer>
+<script src="common.js"></script>
+<script src="import-ui.js"></script>
+<script src="welcome.js"></script>
+</body>
+</html>

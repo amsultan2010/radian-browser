@@ -1,0 +1,144 @@
+/* Socle commun à toute l'interface d'Orbe. */
+:root {
+  --accent: #7c6cf0;
+  --fg: #1d1d1f;
+  --dim: rgba(0, 0, 0, 0.52);
+  --faint: rgba(0, 0, 0, 0.28);
+  --hover: rgba(0, 0, 0, 0.06);
+  --pill: rgba(0, 0, 0, 0.07);
+  --line: rgba(0, 0, 0, 0.1);
+  --active: #ffffff;
+  --active-shadow: 0 1px 3px rgba(0, 0, 0, 0.13), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+  --base: #f3f3f5;
+  --panel: rgba(250, 250, 252, 0.94);
+  --panel-line: rgba(0, 0, 0, 0.12);
+  --tint: 18%;
+  --ease: cubic-bezier(0.33, 1, 0.68, 1);
+  /* Mouvements. Les mêmes courbes que celles du système pour les vues natives
+     (View.setBounds animé : ease-out, ease-in), afin que l'interface et les pages
+     partent et arrivent ensemble. */
+  --ease-out: cubic-bezier(0, 0, 0.58, 1);
+  --ease-in: cubic-bezier(0.42, 0, 1, 1);
+  /* Ressorts (durée + courbe, calculés par scripts/make-springs.js) : un ressort
+     amorti décrit comme dans SwiftUI par sa réponse et son amortissement.
+     Usage : `transition: transform var(--spring-snappy)`. */
+  /* snappy — réponse 0,2 s, amortissement 1, sans dépassement : lignes, panneaux, états pressés. */
+  --spring-snappy: 240ms linear(0, 0.04, 0.131, 0.243, 0.358, 0.466, 0.562, 0.645, 0.715, 0.774, 0.821, 0.859, 0.89, 0.914, 0.934, 0.949, 0.96, 0.97, 0.977, 0.982, 0.986, 0.99, 0.992, 0.994, 1);
+  /* smooth — réponse 0,3 s, amortissement 1, sans dépassement : grands déplacements (barre flottante). */
+  --spring-smooth: 360ms linear(0, 0.04, 0.131, 0.243, 0.358, 0.466, 0.562, 0.645, 0.715, 0.774, 0.821, 0.859, 0.89, 0.914, 0.934, 0.949, 0.96, 0.97, 0.977, 0.982, 0.986, 0.99, 0.992, 0.994, 1);
+  /* bouncy — réponse 0,3 s, amortissement 0,7, dépassement 4,6 % : éléments relâchés (tuile, pastille d'Espace, message). */
+  --spring-bouncy: 340ms linear(0, 0.038, 0.132, 0.256, 0.391, 0.524, 0.646, 0.751, 0.839, 0.908, 0.96, 0.998, 1.023, 1.037, 1.044, 1.046, 1.044, 1.039, 1.033, 1.027, 1.021, 1.015, 1.011, 1.007, 1);
+  /* État pressé : l'enfoncement est bref, le relâchement se fait au ressort. */
+  --press: 80ms var(--ease-out);
+  color-scheme: light dark;
+}
+
+/* Apparence sombre : celle du système, ou celle qu'un Espace impose à ses vues
+   (attribut data-scheme posé sur <html> : « light » ou « dark »). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-scheme="light"]) {
+    --fg: #f3f3f5;
+    --dim: rgba(255, 255, 255, 0.55);
+    --faint: rgba(255, 255, 255, 0.3);
+    --hover: rgba(255, 255, 255, 0.07);
+    --pill: rgba(255, 255, 255, 0.09);
+    --line: rgba(255, 255, 255, 0.12);
+    --active: rgba(255, 255, 255, 0.17);
+    --active-shadow: none;
+    --base: #16161a;
+    --panel: rgba(38, 38, 43, 0.95);
+    --panel-line: rgba(255, 255, 255, 0.14);
+    --tint: 24%;
+  }
+}
+:root[data-scheme="dark"] {
+  --fg: #f3f3f5;
+  --dim: rgba(255, 255, 255, 0.55);
+  --faint: rgba(255, 255, 255, 0.3);
+  --hover: rgba(255, 255, 255, 0.07);
+  --pill: rgba(255, 255, 255, 0.09);
+  --line: rgba(255, 255, 255, 0.12);
+  --active: rgba(255, 255, 255, 0.17);
+  --active-shadow: none;
+  --base: #16161a;
+  --panel: rgba(38, 38, 43, 0.95);
+  --panel-line: rgba(255, 255, 255, 0.14);
+  --tint: 24%;
+  color-scheme: dark;
+}
+:root[data-scheme="light"] { color-scheme: light; }
+
+* { box-sizing: border-box; }
+
+/* Un élément masqué le reste, même si une règle lui donne un « display ». */
+[hidden] { display: none !important; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  color: var(--fg);
+  font: 13px/1.35 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* Dessin de la police adapté au corps (SF Text / Display), crénage ; pas de
+     « optimizeLegibility », coûteux sur les longues listes. */
+  font-optical-sizing: auto;
+  font-kerning: normal;
+  text-rendering: auto;
+  user-select: none;
+  cursor: default;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: default;
+}
+
+input, select {
+  font: inherit;
+  color: inherit;
+}
+
+.favicon { width: 16px; height: 16px; border-radius: 4px; flex: none; object-fit: contain; }
+
+.letter {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: color-mix(in srgb, var(--accent) 70%, #555);
+}
+
+svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+
+/* ==== Plateformes (html.mac / html.win, classe posée par common.js) ========== */
+html.win body, html.win kbd { font-family: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; }
+/* ==== Fin du bloc plateformes ============================================== */
+
+/* « Réduire les animations » (réglage du système) : plus de mouvement, seulement des changements d'état. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+/* Adresse affichée à l'étroit (common.js, `addressInto`) : le domaine en avant ; quand la
+   place manque, le chemin cède d'abord, puis le nom d'hôte s'efface par la GAUCHE — sa
+   fin (le domaine enregistré) reste toujours visible. */
+.addr { display: flex; min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; }
+.addr .addr-host { flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; direction: rtl; }
+.addr .addr-host bdi { unicode-bidi: isolate; direction: ltr; }
+.addr .addr-rest { flex: 0 1000 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.addr .addr-sub, .addr .addr-rest { opacity: 0.6; }
+.addr .addr-domain { font-weight: 650; }

@@ -1,0 +1,84 @@
+Orbe {version} pour Windows
+==========================
+
+Orbe est un navigateur à barre latérale, libre (licence MIT) et en français.
+Code source : https://github.com/amadoubaui/orbe
+
+
+Lancer Orbe
+-----------
+
+1. Décompresse l'archive en entier (clic droit sur le fichier zip, puis
+   « Extraire tout… »). Orbe ne fonctionne pas lancé depuis l'intérieur
+   de l'archive.
+2. Place le dossier « Orbe » où tu veux, par exemple dans Documents.
+   Garde tous ses fichiers ensemble : Orbe.exe a besoin de ses voisins.
+3. Ouvre le dossier et double-clique sur Orbe.exe.
+
+Il n'y a pas d'installateur : rien n'est copié ailleurs sur l'ordinateur.
+Pour retrouver Orbe facilement, clic droit sur Orbe.exe, puis « Épingler
+à la barre des tâches » ou « Épingler à l'écran de démarrage ».
+
+Windows 10 ou 11, en 64 bits.
+
+
+« Windows a protégé votre ordinateur »
+--------------------------------------
+
+Au premier lancement, Windows SmartScreen peut afficher ce message bleu.
+Il ne signale pas un virus : il apparaît pour tout programme qui n'est pas
+signé par un éditeur enregistré auprès de Microsoft. Orbe est un logiciel
+libre, sans certificat de signature (ils sont payants).
+
+Pour continuer : clique sur « Informations complémentaires », puis sur
+« Exécuter quand même ». Windows ne reposera plus la question pour ce
+fichier.
+
+Ne le fais que si l'archive vient bien de la page du projet :
+https://github.com/amadoubaui/orbe
+
+
+Où sont tes données
+-------------------
+
+Onglets, Espaces, historique, réglages, mots de passe et extensions sont
+rangés dans ton profil Windows, pas dans le dossier d'Orbe :
+
+    %APPDATA%\Orbe
+
+(colle cette ligne dans la barre d'adresse de l'Explorateur de fichiers ;
+elle mène en général à C:\Users\ton-nom\AppData\Roaming\Orbe)
+
+Mettre Orbe à jour : remplace le dossier « Orbe » par celui de la nouvelle
+archive, tes données restent en place.
+Les mots de passe sont chiffrés avec ton compte Windows : ils ne se
+relisent pas depuis un autre compte ni un autre ordinateur.
+
+
+Faire d'Orbe le navigateur par défaut
+-------------------------------------
+
+Windows n'autorise aucun programme à se déclarer navigateur par défaut
+tout seul : le choix se fait dans les Paramètres.
+
+1. Dans Orbe : Réglages (Ctrl+,), puis « Définir Orbe par défaut ».
+   Orbe s'inscrit comme navigateur dans ton compte Windows et ouvre
+   Paramètres → Applications → Applications par défaut.
+2. Dans cette page, choisis Orbe, puis « Définir par défaut »
+   (Windows 11), ou clique sur le navigateur actuel sous « Navigateur
+   web » et choisis Orbe (Windows 10).
+
+L'inscription retient l'emplacement d'Orbe.exe : si tu déplaces le
+dossier, refais l'étape 1.
+
+Pour annuler : menu « ⋯ » d'Orbe, puis « Retirer Orbe des navigateurs de
+Windows ». Choisis d'abord un autre navigateur par défaut dans les
+Paramètres.
+
+
+Désinstaller
+------------
+
+Retire d'abord l'inscription (ci-dessus) si tu l'avais faite, supprime le
+dossier « Orbe », puis, pour effacer aussi tes données, le dossier
+%APPDATA%\Orbe.
