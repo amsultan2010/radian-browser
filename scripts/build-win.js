@@ -3,9 +3,9 @@
 // renomme, y place le code d'Orbe, coupe les fusibles, inscrit l'icône et les
 // informations de version dans Orbe.exe, puis en fait une archive zip.
 //
-//   node scripts/build-win.js          -> <runtime>/dist/Orbe/Orbe.exe
-//                                         <runtime>/dist/Orbe-<version>-windows-x64.zip
-//   node scripts/build-win.js --icon   -> régénère d'abord assets/orbe.ico
+//   node scripts/build-win.js          -> <runtime>/dist/Radian/Radian.exe
+//                                         <runtime>/dist/Radian-<version>-windows-x64.zip
+//   node scripts/build-win.js --icon   -> régénère d'abord assets/radian.ico
 //   node scripts/build-win.js --fuses  -> relit seulement les fusibles de l'application fabriquée
 //
 // À lancer sous Windows (le moteur installé doit être celui de Windows).
@@ -26,12 +26,12 @@ const pkg = require('../package.json');
 const root = dev.root;
 const args = process.argv.slice(2);
 const arch = process.env.ORBE_WIN_ARCH || (process.arch === 'arm64' && process.platform === 'win32' ? 'arm64' : 'x64');
-const name = 'Orbe';
-const zipName = `Orbe-${pkg.version}-windows-${arch}.zip`;
+const name = 'Radian';
+const zipName = `Radian-${pkg.version}-windows-${arch}.zip`;
 const out = path.join(dev.runtime, 'dist');
 const appDir = path.join(out, name);
-const exe = path.join(appDir, 'Orbe.exe');
-const ico = path.join(root, 'assets', 'orbe.ico');
+const exe = path.join(appDir, 'Radian.exe');
+const ico = path.join(root, 'assets', 'radian.ico');
 
 if (args.includes('--fuses')) {
   // Relecture seule de l'application déjà fabriquée.
@@ -71,7 +71,7 @@ const target = path.join(resources, 'app');
 fs.mkdirSync(path.join(target, 'assets'), { recursive: true });
 fs.cpSync(path.join(root, 'src'), path.join(target, 'src'), { recursive: true });
 for (const f of ['package.json', 'LICENSE']) fs.copyFileSync(path.join(root, f), path.join(target, f));
-for (const f of ['blocklist.txt', 'orbe.ico']) fs.copyFileSync(path.join(root, 'assets', f), path.join(target, 'assets', f));
+for (const f of ['blocklist.txt', 'radian.ico']) fs.copyFileSync(path.join(root, 'assets', f), path.join(target, 'assets', f));
 
 // Fusibles d'Electron (scripts/fuses.js) : sous Windows, la table est dans Orbe.exe.
 cutFuses(exe);
@@ -83,14 +83,14 @@ peResources.edit(exe, {
   icon: ico,
   decodePng,
   version: {
-    ProductName: 'Orbe',
-    FileDescription: 'Orbe',
-    CompanyName: 'PIXEWORK',
+    ProductName: 'Radian',
+    FileDescription: 'Radian',
+    CompanyName: 'Radian',
     FileVersion: pkg.version,
     ProductVersion: pkg.version,
-    OriginalFilename: 'Orbe.exe',
-    InternalName: 'Orbe',
-    LegalCopyright: 'Logiciel libre — licence MIT',
+    OriginalFilename: 'Radian.exe',
+    InternalName: 'Radian',
+    LegalCopyright: 'Free software — MIT license. Based on Orbe.',
     // Marque posée par Electron pour l'installateur Squirrel, sans objet ici.
     SquirrelAwareVersion: null,
   },

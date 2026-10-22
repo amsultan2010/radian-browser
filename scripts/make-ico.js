@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Fabrique assets/orbe.ico à partir de assets/icon.png, sans dépendance :
+// Fabrique assets/radian.ico à partir de assets/icon.png, sans dépendance :
 // décodage du PNG, réduction aux tailles voulues, puis empaquetage ICO
 // (chaque taille y est rangée sous forme de PNG, format accepté depuis Vista).
 //   node scripts/make-ico.js [entrée.png] [sortie.ico]
@@ -143,7 +143,7 @@ function makeIco(pngFile, icoFile) {
 
 if (require.main === module) {
   const assets = path.join(__dirname, '..', 'assets');
-  const out = makeIco(process.argv[2] || path.join(assets, 'icon.png'), process.argv[3] || path.join(assets, 'orbe.ico'));
+  const out = makeIco(process.argv[2] || path.join(assets, 'icon.png'), process.argv[3] || path.join(assets, 'radian.ico'));
   console.log('Icône écrite : ' + out);
 }
 

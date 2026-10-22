@@ -21,9 +21,9 @@ const { decodePng, resize } = require('../scripts/make-ico');
 const pkg = require('../package.json');
 const root = dev.root;
 const dist = path.join(dev.runtime, 'dist');
-const exe = path.join(dist, 'Orbe', 'Orbe.exe');
+const exe = path.join(dist, 'Radian', 'Radian.exe');
 const engine = path.join(dev.runtime, 'node_modules', 'electron', 'dist', 'electron.exe');
-const zip = path.join(dist, `Orbe-${pkg.version}-windows-x64.zip`);
+const zip = path.join(dist, `Radian-${pkg.version}-windows-x64.zip`);
 const probe = path.join(root, 'tests', 'win-probe.js');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'orbe-paquet-'));
 const shots = process.env.ORBE_SHOTS || tmp;
@@ -53,12 +53,12 @@ const sources = (args, env) => launch(engine, [...args, root, '--selftest'], env
 // --- 1. Archive -------------------------------------------------------------------
 check(fs.existsSync(exe), 'Orbe.exe fabriqué', exe);
 check(fs.existsSync(zip), 'archive nommée Orbe-<version>-windows-x64.zip', path.basename(zip));
-const notice = fs.readFileSync(path.join(dist, 'Orbe', 'LISEZMOI.txt'), 'utf8');
-check(/SmartScreen/.test(notice) && /%APPDATA%\\Orbe/.test(notice) && /navigateur par défaut/.test(notice) && notice.includes(pkg.version), 'LISEZMOI.txt : lancement, SmartScreen, données, navigateur par défaut');
+const notice = fs.readFileSync(path.join(dist, 'Radian', 'LISEZMOI.txt'), 'utf8');
+check(/SmartScreen/.test(notice) && /%APPDATA%\\Radian/.test(notice) && /navigateur par défaut/.test(notice) && notice.includes(pkg.version), 'LISEZMOI.txt : lancement, SmartScreen, données, navigateur par défaut');
 check(notice.charCodeAt(0) === 0xfeff && /\r\n/.test(notice) && !/[^\r]\n/.test(notice), 'LISEZMOI.txt lisible par le Bloc-notes (UTF-8 avec marque, fins de ligne de Windows)');
 if (process.platform === 'win32') {
   const list = execFileSync('tar.exe', ['-tf', zip], { encoding: 'utf8', maxBuffer: 1 << 26 }).split(/\r?\n/).filter(Boolean);
-  check(list.every((f) => f.startsWith('Orbe/')) && list.includes('Orbe/Orbe.exe') && list.includes('Orbe/LISEZMOI.txt'), 'archive : un seul dossier « Orbe », avec Orbe.exe et LISEZMOI.txt', `${list.length} entrées`);
+  check(list.every((f) => f.startsWith('Radian/')) && list.includes('Radian/Radian.exe') && list.includes('Radian/LISEZMOI.txt'), 'archive : un seul dossier « Orbe », avec Orbe.exe et LISEZMOI.txt', `${list.length} entrées`);
 }
 
 // --- 2. Fusibles ------------------------------------------------------------------
@@ -95,7 +95,7 @@ if (process.platform === 'win32') {
   };
   const v = JSON.parse(ps('param($f)\n[Console]::OutputEncoding = [Text.Encoding]::UTF8\n(Get-Item $f).VersionInfo | Select-Object ProductName, FileDescription, CompanyName, FileVersion, ProductVersion, OriginalFilename, InternalName, LegalCopyright, FileMajorPart, FileMinorPart, FileBuildPart | ConvertTo-Json', [exe]));
   info('(Get-Item Orbe.exe).VersionInfo : ' + JSON.stringify(v));
-  const want = { ProductName: 'Orbe', FileDescription: 'Orbe', CompanyName: 'PIXEWORK', FileVersion: pkg.version, ProductVersion: pkg.version, OriginalFilename: 'Orbe.exe' };
+  const want = { ProductName: 'Radian', FileDescription: 'Radian', CompanyName: 'Radian', FileVersion: pkg.version, ProductVersion: pkg.version, OriginalFilename: 'Radian.exe' };
   for (const [k, val] of Object.entries(want)) check(v[k] === val, `version : ${k} = ${val}`, v[k] === val ? '' : `lu : ${v[k]}`);
   check([v.FileMajorPart, v.FileMinorPart, v.FileBuildPart].join('.') === pkg.version.split(/[+-]/)[0], 'version : numéro binaire', [v.FileMajorPart, v.FileMinorPart, v.FileBuildPart].join('.'));
 
@@ -105,7 +105,7 @@ if (process.platform === 'win32') {
   const got = shot(exe, 'icone-Orbe.exe.png');
   const before = shot(engine, 'icone-electron.exe.png');
   // Référence : la même taille dans assets/orbe.ico (ou la plus grande, réduite).
-  const entries = peResources.readIco(fs.readFileSync(path.join(root, 'assets', 'orbe.ico')));
+  const entries = peResources.readIco(fs.readFileSync(path.join(root, 'assets', 'radian.ico')));
   const same = entries.find((e) => (e.width || 256) === got.img.width);
   const ref = same ? decodePng(same.data) : resize(decodePng(entries[entries.length - 1].data), got.img.width);
   // Comparaison sur fond blanc : écart moyen par canal, et couleur moyenne.

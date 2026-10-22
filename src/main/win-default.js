@@ -13,7 +13,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const ID = 'Orbe';
+const ID = 'Radian';
 const ROOT = 'HKEY_CURRENT_USER';
 const FILE_TYPES = ['.htm', '.html', '.shtml', '.xht', '.xhtml'];
 const URL_TYPES = ['http', 'https'];
@@ -32,17 +32,17 @@ function launcher() {
 //   keys   : clés créées par Orbe, retirées en entier à l'annulation ;
 //   values : valeurs posées dans des clés partagées, retirées une à une.
 // id : nom d'inscription (« Orbe » ; les tests en prennent un autre).
-function plan({ exe, args = [], id = ID, name = 'Orbe' } = {}) {
+function plan({ exe, args = [], id = ID, name = 'Radian' } = {}) {
   const progId = id + 'HTML';
   const base = [quote(exe), ...args.map(quote)].join(' ');
   const icon = exe + ',0';
   const classes = `${ROOT}\\Software\\Classes\\${progId}`;
   const client = `${ROOT}\\Software\\Clients\\StartMenuInternet\\${id}`;
   const caps = `${client}\\Capabilities`;
-  const description = 'Orbe — un navigateur à barre latérale, libre et en français.';
+  const description = 'Radian — a free, open-source sidebar browser.';
   const keys = [
-    { key: classes, values: { '': `Document HTML ${name}`, FriendlyTypeName: `Document HTML ${name}` } },
-    { key: `${classes}\\Application`, values: { ApplicationName: name, ApplicationIcon: icon, ApplicationDescription: description, ApplicationCompany: 'PIXEWORK' } },
+    { key: classes, values: { '': `${name} HTML Document`, FriendlyTypeName: `${name} HTML Document` } },
+    { key: `${classes}\\Application`, values: { ApplicationName: name, ApplicationIcon: icon, ApplicationDescription: description, ApplicationCompany: 'Radian' } },
     { key: `${classes}\\DefaultIcon`, values: { '': icon } },
     { key: `${classes}\\shell\\open\\command`, values: { '': `${base} "%1"` } },
     { key: client, values: { '': name } },

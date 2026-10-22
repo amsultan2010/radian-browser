@@ -17,7 +17,7 @@ const { decodePng } = require('../scripts/make-ico');
 const winDefault = require('../src/main/win-default');
 
 const root = path.join(__dirname, '..');
-const ico = path.join(root, 'assets', 'orbe.ico');
+const ico = path.join(root, 'assets', 'radian.ico');
 const runtime = process.env.ORBE_RUNTIME || path.join(os.homedir(), '.orbe-dev');
 const sample = [process.env.ORBE_PE_SAMPLE, path.join(runtime, 'node_modules', 'electron', 'dist', 'electron.exe')].find((f) => f && fs.existsSync(f));
 const real = { skip: sample ? false : 'electron.exe absent (voir ORBE_PE_SAMPLE)' };
@@ -81,7 +81,7 @@ test('icône : image classique (BMP et masque) à partir de pixels RVBA', () => 
   assert.strictEqual(dib[60], 0);
 });
 
-test('icône : assets/orbe.ico se relit, toutes tailles', () => {
+test('icône : assets/radian.ico se relit, toutes tailles', () => {
   const images = pe.readIco(fs.readFileSync(ico));
   assert.deepStrictEqual(images.map((i) => i.width || 256), [16, 24, 32, 48, 64, 128, 256]);
   for (const im of images) assert.strictEqual(decodePng(im.data).width, im.width || 256);
@@ -225,24 +225,24 @@ test('exécutable abîmé : somme de contrôle fausse détectée', real, () => {
 test('registre : plan de l’inscription et fichier .reg', () => {
   const p = winDefault.plan({ exe: 'C:\\Outils\\Orbe\\Orbe.exe' });
   const flat = Object.fromEntries(p.keys.map((k) => [k.key.replace('HKEY_CURRENT_USER\\', ''), k.values]));
-  assert.strictEqual(flat['Software\\Classes\\OrbeHTML\\shell\\open\\command'][''], '"C:\\Outils\\Orbe\\Orbe.exe" "%1"');
-  assert.strictEqual(flat['Software\\Clients\\StartMenuInternet\\Orbe\\shell\\open\\command'][''], '"C:\\Outils\\Orbe\\Orbe.exe"');
-  assert.deepStrictEqual(flat['Software\\Clients\\StartMenuInternet\\Orbe\\Capabilities\\URLAssociations'], { http: 'OrbeHTML', https: 'OrbeHTML' });
-  assert.strictEqual(flat['Software\\Clients\\StartMenuInternet\\Orbe\\Capabilities\\FileAssociations']['.html'], 'OrbeHTML');
-  assert.deepStrictEqual(p.values[0], { key: 'HKEY_CURRENT_USER\\Software\\RegisteredApplications', name: 'Orbe', value: 'Software\\Clients\\StartMenuInternet\\Orbe\\Capabilities' });
+  assert.strictEqual(flat['Software\\Classes\\RadianHTML\\shell\\open\\command'][''], '"C:\\Outils\\Orbe\\Orbe.exe" "%1"');
+  assert.strictEqual(flat['Software\\Clients\\StartMenuInternet\\Radian\\shell\\open\\command'][''], '"C:\\Outils\\Orbe\\Orbe.exe"');
+  assert.deepStrictEqual(flat['Software\\Clients\\StartMenuInternet\\Radian\\Capabilities\\URLAssociations'], { http: 'RadianHTML', https: 'RadianHTML' });
+  assert.strictEqual(flat['Software\\Clients\\StartMenuInternet\\Radian\\Capabilities\\FileAssociations']['.html'], 'RadianHTML');
+  assert.deepStrictEqual(p.values[0], { key: 'HKEY_CURRENT_USER\\Software\\RegisteredApplications', name: 'Radian', value: 'Software\\Clients\\StartMenuInternet\\Radian\\Capabilities' });
   // Tout est sous HKEY_CURRENT_USER.
   assert.ok([...p.keys, ...p.values].every((k) => k.key.startsWith('HKEY_CURRENT_USER\\Software\\')));
 
   const reg = winDefault.regFile(p);
   assert.ok(reg.startsWith('Windows Registry Editor Version 5.00\r\n'));
-  assert.ok(reg.includes('[HKEY_CURRENT_USER\\Software\\Classes\\OrbeHTML\\shell\\open\\command]\r\n@="\\"C:\\\\Outils\\\\Orbe\\\\Orbe.exe\\" \\"%1\\""\r\n'));
+  assert.ok(reg.includes('[HKEY_CURRENT_USER\\Software\\Classes\\RadianHTML\\shell\\open\\command]\r\n@="\\"C:\\\\Outils\\\\Orbe\\\\Orbe.exe\\" \\"%1\\""\r\n'));
   assert.ok(reg.includes('"IconsVisible"=dword:00000001'));
-  assert.ok(reg.includes('[HKEY_CURRENT_USER\\Software\\RegisteredApplications]\r\n"Orbe"="Software\\\\Clients\\\\StartMenuInternet\\\\Orbe\\\\Capabilities"'));
+  assert.ok(reg.includes('[HKEY_CURRENT_USER\\Software\\RegisteredApplications]\r\n"Radian"="Software\\\\Clients\\\\StartMenuInternet\\\\Radian\\\\Capabilities"'));
 
   const undo = winDefault.regFile(p, true);
-  assert.ok(undo.includes('[-HKEY_CURRENT_USER\\Software\\Classes\\OrbeHTML]'));
-  assert.ok(undo.includes('[-HKEY_CURRENT_USER\\Software\\Clients\\StartMenuInternet\\Orbe]'));
-  assert.ok(undo.includes('[HKEY_CURRENT_USER\\Software\\RegisteredApplications]\r\n"Orbe"=-'));
+  assert.ok(undo.includes('[-HKEY_CURRENT_USER\\Software\\Classes\\RadianHTML]'));
+  assert.ok(undo.includes('[-HKEY_CURRENT_USER\\Software\\Clients\\StartMenuInternet\\Radian]'));
+  assert.ok(undo.includes('[HKEY_CURRENT_USER\\Software\\RegisteredApplications]\r\n"Radian"=-'));
   // L'annulation ne retire aucune clé partagée, seulement des valeurs.
   assert.deepStrictEqual(undo.match(/^\[-.*\]$/gm).length, 2);
 

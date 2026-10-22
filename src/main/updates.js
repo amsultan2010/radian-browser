@@ -29,7 +29,7 @@ const { execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const REPO = 'amadoubaui/orbe';
+const REPO = 'amsultan2010/radian-browser';
 const API_HOST = 'api.github.com';
 const ENDPOINT = `https://${API_HOST}/repos/${REPO}/releases/latest`;
 const RELEASES = `https://github.com/${REPO}/releases`;
@@ -84,8 +84,8 @@ function compare(a, b) {
 
 // Nom de l'archive publiée pour ce système (scripts/build-mac.js, build-win.js).
 function assetName(version, platform = deps.platform, arch = deps.arch) {
-  if (platform === 'darwin' && arch === 'arm64') return `Orbe-${version}-mac-arm64.zip`;
-  if (platform === 'win32' && arch === 'x64') return `Orbe-${version}-windows-x64.zip`;
+  if (platform === 'darwin' && arch === 'arm64') return `Radian-${version}-mac-arm64.zip`;
+  if (platform === 'win32' && arch === 'x64') return `Radian-${version}-windows-x64.zip`;
   return '';
 }
 
@@ -299,7 +299,7 @@ function freeName(dir, name) {
 // Windows à SmartScreen (flux Zone.Identifier, zone 3). Rend true si la marque
 // est posée et relue ; sur les autres systèmes, il n'y a rien à poser.
 function quarantineValue(now = Date.now()) {
-  return `0081;${Math.floor(now / 1000).toString(16)};Orbe;`;
+  return `0081;${Math.floor(now / 1000).toString(16)};Radian;`;
 }
 function markDownloaded(file, source) {
   if (deps.mark) return Promise.resolve(deps.mark(file, source)).then((v) => !!v, () => false);

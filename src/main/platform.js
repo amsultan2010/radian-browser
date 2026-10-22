@@ -105,7 +105,7 @@ function adaptLocales(locales) {
 // --- Habillage des fenêtres ---------------------------------------------------
 const CAPTION_H = 32; // hauteur des boutons de fenêtre de Windows
 const CAPTION_TOOLBAR_H = 46; // … quand la barre d'outils est affichée
-const ICON = path.join(__dirname, '..', '..', 'assets', 'orbe.ico');
+const ICON = path.join(__dirname, '..', '..', 'assets', 'radian.ico');
 
 // Fond de la coque, comme le calcule base.css : couleur de l'Espace mêlée au
 // fond clair ou sombre. Sert de fond opaque et de couleur aux boutons de fenêtre.

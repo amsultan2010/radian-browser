@@ -1,4 +1,4 @@
-# Tests d'Orbe sur macOS et Windows, à chaque envoi.
+# Tests de Radian sur macOS et Windows, à chaque envoi.
 # Sous Windows s'ajoutent la fabrication de l'application, sa vérification
 # (fusibles, icône, informations de version, inscription comme navigateur) et
 # des captures d'écran, publiées comme pièces jointes de l'exécution.
@@ -62,9 +62,9 @@ jobs:
       - name: L'application fabriquée démarre (Windows)
         if: runner.os == 'Windows'
         shell: bash
-        run: ORBE_SCENARIO=tests/smoke.js ORBE_USER_DATA="$RUNNER_TEMP/orbe-smoke" "$HOME/.orbe-dev/dist/Orbe/Orbe.exe" --selftest --orbe-test
+        run: ORBE_SCENARIO=tests/smoke.js ORBE_USER_DATA="$RUNNER_TEMP/orbe-smoke" "$HOME/.orbe-dev/dist/Radian/Radian.exe" --selftest --orbe-test
 
-      - name: Archive, fusibles, version et icône de Orbe.exe (Windows)
+      - name: Archive, fusibles, version et icône de Radian.exe (Windows)
         if: runner.os == 'Windows'
         run: node tests/win-package.js
 
@@ -73,54 +73,54 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $v = (Get-Item "$HOME/.orbe-dev/dist/Orbe/Orbe.exe").VersionInfo
+          $v = (Get-Item "$HOME/.orbe-dev/dist/Radian/Radian.exe").VersionInfo
           $v | Format-List ProductName, FileDescription, CompanyName, FileVersion, ProductVersion, OriginalFilename, InternalName, LegalCopyright
-          if ($v.ProductName -ne 'Orbe' -or $v.FileDescription -ne 'Orbe' -or $v.CompanyName -ne 'PIXEWORK' -or $v.OriginalFilename -ne 'Orbe.exe') { throw 'Informations de version inattendues' }
+          if ($v.ProductName -ne 'Radian' -or $v.FileDescription -ne 'Radian' -or $v.CompanyName -ne 'Radian' -or $v.OriginalFilename -ne 'Radian.exe') { throw 'Informations de version inattendues' }
           if ($v.FileVersion -ne $env:ORBE_VERSION -or $v.ProductVersion -ne $env:ORBE_VERSION) { throw "Version inattendue : $($v.FileVersion)" }
 
       - name: Navigateur par défaut — inscription (Windows)
         if: runner.os == 'Windows'
         shell: bash
-        run: ORBE_WIN_DEFAULT_STEP=register ORBE_SCENARIO=tests/win-default.js ORBE_USER_DATA="$RUNNER_TEMP/orbe-defaut" "$HOME/.orbe-dev/dist/Orbe/Orbe.exe" --selftest --orbe-test
+        run: ORBE_WIN_DEFAULT_STEP=register ORBE_SCENARIO=tests/win-default.js ORBE_USER_DATA="$RUNNER_TEMP/orbe-defaut" "$HOME/.orbe-dev/dist/Radian/Radian.exe" --selftest --orbe-test
 
       - name: Navigateur par défaut — registre relu après l'inscription (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $exe = (Resolve-Path "$HOME/.orbe-dev/dist/Orbe/Orbe.exe").Path
-          reg query 'HKCU\Software\Classes\OrbeHTML' /s
-          if ($LASTEXITCODE) { throw 'OrbeHTML absent' }
-          reg query 'HKCU\Software\Clients\StartMenuInternet\Orbe' /s
-          if ($LASTEXITCODE) { throw 'StartMenuInternet\Orbe absent' }
-          reg query 'HKCU\Software\RegisteredApplications' /v Orbe
-          if ($LASTEXITCODE) { throw 'Orbe absent de RegisteredApplications' }
+          $exe = (Resolve-Path "$HOME/.orbe-dev/dist/Radian/Radian.exe").Path
+          reg query 'HKCU\Software\Classes\RadianHTML' /s
+          if ($LASTEXITCODE) { throw 'RadianHTML absent' }
+          reg query 'HKCU\Software\Clients\StartMenuInternet\Radian' /s
+          if ($LASTEXITCODE) { throw 'StartMenuInternet\Radian absent' }
+          reg query 'HKCU\Software\RegisteredApplications' /v Radian
+          if ($LASTEXITCODE) { throw 'Radian absent de RegisteredApplications' }
           # Liste des applications inscrites : Orbe y figure, et son chemin mène à des capacités lisibles.
           $apps = Get-ItemProperty 'HKCU:\Software\RegisteredApplications'
           Write-Host "Applications inscrites pour l'utilisateur : $(($apps.PSObject.Properties | Where-Object { $_.Name -notlike 'PS*' } | ForEach-Object Name) -join ', ')"
-          $caps = "HKCU:\$($apps.Orbe)"
-          if ((Get-ItemProperty $caps).ApplicationName -ne 'Orbe') { throw 'Capacités illisibles' }
-          if ((Get-ItemProperty $caps).ApplicationDescription -notmatch 'français') { throw 'Description mal encodée' }
-          foreach ($scheme in 'http', 'https') { if ((Get-ItemProperty "$caps\URLAssociations").$scheme -ne 'OrbeHTML') { throw "Capacité $scheme absente" } }
-          foreach ($ext in '.htm', '.html') { if ((Get-ItemProperty "$caps\FileAssociations").$ext -ne 'OrbeHTML') { throw "Capacité $ext absente" } }
-          $cmd = (Get-ItemProperty 'HKCU:\Software\Classes\OrbeHTML\shell\open\command').'(default)'
+          $caps = "HKCU:\$($apps.Radian)"
+          if ((Get-ItemProperty $caps).ApplicationName -ne 'Radian') { throw 'Capacités illisibles' }
+          if ((Get-ItemProperty $caps).ApplicationDescription -notmatch 'Radian — a') { throw 'Description mal encodée' }
+          foreach ($scheme in 'http', 'https') { if ((Get-ItemProperty "$caps\URLAssociations").$scheme -ne 'RadianHTML') { throw "Capacité $scheme absente" } }
+          foreach ($ext in '.htm', '.html') { if ((Get-ItemProperty "$caps\FileAssociations").$ext -ne 'RadianHTML') { throw "Capacité $ext absente" } }
+          $cmd = (Get-ItemProperty 'HKCU:\Software\Classes\RadianHTML\shell\open\command').'(default)'
           if ($cmd -ne "`"$exe`" `"%1`"") { throw "Commande inattendue : $cmd" }
           Write-Host "Commande d'ouverture : $cmd"
 
       - name: Navigateur par défaut — retrait (Windows)
         if: runner.os == 'Windows'
         shell: bash
-        run: ORBE_WIN_DEFAULT_STEP=unregister ORBE_SCENARIO=tests/win-default.js ORBE_USER_DATA="$RUNNER_TEMP/orbe-defaut" "$HOME/.orbe-dev/dist/Orbe/Orbe.exe" --selftest --orbe-test
+        run: ORBE_WIN_DEFAULT_STEP=unregister ORBE_SCENARIO=tests/win-default.js ORBE_USER_DATA="$RUNNER_TEMP/orbe-defaut" "$HOME/.orbe-dev/dist/Radian/Radian.exe" --selftest --orbe-test
 
       - name: Navigateur par défaut — registre relu après le retrait (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          foreach ($key in 'HKCU:\Software\Classes\OrbeHTML', 'HKCU:\Software\Clients\StartMenuInternet\Orbe') { if (Test-Path $key) { throw "Clé encore présente : $key" } }
+          foreach ($key in 'HKCU:\Software\Classes\RadianHTML', 'HKCU:\Software\Clients\StartMenuInternet\Radian') { if (Test-Path $key) { throw "Clé encore présente : $key" } }
           $apps = Get-ItemProperty 'HKCU:\Software\RegisteredApplications'
-          if ($null -ne $apps.Orbe) { throw 'Orbe encore dans RegisteredApplications' }
+          if ($null -ne $apps.Radian) { throw 'Radian encore dans RegisteredApplications' }
           foreach ($ext in '.htm', '.html') {
             $p = Get-ItemProperty "HKCU:\Software\Classes\$ext\OpenWithProgids" -ErrorAction SilentlyContinue
-            if ($p -and ($p.PSObject.Properties.Name -contains 'OrbeHTML')) { throw "OrbeHTML encore proposé pour $ext" }
+            if ($p -and ($p.PSObject.Properties.Name -contains 'RadianHTML')) { throw "RadianHTML encore proposé pour $ext" }
           }
           Write-Host 'Plus aucune trace de l''inscription dans le registre.'
 
@@ -136,6 +136,6 @@ jobs:
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
-          name: Orbe-${{ env.ORBE_VERSION }}-windows-x64
-          path: ~/.orbe-dev/dist/Orbe-${{ env.ORBE_VERSION }}-windows-x64.zip
+          name: Radian-${{ env.ORBE_VERSION }}-windows-x64
+          path: ~/.orbe-dev/dist/Radian-${{ env.ORBE_VERSION }}-windows-x64.zip
           compression-level: 0
