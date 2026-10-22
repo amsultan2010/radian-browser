@@ -7,6 +7,21 @@
   "license": "MIT",
   "author": "Abdullah Sultan",
   "repository": "github:amsultan2010/radian-browser",
+  "homepage": "https://github.com/amsultan2010/radian-browser#readme",
+  "bugs": {
+    "url": "https://github.com/amsultan2010/radian-browser/issues"
+  },
+  "keywords": [
+    "browser",
+    "web-browser",
+    "arc",
+    "arc-browser",
+    "electron",
+    "chromium",
+    "macos",
+    "sidebar",
+    "spaces"
+  ],
   "scripts": {
     "start": "node scripts/dev.js",
     "test": "node scripts/dev.js --selftest",
