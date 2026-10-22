@@ -1,5 +1,5 @@
-// Barre de la petite fenêtre : une adresse, la copie du lien et le bouton
-// « Ouvrir dans Orbe », avec son menu des Espaces (recherche comprise).
+// Barre de la petite fenêtre : une loupe, une adresse, la copie du lien et le bouton
+// « Ouvrir dans ‹Espace› ⌘O », avec son menu des Espaces (recherche comprise).
 const u = document.getElementById('u');
 const open = document.getElementById('open');
 const copy = document.getElementById('copy');
@@ -8,16 +8,24 @@ const list = document.getElementById('space-list');
 let url = '';
 let spaces = null; // Espaces du menu « Ouvrir dans… », ou null s'il est fermé
 let sel = 0;
+let first = true; // premier état reçu : sans page, le champ prend le clavier
 
 O.on('state', (s) => {
   setLang(s.lang);
   url = s.url;
+  if (first) { first = false; if (!url) u.focus(); }
   if (document.activeElement !== u) u.value = host(s.url);
   addressInto(document.getElementById('u-site'), s.url ? host(s.url) : '');
   document.getElementById('u-wrap').classList.toggle('site', !!s.url);
   open.disabled = !s.url;
   copy.disabled = !s.url;
   document.title = s.title || 'Radian';
+  // Comme dans Arc : la fenêtre prend les couleurs de l'Espace où ⌘O enverra la page, et le bouton le nomme.
+  if (s.target) {
+    const vars = OrbeTheme.cssVars(OrbeTheme.palette(s.target.space, s.target.dark));
+    for (const [k, v] of Object.entries(vars)) document.documentElement.style.setProperty(k, v);
+  }
+  document.getElementById('open-label').textContent = s.target ? t('little.openSpace', { space: s.target.name }) : t('little.open');
   document.getElementById('hint').hidden = !s.hint;
   const was = !!spaces;
   spaces = Array.isArray(s.spaces) ? s.spaces : null;
@@ -35,6 +43,7 @@ u.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') u.blur();
 });
 open.onclick = () => O.send('openInOrbe');
+document.getElementById('find-u').onclick = () => u.focus();
 document.getElementById('hint-close').onclick = () => O.send('closeHint');
 document.getElementById('open-in').onclick = () => O.send('openInMenu');
 copy.onclick = () => {
@@ -72,4 +81,3 @@ list.addEventListener('click', (e) => {
 document.getElementById('veil').addEventListener('mousedown', () => O.send('closeMenu'));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && spaces) { e.preventDefault(); O.send('closeMenu'); } });
 O.send('ready');
-if (!url) u.focus();

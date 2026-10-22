@@ -5,15 +5,16 @@ const platform = require('./platform');
 const { store } = require('./store');
 const sessions = require('./sessions');
 const suggest = require('./suggest');
-const { trusted, UI_PRELOAD, INTERNAL, isInternal, cleanUrl, motion, place } = require('./window');
+const { trusted, UI_PRELOAD, INTERNAL, isInternal, cleanUrl, motion, place, OrbeWindow } = require('./window');
 
 const BAR = 42;
 const PAD = 6;
 const SIZE = { width: 860, height: 640 };
 const MIN = { width: 380, height: 260 };
 const HINT = 34; // bandeau d'explication de la première petite fenêtre
-// Ouverture : la fenêtre monte de quelques points en se dévoilant.
-const OPEN = { ms: 180, rise: 14, step: 8 };
+// Ouverture : la fenêtre monte de quelques points en se dévoilant. Dans Arc, elle est
+// entière en moins de 140 ms (deux images de 70 ms de la vidéo de l'aide).
+const OPEN = { ms: 120, rise: 14, step: 8 };
 const HINT_MS = 12000;
 const PROFILES_MAX = 200;
 const easeOut = (x) => 1 - (1 - x) ** 3;
@@ -138,7 +139,8 @@ class LittleWindow {
     this.win.on('resize', () => this.layout());
     // Taille choisie à la main : retenue pour les prochaines petites fenêtres.
     this.win.on('resized', () => this.rememberSize());
-    this.win.on('focus', () => { this.usedAt = Date.now(); });
+    // Revenue au premier plan : l'Espace visé a pu changer dans la fenêtre principale.
+    this.win.on('focus', () => { this.usedAt = Date.now(); this.send(); });
     this.win.on('blur', () => { this.usedAt = Date.now(); });
     this.win.on('closed', () => {
       littles.delete(this.uiId);
@@ -240,7 +242,16 @@ class LittleWindow {
     if (this.ui.webContents.isDestroyed()) return;
     const s = store.state.settings;
     // `spaces` : liste du menu « Ouvrir dans… », tant qu'il est ouvert.
-    this.ui.webContents.send('state', { lang: s.lang, appearance: s.appearance, url: this.url, title: this.title, loading: this.loading, hint: !!this.hint, spaces: this.menu ? hooks.spaces() : null });
+    this.ui.webContents.send('state', { lang: s.lang, appearance: s.appearance, url: this.url, title: this.title, loading: this.loading, hint: !!this.hint, spaces: this.menu ? hooks.spaces() : null, target: this.target() });
+  }
+
+  // Espace où ⌘O enverra la page (celui de la fenêtre principale) : son nom et son thème.
+  target() {
+    const w = OrbeWindow.primary;
+    const sp = w && w.space;
+    if (!sp) return null;
+    const { color, color2, color3, plain, intensity, mode } = sp;
+    return { name: sp.name, space: { color, color2, color3, plain, intensity, mode }, dark: nativeTheme.shouldUseDarkColors };
   }
 
   // « Ouvrir dans… » : choix de l'Espace de destination (⌥⌘O dans Arc), avec un
