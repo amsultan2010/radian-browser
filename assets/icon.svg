@@ -1,28 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <defs>
-    <linearGradient id="bg" x1="0.15" y1="0" x2="0.85" y2="1">
-      <stop offset="0" stop-color="#8f7dff"/>
-      <stop offset="0.55" stop-color="#5b46e0"/>
-      <stop offset="1" stop-color="#2a1f8f"/>
-    </linearGradient>
-    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#d9d2ff"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="0.5" cy="0.42" r="0.6">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.28"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000" flood-opacity="0.28"/>
+    <path id="radian-stem" d="M384 718V292H470A102 102 0 0 1 470 496H384"/>
+    <path id="radian-leg" d="M384 496L649 718"/>
+    <path id="radian-ribbon" d="M272 528A264 264 0 0 0 752 465"/>
+    <mask id="radian-over" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <use href="#radian-ribbon" fill="none" stroke="#fff" stroke-width="100" stroke-linecap="round"/>
+    </mask>
+    <filter id="radian-tile-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+    <filter id="radian-mark-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity="0.2"/>
     </filter>
   </defs>
-  <g filter="url(#shadow)">
-    <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
-    <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#glow)"/>
-  </g>
-  <g transform="rotate(-38 512 512)">
-    <path d="M 512 282 A 230 230 0 1 0 742 512" fill="none" stroke="url(#ring)" stroke-width="84" stroke-linecap="round"/>
-    <circle cx="700" cy="324" r="50" fill="#ffffff"/>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="#FFFFFF" filter="url(#radian-tile-shadow)"/>
+  <g fill="none" stroke-width="100" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#FFFFFF" stroke-width="160" filter="url(#radian-mark-shadow)">
+      <use href="#radian-stem"/>
+      <use href="#radian-leg"/>
+      <use href="#radian-ribbon"/>
+    </g>
+    <use href="#radian-stem" stroke="#FF6378"/>
+    <path d="M384 630V718" stroke="#1A007F"/>
+    <use href="#radian-leg" stroke="#FF6378"/>
+    <path d="M272 528A264 264 0 0 0 564.8 647.5" stroke="#1942CD"/>
+    <path d="M564.8 647.5A264 264 0 0 0 752 465" stroke="#FF9396"/>
+    <g mask="url(#radian-over)">
+      <use href="#radian-leg" stroke="#ED4A5F"/>
+      <use href="#radian-stem" stroke="#0229C0"/>
+    </g>
   </g>
 </svg>

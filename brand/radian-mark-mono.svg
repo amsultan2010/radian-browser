@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640" fill="none" stroke="currentColor" stroke-width="100" stroke-linecap="round" stroke-linejoin="round">
+  <mask id="radian-under-ribbon" maskUnits="userSpaceOnUse" x="0" y="0" width="640" height="640">
+    <rect width="640" height="640" fill="#fff" stroke="none"/>
+    <path d="M80 343A264 264 0 0 0 560 280" stroke="#000" stroke-width="140"/>
+  </mask>
+  <mask id="radian-under-leg" maskUnits="userSpaceOnUse" x="0" y="0" width="640" height="640">
+    <rect width="640" height="640" fill="#fff" stroke="none"/>
+    <path d="M192 311L457 533" stroke="#000" stroke-width="140"/>
+  </mask>
+  <path d="M192 533V107H278A102 102 0 0 1 278 311H192" mask="url(#radian-under-ribbon)"/>
+  <path d="M80 343A264 264 0 0 0 560 280" mask="url(#radian-under-leg)"/>
+  <path d="M192 311L457 533"/>
+</svg>

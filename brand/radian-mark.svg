@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+  <defs>
+    <path id="radian-stem" d="M192 533V107H278A102 102 0 0 1 278 311H192"/>
+    <path id="radian-leg" d="M192 311L457 533"/>
+    <path id="radian-ribbon" d="M80 343A264 264 0 0 0 560 280"/>
+    <mask id="radian-over" maskUnits="userSpaceOnUse" x="0" y="0" width="640" height="640">
+      <use href="#radian-ribbon" fill="none" stroke="#fff" stroke-width="100" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <g fill="none" stroke-width="100" stroke-linecap="round" stroke-linejoin="round">
+    <use href="#radian-stem" stroke="#FF6378"/>
+    <path d="M192 445V533" stroke="#1A007F"/>
+    <use href="#radian-leg" stroke="#FF6378"/>
+    <path d="M80 343A264 264 0 0 0 372.8 462.5" stroke="#1942CD"/>
+    <path d="M372.8 462.5A264 264 0 0 0 560 280" stroke="#FF9396"/>
+    <g mask="url(#radian-over)">
+      <use href="#radian-leg" stroke="#ED4A5F"/>
+      <use href="#radian-stem" stroke="#0229C0"/>
+    </g>
+  </g>
+</svg>
