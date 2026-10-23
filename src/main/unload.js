@@ -115,7 +115,14 @@ async function closeAll(rts, close) {
 }
 
 function setup() {
-  app.on('before-quit', () => { state.quitting = true; });
+  let last = null;
+  app.on('before-quit', (e) => {
+    state.quitting = true;
+    last = e;
+    // Another listener may cancel the quit (warn before quitting, downloads running…). Once all
+    // have run, a cancelled quit no longer counts, unless a newer one has started since.
+    setImmediate(() => { if (last === e && e.defaultPrevented) state.quitting = false; });
+  });
 }
 
 module.exports = { confirm, closeAll, setup, env, state, QUIET, forget: (wc) => stays.delete(wc), shield, unshield, stayedAgo, shielded: (wc) => guards.has(wc) };

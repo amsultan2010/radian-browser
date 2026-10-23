@@ -159,6 +159,8 @@ class Store {
     s.boosts = s.boosts || {};
     s.notes = Array.isArray(s.notes) ? s.notes : [];
     s.window = s.window || {};
+    // Every normal window open at quit, in order (see `remember` in window.js); missing before Radian saved it.
+    s.windows = Array.isArray(s.windows) ? s.windows.filter((e) => e && typeof e === 'object' && !Array.isArray(e)) : [];
     // Mises à jour : dernière vérification et version annoncée (src/main/updates.js).
     s.updates = s.updates && typeof s.updates === 'object' && !Array.isArray(s.updates) ? s.updates : {};
     if (!Array.isArray(s.spaces) || !s.spaces.length) {
