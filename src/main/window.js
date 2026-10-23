@@ -5,6 +5,7 @@ const { app, BaseWindow, WebContentsView, Menu, clipboard, ClipboardItem, screen
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { pathToFileURL } = require('url');
 const { store, uid, SPACE_COLORS, DEFAULT_SETTINGS } = require('./store');
 const veille = require('./veille');
 const empreinte = require('./empreinte');
@@ -2164,6 +2165,21 @@ class OrbeWindow {
     this.changed();
   }
 
+  // Finder files and folders dropped on the sidebar (Arc): a tab each, showing the file (a
+  // folder shows its listing), at the drop place; the first one is shown. The sidebar reads
+  // the paths from the dropped files themselves, never from an address a page could set.
+  dropFiles({ paths, to = 'today', folderId, index = 0 }) {
+    const files = (Array.isArray(paths) ? paths : []).slice(0, 100).filter((p) => typeof p === 'string' && path.isAbsolute(p) && fs.existsSync(p));
+    if (!files.length) return undefined;
+    // At the end of Today, so the ranks the sidebar aimed at do not shift (as in copyTo). Until a
+    // tab loads, its row shows the file's name.
+    const ids = files.map((p) => Object.assign(this.createTab(pathToFileURL(p).href, { index: this.space.today.length }), { title: path.basename(p) }).id);
+    this.moveMany({ ids, to, folderId, index }, null);
+    // Place refused (folder gone, Favorites full): they open at the top of Today, like any new tab.
+    if (to !== 'today' && ids.some((x) => this.space.today.includes(x))) this.moveMany({ ids, to: 'today', index: 0 }, null);
+    return this.activate(ids[0]);
+  }
+
   // Épingle les onglets du jour de la sélection ; si tous sont déjà épinglés, les désépingle.
   pinMany(ids) {
     ids = this.checkIds(ids).filter((id) => this.locate(id).list !== 'favorites');
@@ -3964,6 +3980,19 @@ class OrbeWindow {
     return this.activateSplit(id);
   }
 
+  // Tab dropped on another sidebar tab (Arc 1.27): the two open as a split, the dropped tab on
+  // the side of the row it fell on (Arc 1.28), the split staying where the target tab sits,
+  // in Pinned too (Arc 1.34).
+  splitOnTab(id, target, before) {
+    if (id === target || this.checkIds([id, target]).length !== 2) return undefined;
+    this.splitWith(target, id, true, before);
+    if (!(this.groupOf(target) || []).includes(id)) return undefined; // split full: splitWith said so
+    // The split shows on its first tab's row: the dropped tab moves next to the target.
+    const p = this.placeOf(target);
+    this.moveMany({ ids: [id], to: p.parentId ? 'folder' : p.list, folderId: p.parentId, index: p.index + (before ? 0 : 1) }, 'undo.move');
+    return this.activateSplit(id);
+  }
+
   // Comme dans Arc, la page déjà affichée s'écarte pour faire place à l'onglet déposé (200 ms, ease-out).
   activateSplit(id) {
     this.splitSlide = motion(MOTION.split);
@@ -4911,7 +4940,7 @@ class OrbeWindow {
       case 'ready': return this.sendState();
       case 'hoverTab': return this.prewake(a);
       case 'battery': return OrbeWindow.setBattery(a, this);
-      case 'haptic': return store.state.settings.haptics === false ? undefined : require('./haptics').perform(a);
+      case 'haptic': return require('./haptics').perform(a);
       // Clic sur l'onglet déjà affiché : rien à faire, et surtout ne pas
       // reprendre le clavier (second clic d'un double-clic pour renommer).
       case 'activate': return a === this.activeId && live.has(a) && !this.peekState ? undefined : this.activate(a);
@@ -4963,6 +4992,7 @@ class OrbeWindow {
         if (/^[a-z][a-z0-9+.-]*:/i.test(text) && !webUrl(text)) return undefined;
         return this.newTab(webUrl(text) || suggest.searchUrl(text));
       }
+      case 'dropFiles': return a && typeof a === 'object' ? this.dropFiles(a) : undefined;
       // Saisie seule, ou { q, scope } : 'actions', ou { site } pour la recherche dans un site.
       case 'suggest': return a && typeof a === 'object' ? this.suggest(String(a.q || ''), a.scope === 'actions' ? 'actions' : (a.scope && typeof a.scope.site === 'string' ? { site: a.scope.site } : undefined)) : this.suggest(String(a || ''));
       case 'suggestDelete': return this.incognito ? false : palette.forget(a);
@@ -4991,6 +5021,7 @@ class OrbeWindow {
       case 'paneMenu': return this.visibleIds().includes(a) && this.groupOf(a) ? this.popup(this.paneMenuTemplate(a)) : undefined;
       case 'paneClose': return this.visibleIds().includes(a) ? this.closeSplitPane(a) : undefined;
       case 'splitTab': return this.splitTab(String(a));
+      case 'splitOnTab': return a && typeof a === 'object' ? this.splitOnTab(String(a.id), String(a.target), !!a.before) : undefined;
       // Onglet lâché hors de la fenêtre : seuls les identifiants viennent de l'interface, le point vient du système.
       case 'tearOff': return a && typeof a === 'object' && Array.isArray(a.ids) ? !!this.tearOff(a.ids) : false;
       // Ligne d'une autre fenêtre d'Orbe lâchée sur cette barre latérale.
