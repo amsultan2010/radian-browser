@@ -83,7 +83,10 @@ captured from the running app and rebuilt to match.
 - A Developer Mode tab's row gets Arc's caution-tape outline and its host and
   port under the title.
 - The Library takes the sidebar's place, as in Arc, instead of opening in a
-  tab. Easels and Notes opened from it open in Peek.
+  tab: a section rail (Media, Downloads, Easels, Spaces, Boosts, Archived Tabs,
+  then History), Arc's search fields, Filter button, date headings and empty
+  states, and the page slides right beside it. Its Spaces section is Arc's
+  Space manager, one column per Space. Easels and Notes open from it in Peek.
 - ⌥⌘N opens Little Radian's own command bar in the top right of the screen.
   The Little Radian window looks like Little Arc: one address field with copy,
   a navy "Open in ‹Space› ⌘O" button with a More Spaces list, a first-run coach
