@@ -5,6 +5,7 @@ const { app, BaseWindow, WebContentsView, Menu, clipboard, ClipboardItem, screen
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { pathToFileURL } = require('url');
 const { store, uid, SPACE_COLORS, DEFAULT_SETTINGS } = require('./store');
 const veille = require('./veille');
 const empreinte = require('./empreinte');
@@ -2146,6 +2147,21 @@ class OrbeWindow {
       for (const x of copies) { const i = this.space.today.indexOf(x); if (i >= 0) this.space.today.splice(i, 1); delete this.data.tabs[x]; }
     }
     this.changed();
+  }
+
+  // Finder files and folders dropped on the sidebar (Arc): a tab each, showing the file (a
+  // folder shows its listing), at the drop place; the first one is shown. The sidebar reads
+  // the paths from the dropped files themselves, never from an address a page could set.
+  dropFiles({ paths, to = 'today', folderId, index = 0 }) {
+    const files = (Array.isArray(paths) ? paths : []).slice(0, 100).filter((p) => typeof p === 'string' && path.isAbsolute(p) && fs.existsSync(p));
+    if (!files.length) return undefined;
+    // At the end of Today, so the ranks the sidebar aimed at do not shift (as in copyTo). Until a
+    // tab loads, its row shows the file's name.
+    const ids = files.map((p) => Object.assign(this.createTab(pathToFileURL(p).href, { index: this.space.today.length }), { title: path.basename(p) }).id);
+    this.moveMany({ ids, to, folderId, index }, null);
+    // Place refused (folder gone, Favorites full): they open at the top of Today, like any new tab.
+    if (to !== 'today' && ids.some((x) => this.space.today.includes(x))) this.moveMany({ ids, to: 'today', index: 0 }, null);
+    return this.activate(ids[0]);
   }
 
   // Épingle les onglets du jour de la sélection ; si tous sont déjà épinglés, les désépingle.
@@ -4945,6 +4961,7 @@ class OrbeWindow {
         if (/^[a-z][a-z0-9+.-]*:/i.test(text) && !webUrl(text)) return undefined;
         return this.newTab(webUrl(text) || suggest.searchUrl(text));
       }
+      case 'dropFiles': return a && typeof a === 'object' ? this.dropFiles(a) : undefined;
       // Saisie seule, ou { q, scope } : 'actions', ou { site } pour la recherche dans un site.
       case 'suggest': return a && typeof a === 'object' ? this.suggest(String(a.q || ''), a.scope === 'actions' ? 'actions' : (a.scope && typeof a.scope.site === 'string' ? { site: a.scope.site } : undefined)) : this.suggest(String(a || ''));
       case 'suggestDelete': return this.incognito ? false : palette.forget(a);

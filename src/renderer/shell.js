@@ -1620,7 +1620,7 @@ function endDrag() {
   if (!drag) return;
   clearTimeout(drag.timer);
   const settled = drag.settling;
-  if (!settled && !drag.space) send('dragZone', false);
+  if (!settled && !drag.space && !drag.ext) send('dragZone', false);
   zoneOn = false;
   // Dépôt accepté : les lignes sont déjà à leur place définitive, on retire les
   // décalages sans animation. Abandon : elles reviennent en glissant.
@@ -1788,7 +1788,7 @@ function dropTarget(e) {
   if (drag.space) return spaceTarget(e);
   // Onglet au-dessus de la pastille d'un autre Espace : il y sera déplacé.
   const dot = e.target.closest('#spaces [data-space]');
-  if (dot) return drag.folder || dot.dataset.space === S.space.id ? null : { toSpace: dot.dataset.space, into: dot, g: null };
+  if (dot) return drag.folder || drag.ext || dot.dataset.space === S.space.id ? null : { toSpace: dot.dataset.space, into: dot, g: null };
   const fav = e.target.closest('#fav');
   if (fav) return gridTarget(e, fav);
   const hint = e.target.closest('#fav-hint');
@@ -1800,7 +1800,7 @@ function dropTarget(e) {
 
 // Au-dessus de la page : lâcher l'onglet crée une vue scindée. Pendant un
 // glisser, c'est la coque qui reçoit les événements, même au-dessus des pages.
-const overPage = (e) => !!drag && !drag.settling && !drag.folder && !drag.space && !!S && S.sidebar.visible && !!S.activeId && e.clientX > S.sidebar.width + 12;
+const overPage = (e) => !!drag && !drag.settling && !drag.folder && !drag.space && !drag.ext && !!S && S.sidebar.visible && !!S.activeId && e.clientX > S.sidebar.width + 12;
 // Le côté visé (moitié gauche ou droite du volet survolé) est éclairé par la zone
 // de dépôt : le processus principal le calcule d'après le point transmis.
 let zoneOn = false;
@@ -1856,26 +1856,53 @@ function overSidebar(e) {
       e.dataTransfer.dropEffect = 'move';
       return;
     }
-    // Adresse ou texte venu d'ailleurs.
-    if (!types.some((x) => x === 'text/uri-list' || x === 'text/plain')) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-    return;
+    // Files from the Finder: the rows part for them as for a dragged tab (see dropFiles).
+    if (types.includes('Files')) {
+      drag = { ext: true };
+      document.body.classList.add('dragging', 'parting');
+    } else {
+      // Adresse ou texte venu d'ailleurs.
+      if (!types.some((x) => x === 'text/uri-list' || x === 'text/plain')) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      return;
+    }
   }
   const t = dropTarget(e);
   showTarget(t);
   if (!t) return;
   e.preventDefault();
-  e.dataTransfer.dropEffect = copying(e, t) ? 'copy' : 'move';
+  e.dataTransfer.dropEffect = drag.ext || copying(e, t) ? 'copy' : 'move';
 }
 // ⌥glisser un onglet : il est dupliqué à l'endroit du dépôt (ni dossier, ni autre Espace).
 const copying = (e, t) => e.altKey && !drag.folder && !drag.space && !t.toSpace;
 sidebar.addEventListener('dragover', overSidebar);
 sidebar.addEventListener('dragenter', overSidebar);
+// A Finder drag that leaves the window, or is let go where nothing takes it, sends no dragend
+// here; a mouse move (none comes during a drag) is the fallback.
+document.addEventListener('dragleave', (e) => { if (drag && drag.ext && !drag.settling && !e.relatedTarget) endDrag(); });
+addEventListener('mousemove', () => { if (drag && drag.ext && !drag.settling) endDrag(); }, true);
+
+// Finder files and folders: a tab each, where they are dropped. Their paths come from the
+// dropped files themselves (the preload asks Electron), never from a file: address, which a
+// page can put in a drag of its own.
+function dropFiles(e) {
+  const paths = [...e.dataTransfer.files].map((f) => O.filePath(f)).filter(Boolean);
+  const t = dropTarget(e);
+  if (!paths.length) return endDrag();
+  send('dropFiles', { paths, ...(t && t.to ? { to: t.to, folderId: t.folderId, index: t.index } : null) });
+  if (t && t.into) dropPulse(t.into);
+  if (!t || !t.slot) return endDrag();
+  // The rows stay parted until the state that brings the new tabs into the open place.
+  drag.settling = structSig(S);
+  drag.timer = setTimeout(endDrag, 400);
+  return undefined;
+}
 
 sidebar.addEventListener('drop', (e) => {
   if (overPage(e)) return undefined;
   e.preventDefault();
+  if (drag && drag.ext) return dropFiles(e);
   if (!drag) {
     // Ligne venue d'une autre fenêtre Orbe : ce n'est pas une adresse ; l'onglet s'affiche ici
     // (le processus principal vérifie l'identifiant et la fenêtre d'où il vient).
