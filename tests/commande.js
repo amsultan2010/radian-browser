@@ -369,6 +369,14 @@ module.exports = async function commandeTests(ctx) {
   w.close(note.id, { ask: false });
   store.state.notes.length = notes0;
 
+  // --- New Note in the chosen document app (Arc's "Default Document App") -------------------
+  store.state.settings.noteApp = 'googleDocs';
+  const doc = w.run('newNote');
+  check('« New Note » avec Google Docs choisi : un nouvel onglet sur doc.new, sans note de Radian', !!doc && /^https:\/\/doc\.new\/?$/.test(d.tabs[doc.id].url) && store.state.notes.length === notes0, doc && d.tabs[doc.id].url);
+  w.close(doc.id, { ask: false });
+  store.state.settings.noteApp = 'notes';
+  w.activate(page.id);
+
   // --- Remise en état ---------------------------------------------------------------------
   w.hideModal();
   for (const sp of [space, other]) {
