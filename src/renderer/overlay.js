@@ -148,6 +148,7 @@ const fieldIcon = (url) => $('cmd-icon').querySelector('use').setAttribute('href
 input.addEventListener('input', (e) => {
   deleting = !!e.inputType && e.inputType.startsWith('delete');
   typed = input.value;
+  sel = -1; // until the new suggestions arrive, Enter goes to what was typed, not the old first row
   fieldIcon(false);
   query();
 });
