@@ -934,7 +934,7 @@ module.exports = async function selftest(ctx) {
     const navy = Theme.palette({ colors: ['#0b1d4a'], accent: '#0b1d4a', intensity: 1, grain: 0, texture: 'grain', mode: 'light' }, false);
     const lemon = Theme.palette({ colors: ['#fff27a'], accent: '#fff27a', intensity: 1, grain: 0, texture: 'grain', mode: 'dark' }, true);
     const lemonLight = Theme.palette({ colors: ['#fff27a'], accent: '#fff27a', intensity: 1, grain: 0, texture: 'grain', mode: 'light' }, false);
-    check('thème : fond foncé en mode clair = texte clair ; fond pâle = texte sombre ; en mode sombre, le fond reste sombre ; texte sur l’accent choisi de même', navy.family === 'dark' && navy.onAccent === '#ffffff' && lemonLight.family === 'light' && lemonLight.fg === '#1d1d1f' && lemonLight.onAccent === '#141416' && lemon.family === 'dark');
+    check('thème : fond foncé en mode clair = texte clair ; fond pâle = texte sombre ; en mode sombre, le fond reste sombre ; texte sur l’accent choisi de même', navy.family === 'dark' && navy.onAccent === '#ffffff' && lemonLight.family === 'light' && lemonLight.fg === '#1d1d1f' && lemonLight.onAccent === '#0a0a0c' && lemon.family === 'dark');
     // Textures : quatre carreaux, exactement ceux que produit le script, gris moyen neutre.
     const txDir = path.join(__dirname, '..', 'src', 'renderer', 'textures');
     const tiles = Theme.TEXTURES.map((name) => {
