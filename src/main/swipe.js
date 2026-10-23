@@ -131,6 +131,7 @@ function onMessage(e, msg) {
     st.shown = '';
     hide(w);
     require('./sounds').arm(w);
+    require('./haptics').perform('level'); // Arc's page detent: one tap as the swipe commits
     if (dir === 'back') nav.goBack(); else nav.goForward();
     stats.navigations += 1;
     return;
