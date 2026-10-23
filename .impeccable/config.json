@@ -19,7 +19,7 @@
           "src/renderer/shell.css"
         ],
         "createdAt": "2026-10-22T23:10:28.017Z",
-        "reason": "Claude decided: L600 is the Developer Mode yellow-and-black stripe, which replicates Arc's documented Developer Mode outline (docs/parity/visual-spec.md §1)"
+        "reason": "Claude decided: the Developer Mode yellow-and-black dashed row outline replicates Arc 1.170 as observed (docs/parity/captures/colors/spec.md, Developer Mode)"
       }
     ]
   }

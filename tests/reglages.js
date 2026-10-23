@@ -260,7 +260,7 @@ module.exports = async function reglagesTests(ctx) {
       prefs2.isLocal('http://localhost:3000/') && prefs2.isLocal('https://app.localhost/x') && prefs2.isLocal('http://127.0.0.1:8080/') && prefs2.isLocal('http://[::1]:5173/')
       && !prefs2.isLocal('https://localhost.pirate.invalid/') && !prefs2.isLocal('https://exemple.fr/?localhost') && !prefs2.isLocal('file:///localhost') && !prefs2.isLocal('http://127.0.0.2/'));
     check('pendant les essais, le mode développeur automatique est coupé au départ (les pages d’essai sont locales)', s().devLocalhost === false && !w.toolbarShown);
-    const stripe = () => ui('(() => { const b = document.body.classList.contains("dev-site"); const g = getComputedStyle(document.getElementById("tb-url"), "::after"); return b + "|" + (g.content !== "none" && g.backgroundImage.includes("repeating-linear-gradient")); })()');
+    const stripe = () => ui('(() => { const b = document.body.classList.contains("dev-site"); const r = document.querySelector(".row.tab.active"); const g = r ? getComputedStyle(r, "::after") : { content: "none", backgroundImage: "" }; return b + "|" + (g.content !== "none" && g.backgroundImage.includes("repeating-linear-gradient")); })()');
     const noStripe = await stripe();
     await set({ devLocalhost: true });
     await until(async () => (await stripe()) === 'true|true', 'liseré du mode développeur');

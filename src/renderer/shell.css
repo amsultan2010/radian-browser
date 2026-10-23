@@ -595,16 +595,23 @@ body.fullscreen #page-drag, .floating #page-drag { display: none; }
   transition: transform 140ms var(--ease);
 }
 
-/* Mode développeur du site affiché : liseré de chantier, jaune et noir, sous l'adresse. */
-body.dev-site #tb-url { position: relative; overflow: hidden; }
-body.dev-site #tb-url::after {
+/* Developer Mode, as observed in Arc 1.170: the tab's row gets a yellow and black dashed
+   outline, and the toolbar becomes a blue bar with the full URL in a monospaced font. */
+body.dev-site .row.tab.active::after {
   content: '';
   position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: 3px;
-  background: repeating-linear-gradient(-45deg, #facc15 0 7px, #18181b 7px 14px);
+  inset: 0;
+  padding: 1.5px;
+  border-radius: inherit;
+  background: repeating-linear-gradient(-45deg, #facc15 0 5px, #18181b 5px 10px);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
   pointer-events: none;
 }
+body.dev-site #toolbar::before { opacity: 1; background: #464dd3; }
+body.dev-site #toolbar, body.dev-site #toolbar.tinted.on-dark { --fg: #fff; --dim: rgba(255, 255, 255, 0.72); --faint: rgba(255, 255, 255, 0.45); --hover: rgba(255, 255, 255, 0.14); --pill: rgba(255, 255, 255, 0.12); color: var(--fg); }
+body.dev-site #tb-url { font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
 
 /* Barre d'outils optionnelle (⇧⌘D), au-dessus de la page. */
 #toolbar {
