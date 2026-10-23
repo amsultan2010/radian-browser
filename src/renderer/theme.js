@@ -22,12 +22,15 @@
   const TARGET = 4.56; // visé par le calcul : une marge sur le minimum, pour les arrondis du moteur
 
   // Pastilles du sélecteur, comme dans Arc : des pages de neuf, que l'on fait défiler.
-  // Chaque pastille donne les couleurs du thème ([] : thème par défaut, neutre).
-  // Page 1 : teintes relevées sur l'image du sélecteur d'Arc ; les autres sont propres à Radian.
+  // Chaque pastille donne les couleurs du thème.
+  // Arc's five pages in Arc's order, sampled from Arc 1.170 (docs/parity/captures/colors/swatches.md):
+  // Brand, three-colour gradients (rendered swatch bands, approximate), Pastel, Drab, Greyscale.
   const SWATCHES = [
-    [[], ['#d8a6bd'], ['#a183a1'], ['#d67c76'], ['#e19a74'], ['#edda87'], ['#97dfa6'], ['#94bbd5'], ['#6e7388']],
-    [['#f4a6b7'], ['#c9a7f5'], ['#a7b4f6'], ['#8fd3f0'], ['#86e0cf'], ['#c7e58f'], ['#f7c873'], ['#f59e86'], ['#b9a58d']],
-    [['#9aa3f2', '#f26ef2'], ['#f8a37a', '#f1acd3'], ['#94bbd5', '#97dfa6'], ['#edda87', '#d67c76'], ['#a183a1', '#6e7388'], ['#86e0cf', '#a7b4f6'], ['#f7c873', '#f59e86'], ['#c9a7f5', '#8fd3f0'], ['#d8a6bd', '#e19a74']],
+    [['#f1eae5'], ['#e69fba'], ['#9e749b'], ['#e1686f'], ['#ef8c62'], ['#f2d66d'], ['#73e59c'], ['#7fb8d6'], ['#666786']],
+    [['#d8d5d1', '#d8d8d1', '#d8d3d2'], ['#cf9ba2', '#d0a397', '#ce9db3'], ['#936e86', '#926e7b', '#896e88'], ['#cc836a', '#cba068', '#cc888f'], ['#daab62', '#d8ce63', '#db9d7e'], ['#c3cd6b', '#aad76b', '#c6ad6c'], ['#6ecdb3', '#6fcbce', '#7dcda4'], ['#7990c4', '#7979c4', '#7a9cba'], ['#6c6380', '#746380', '#6d6c80']],
+    [['#fefbfa'], ['#fbeaf3'], ['#ecd2ea'], ['#f7cdd2'], ['#fae1d5'], ['#fef9e7'], ['#e4fcec'], ['#e0f2fb'], ['#c5c6e2']],
+    [['#4b3b58'], ['#623856'], ['#854444'], ['#a77048'], ['#d1b46a'], ['#cdcca8'], ['#84a885'], ['#34604b'], ['#2d4468']],
+    [['#ffffff'], ['#e5e5e5'], ['#cccccc'], ['#b3b3b3'], ['#808080'], ['#666666'], ['#333333'], ['#191919'], ['#000000']],
   ];
   // Thème du premier Espace : celui mesuré dans Arc (en sombre, #232537 → #371937 en sRGB ;
   // les relevés de docs/parity/captures/colors/spec.md sont des valeurs d'écran, converties).

@@ -317,8 +317,7 @@ function drawGrid() {
 
 const pageOf = (colors) => Math.max(0, OrbeTheme.SWATCHES.findIndex((page) => page.some((c) => c.join() === colors.join())));
 function drawSwatches() {
-  const plain = OrbeTheme.hex(OrbeTheme.NEUTRAL.light);
-  $('theme-presets').innerHTML = OrbeTheme.SWATCHES[theme.page].map((c, i) => `<button class="swatch" data-i="${i}" style="background:${c.length > 1 ? `linear-gradient(131deg, ${c.join(', ')})` : c[0] || plain}"></button>`).join('');
+  $('theme-presets').innerHTML = OrbeTheme.SWATCHES[theme.page].map((c, i) => `<button class="swatch" data-i="${i}" style="background:${c.length > 1 ? `linear-gradient(131deg, ${c.join(', ')})` : c[0]}"></button>`).join('');
 }
 
 function drawTheme() {

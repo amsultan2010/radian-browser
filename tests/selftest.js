@@ -865,8 +865,8 @@ module.exports = async function selftest(ctx) {
     check('thème : choisir une couleur quitte le thème par défaut', !sp.plain && Theme.normalize(sp).colors.join() === '#10b981');
     Theme.apply(sp, { preset: 'lagon' });
     check('thème prêt : couleurs, intensité et texture appliquées d’un coup', sp.color === '#3b82f6' && sp.color3 === '#9fdcc4' && sp.texture === 'grain' && sp.grain === 0.25 && sp.intensity === 0.62);
-    check('pastilles du sélecteur : trois pages de neuf, d’une à trois couleurs valides, toutes distinctes, la première = thème par défaut ; huit thèmes prêts',
-      Theme.SWATCHES.length === 3 && Theme.SWATCHES.every((page) => page.length === 9 && page.every((c) => c.length <= Theme.MAX_COLORS && c.every(Theme.isHex))) && new Set(Theme.SWATCHES.flat().map(String)).size === 27 && Theme.SWATCHES[0][0].length === 0
+    check('pastilles du sélecteur : les cinq pages de neuf d’Arc, d’une à trois couleurs valides, toutes distinctes ; huit thèmes prêts',
+      Theme.SWATCHES.length === 5 && Theme.SWATCHES.every((page) => page.length === 9 && page.every((c) => c.length >= 1 && c.length <= Theme.MAX_COLORS && c.every(Theme.isHex))) && new Set(Theme.SWATCHES.flat().map(String)).size === 45
       && Theme.PRESETS.length === 8 && Theme.PRESETS.every((x) => x.colors.every(Theme.isHex) && x.colors.length <= 3 && Theme.TEXTURES.includes(x.texture)));
     // Thème du premier Espace, en sombre : les couleurs relevées dans Arc (fond, texte, accent).
     const first = (mode, dark, intensity = 0.5) => Theme.palette({ colors: Theme.FIRST, accent: Theme.FIRST[0], intensity, grain: 0, texture: 'grain', mode }, dark);
