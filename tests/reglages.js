@@ -15,6 +15,7 @@ function serve() {
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
     if (url.pathname === '/f.txt') { res.setHeader('content-disposition', 'attachment; filename="reglages-essai.txt"'); return res.end('bonjour'); }
+    if (url.pathname === '/data.json') { res.setHeader('content-type', 'application/json'); return res.end(JSON.stringify({ name: '<b>Radian</b>', list: [1, 2], site: 'https://example.com/' })); }
     res.setHeader('content-type', 'text/html; charset=utf-8');
     return res.end(`<!doctype html><meta charset="utf-8"><title>Page réglages${url.search}</title><body style="font:16px sans-serif">
       <div id="onetrust-banner-sdk" style="height:60px;background:#fc0">Nous utilisons des cookies</div><p>contenu</p></body>`);
@@ -280,9 +281,11 @@ module.exports = async function reglagesTests(ctx) {
   const devOn = s().devSites.includes(hostDev) && w.toolbarShown && !s().showToolbar && w.contentRect().y > yBefore;
   await set({ showFullUrl: false });
   await until(async () => (await ui('document.getElementById("tb-url-text").textContent')) === base + '/?externe' && (await ui('document.body.classList.contains("toolbar")')), 'barre d’outils du mode développeur');
+  const devBar = await ui('[...document.querySelectorAll("#tb-dev [data-cmd]")].filter((b) => b.offsetWidth && b.title).map((b) => b.dataset.cmd).join()');
   commands.run(w, 'toggleDevMode');
   await sleep(60);
   check('mode développeur d’un site : barre d’outils et adresse entière pour lui seul', devOn && !s().devSites.length && !w.toolbarShown && w.contentRect().y === yBefore);
+  check('Developer Mode bar: copy, Portrait capture, console, network and element picker buttons', devBar === 'copyUrl,capturePortrait,console,network,inspect', devBar);
   // Automatique sur les sites locaux (localhost, 127.0.0.1), avec son liseré jaune et noir.
   {
     const prefs2 = require('../src/main/prefs');
@@ -312,6 +315,28 @@ module.exports = async function reglagesTests(ctx) {
   await set({ showFullUrl: before.showFullUrl });
   check('mode développeur : ⌃D, à côté du raccourci d’épinglage (⌘D)',
     commands.byName.get('toggleDevMode').accel === 'Ctrl+D' && commands.byName.get('togglePin').accel === 'Cmd+D');
+
+  // JSON view (Arc's JSON Formatter): a collapsible tree, Raw and Parsed, nothing new for the page.
+  {
+    const tab = w.newTab(base + '/data.json');
+    await until(() => win.live.get(tab.id) && !win.live.get(tab.id).loading, 'page JSON');
+    const page = win.live.get(tab.id).wc;
+    await until(() => page.executeJavaScript('!!document.querySelector(".jv .en")'), 'arbre JSON');
+    const seen = await page.executeJavaScript(`(() => {
+      const q = (sel) => document.querySelector(sel);
+      const bar = [...document.querySelectorAll('.jv-bar button')];
+      const out = { labels: bar.map((b) => b.textContent).join(), markup: !!q('.jv b'), key: q('.jv .k').textContent, link: q('.jv a').href, globals: typeof parse + typeof render };
+      bar[0].click();
+      out.raw = q('.jv').hidden && !q('body > pre').hidden;
+      bar[1].click();
+      q('.jv .ex').click();
+      out.shut = !q('.jv').hidden && q('.jv .en').classList.contains('shut') && q('.jv .ex').getAttribute('aria-expanded') === 'false';
+      return out;
+    })()`);
+    check('JSON page: a collapsible tree with Raw and Parsed buttons; its text never becomes markup, and the page sees no new globals',
+      seen.labels === store.t('json.raw') + ',' + store.t('json.parsed') && !seen.markup && seen.key === '"name"' && seen.link === 'https://example.com/' && seen.globals === 'undefinedundefined' && seen.raw && seen.shut, JSON.stringify(seen));
+    w.close(tab.id, { silent: true });
+  }
 
   // CSS ajouté aux pages : bandeaux de cookies, couleurs du thème, Boosts
   const css = (code) => wc.executeJavaScript(code, true);

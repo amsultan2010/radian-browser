@@ -90,10 +90,10 @@ const COMMANDS = [
   { name: 'zoomOut', label: 'view.zoomOut', accel: 'Cmd+-', keys: '⌘-', run: (w) => w.zoom(-0.5) },
   { name: 'source', label: 'view.source', accel: 'Alt+Cmd+U', keys: '⌥⌘U', run: (w) => wc(w) && w.newTab('view-source:' + wc(w).getURL()) },
   { name: 'devtools', label: 'view.devtools', accel: 'Alt+Cmd+I', keys: '⌥⌘I', run: (w) => wc(w) && wc(w).toggleDevTools() },
-  { name: 'inspect', label: 'view.inspect', accel: 'Alt+Cmd+C', keys: '⌥⌘C', palette: false, run: (w) => wc(w) && wc(w).openDevTools({ mode: 'right', activate: true }) },
+  { name: 'inspect', label: 'view.inspect', accel: 'Alt+Cmd+C', keys: '⌥⌘C', palette: false, run: (w) => devTools(wc(w), 'enterInspectElementMode()', 'right') },
   // « Network Inspector » d'Arc : les outils de développement, sur l'onglet Réseau.
-  { name: 'network', label: 'view.network', palette: false, run: (w) => showNetwork(wc(w)) },
-  { name: 'console', label: 'view.console', accel: 'Alt+Cmd+J', keys: '⌥⌘J', palette: false, run: (w) => wc(w) && wc(w).openDevTools({ mode: 'bottom', activate: true }) },
+  { name: 'network', label: 'view.network', palette: false, run: (w) => devTools(wc(w), 'showPanel("network")') },
+  { name: 'console', label: 'view.console', accel: 'Alt+Cmd+J', keys: '⌥⌘J', palette: false, run: (w) => devTools(wc(w), 'showPanel("console")') },
   // Mode développeur du site affiché (⌃D dans Arc) : barre d'outils et adresse entière.
   { name: 'toggleDevMode', label: 'view.devMode', accel: 'Ctrl+D', keys: '⌃D', run: (w) => w.toggleDevMode() },
   { name: 'fullscreen', label: 'view.fullscreen', accel: 'Ctrl+Cmd+F', keys: '⌃⌘F', run: (w) => w.win.setFullScreen(!w.win.isFullScreen()) },
@@ -291,13 +291,14 @@ function minimizeAll() {
   return n;
 }
 
-// Outils de développement ouverts sur l'onglet Réseau.
-function showNetwork(page) {
+// DevTools on a given panel or in element-picking mode, even when they last showed
+// another panel: `call` is a method of the DevTools front end's DevToolsAPI.
+function devTools(page, call, mode = 'bottom') {
   if (!page) return;
-  const show = () => { const d = page.devToolsWebContents; if (d && !d.isDestroyed()) d.executeJavaScript('DevToolsAPI.showPanel("network")').catch(() => {}); };
+  const show = () => { const d = page.devToolsWebContents; if (d && !d.isDestroyed()) d.executeJavaScript('DevToolsAPI.' + call).catch(() => {}); };
   if (page.isDevToolsOpened()) return show();
   page.once('devtools-opened', () => setTimeout(show, 300));
-  page.openDevTools({ mode: 'bottom', activate: true });
+  page.openDevTools({ mode, activate: true });
 }
 
 // Trace de Chromium (src/main/trace.js) : premier appel, la question est posée puis

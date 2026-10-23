@@ -613,6 +613,11 @@ body.dev-site .row.tab.active::after {
 body.dev-site #toolbar::before { opacity: 1; background: #464dd3; }
 body.dev-site #toolbar, body.dev-site #toolbar.tinted.on-dark { --fg: #fff; --dim: rgba(255, 255, 255, 0.72); --faint: rgba(255, 255, 255, 0.45); --hover: rgba(255, 255, 255, 0.14); --pill: rgba(255, 255, 255, 0.12); color: var(--fg); }
 body.dev-site #tb-url { font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+/* Its buttons, right of the URL, in Arc's groups: copy and capture | console, network, picker | extensions. */
+#tb-dev { display: none; align-items: center; gap: 2px; flex: none; margin-left: 4px; }
+body.dev-site #tb-dev { display: flex; }
+#tb-dev .ib { width: 28px; height: 28px; }
+.tb-sep, #tb-dev:has(+ #tb-exts:not(:empty))::after { content: ''; width: 1px; height: 16px; margin: 0 4px; background: var(--faint); }
 
 /* Barre d'outils optionnelle (⇧⌘D), au-dessus de la page. */
 #toolbar {

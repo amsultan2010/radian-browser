@@ -1314,6 +1314,9 @@ const fr = {
   'appIcon.sunset': 'Crépuscule',
   'appIcon.graphite': 'Graphite',
   'appIcon.fluted': 'Verre cannelé',
+  // JSON view
+  'json.raw': 'Brut',
+  'json.parsed': 'Formaté',
 };
 
 const en = {
@@ -2608,6 +2611,9 @@ const en = {
   'appIcon.sunset': 'Sunset',
   'appIcon.graphite': 'Graphite',
   'appIcon.fluted': 'Fluted Glass',
+  // JSON view
+  'json.raw': 'Raw',
+  'json.parsed': 'Parsed',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).
