@@ -870,11 +870,12 @@ module.exports = async function essentielsTests(ctx) {
   for (const d of [slowTab, slowIn, slowSleep]) await js(d.wc, 'window.lent = 1500; 1');
   asks.length = 0;
   leave = false;
+  const slowActive = await js(slowTab.wc, 'navigator.userActivation.hasBeenActive');
   let t0 = Date.now();
   w.close(slowTab.id);
   await until(() => asks.length === 1 || slowTab.wc.isDestroyed(), 'réponse de la page lente (onglet)');
   check('fermer l’onglet d’une page qui met plus d’une seconde à répondre : la question est posée quand même, « Rester » garde la page',
-    asks.length === 1 && Date.now() - t0 >= 1400 && await intact(slowTab), JSON.stringify({ questions: asks.length, ms: Date.now() - t0, page: !slowTab.wc.isDestroyed(), journal: slowTab.rt0.trail }));
+    asks.length === 1 && Date.now() - t0 >= 1400 && await intact(slowTab), JSON.stringify({ questions: asks.length, ms: Date.now() - t0, page: !slowTab.wc.isDestroyed(), activated: slowActive, touched: !!slowTab.rt0.touched, journal: slowTab.rt0.trail }));
   if (!slowTab.wc.isDestroyed()) await until(() => w.data.tabs[slowTab.id] && win.live.get(slowTab.id) === slowTab.rt0, 'onglet lent revenu');
   if (!slowTab.wc.isDestroyed()) {
     check('pendant la consultation, la page est à l’abri du délai de Chromium (bouclier levé)', unload.shielded(slowTab.wc) && slowTab.wc.debugger.isAttached());

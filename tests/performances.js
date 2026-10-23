@@ -441,7 +441,7 @@ module.exports = async function performancesTests(ctx) {
       let rows = null;
       await until(() => ui(`(() => { const r = document.querySelector('.row.tab[data-id="${garde.id}"]'); return !!r && !r.classList.contains('live'); })()`), 'ligne de l’onglet endormi').catch(() => {});
       check('barre latérale : la ligne d’un onglet en veille est marquée (plus pâle), celle d’un onglet vivant ne l’est pas',
-        (rows = await ui(`(() => { const z = document.querySelector('.row.tab[data-id="${garde.id}"]'); const v = document.querySelector('.row.tab[data-id="${w.activeId}"]'); return { z: !!z, v: !!v, zl: !!z && z.classList.contains('live'), vl: !!v && v.classList.contains('live'), zc: z && getComputedStyle(z.querySelector('.title')).color, vc: v && getComputedStyle(v.querySelector('.title')).color, va: !!v && v.classList.contains('active') }; })()`))
+        (rows = await ui(`(() => { const z = document.querySelector('.row.tab[data-id="${garde.id}"]'); const v = document.querySelector('.row.tab[data-id="${w.activeId}"]'); return { z: !!z, v: !!v, zl: !!z && z.classList.contains('live'), zcls: z && z.className, sec: getComputedStyle(document.body).getPropertyValue('--secondary'), vl: !!v && v.classList.contains('live'), zc: z && getComputedStyle(z.querySelector('.title')).color, vc: v && getComputedStyle(v.querySelector('.title')).color, va: !!v && v.classList.contains('active') }; })()`))
         && rows.z && rows.v && !rows.zl && rows.vl && rows.zc !== rows.vc, JSON.stringify(rows));
       for (const x of [garde, libre]) w.close(x.id, { silent: true, ask: false });
       server.close();
