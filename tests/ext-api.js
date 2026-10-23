@@ -23,7 +23,7 @@ function serve() {
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
 }
 
-module.exports = async function extApiTest({ first: w, OrbeWindow, win, extApi, extHost }) {
+module.exports = async function extApiTest({ first: w, OrbeWindow, win, little, extApi, extHost }) {
   const results = [];
   let failed = 0;
   const check = (name, ok, detail = '') => {
@@ -206,6 +206,32 @@ module.exports = async function extApiTest({ first: w, OrbeWindow, win, extApi, 
   extHost.closePopup(w);
   await until(() => pop.isDestroyed(), 'fermeture de la fenêtre surgissante');
   check('closePopup la referme', extHost.popups.size === 0);
+
+  // Little Radian (PET-9) : sa page est un onglet pour les extensions, dans leur session, et
+  // son bouton d'extensions ouvre la fenêtre surgissante contre elle.
+  const lw = new little.LittleWindow(base + '/petite');
+  await until(() => lw.title === 'Page petite', 'petite fenêtre');
+  const lwc = lw.view.webContents;
+  const lid = lwc.id;
+  check('petite fenêtre : sa page est dans la session où l’extension est chargée', lwc.session === ses && !!ses.extensions.getExtension(ext.id));
+  const lmark = await until(() => lwc.executeJavaScript('document.documentElement.dataset.orbeTab'), 'script de contenu dans la petite fenêtre');
+  check('…le script de contenu s’y exécute, et l’extension y voit un onglet', lmark === String(lid), lmark);
+  check('…tabs.query la trouve, active, dans sa propre fenêtre', (await call('tabs.query', { url: base + '/petite' })).some((t) => t.id === lid && t.active && t.windowId === lw.win.id) && (await call('windows.getAll')).some((x) => x.id === lw.win.id));
+  check('…son bouton d’extensions liste l’extension', extHost.actionsFor(lw).some((x) => x.id === ext.id));
+  const lpop = extHost.openPopup(lw, ext.id, { x: 0, y: 48, right: 400 }, { keepOpen: true });
+  check('…la fenêtre de l’extension s’ouvre sur la petite fenêtre', lpop instanceof BrowserWindow && lpop.getParentWindow() === lw.win);
+  const lseen = await until(() => lpop.webContents.executeJavaScript('window.activeTab'), 'onglet actif vu depuis la petite fenêtre');
+  check('…et y voit sa page comme onglet actif', lseen.id === lid && lseen.url === base + '/petite', lseen);
+  await until(() => lpop.getContentSize()[0] === 300, 'taille de la fenêtre surgissante (petite fenêtre)');
+  const lb = lw.win.getContentBounds();
+  check('…alignée à droite sur le bouton', lpop.getBounds().x + lpop.getBounds().width === lb.x + 400, lpop.getBounds());
+  check('le débogueur refuse la page d’une petite fenêtre (pas de bandeau pour le signaler)', await call('debugger.attach', { tabId: lid }, '1.3').then(() => false, (err) => /Cannot attach/.test(err.message)));
+  extHost.closePopup(lw);
+  await until(() => lpop.isDestroyed(), 'fermeture de la fenêtre surgissante (petite fenêtre)');
+  lw.win.close();
+  await until(async () => !(await call('tabs.query', {})).some((t) => t.id === lid), 'page de la petite fenêtre retirée des onglets');
+  check('fermer la petite fenêtre retire sa page des onglets, sans erreur', uncaught.length === 0, uncaught.join(' | '));
+  w.win.focus();
 
   await call('action.setPopup', { popup: '' });
   check('sans fenêtre surgissante, le clic émet action.onClicked', extHost.openPopup(w, ext.id) === true);

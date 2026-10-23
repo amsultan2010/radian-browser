@@ -1,8 +1,9 @@
-// Barre de la petite fenêtre : une loupe, une adresse, la copie du lien et le bouton
+// Barre de la petite fenêtre : une loupe, une adresse, les extensions, la copie du lien et le bouton
 // « Ouvrir dans ‹Espace› ⌘O », avec son menu des Espaces (recherche comprise).
 const u = document.getElementById('u');
 const open = document.getElementById('open');
 const copy = document.getElementById('copy');
+const exts = document.getElementById('exts');
 const search = document.getElementById('space-search');
 const list = document.getElementById('space-list');
 let url = '';
@@ -19,6 +20,7 @@ O.on('state', (s) => {
   document.getElementById('u-wrap').classList.toggle('site', !!s.url);
   open.disabled = !s.url;
   copy.disabled = !s.url;
+  exts.hidden = !s.extensions;
   document.title = s.title || 'Radian';
   // Comme dans Arc : la fenêtre prend les couleurs de l'Espace où ⌘O enverra la page, et le bouton le nomme.
   if (s.target) {
@@ -46,6 +48,11 @@ open.onclick = () => O.send('openInOrbe');
 document.getElementById('find-u').onclick = () => u.focus();
 document.getElementById('hint-close').onclick = () => O.send('closeHint');
 document.getElementById('open-in').onclick = () => O.send('openInMenu');
+// The menu and the popups open under the button, right-aligned to it.
+exts.onclick = () => {
+  const r = exts.getBoundingClientRect();
+  O.send('extMenu', { x: Math.round(r.left), y: Math.round(r.bottom + 6), right: Math.round(r.right) });
+};
 copy.onclick = () => {
   O.send('copyUrl');
   copy.classList.add('done');

@@ -23,10 +23,10 @@ body { background: var(--paint, color-mix(in srgb, color-mix(in srgb, var(--acce
 #open kbd { margin-left: 6px; font: inherit; font-weight: 500; opacity: 0.75; }
 #open { border-radius: 8px 0 0 8px; margin-right: -7px; }
 #open-in { height: 28px; width: 24px; border-radius: 0 8px 8px 0; background: color-mix(in srgb, var(--accent) 82%, #000); color: #fff; -webkit-app-region: no-drag; }
-#copy, #find-u { height: 28px; width: 28px; flex: none; border-radius: 8px; display: grid; place-items: center; color: var(--dim); -webkit-app-region: no-drag; }
-#copy:hover, #find-u:hover { background: var(--hover); color: var(--fg); }
+#copy, #find-u, #exts { height: 28px; width: 28px; flex: none; border-radius: 8px; display: grid; place-items: center; color: var(--dim); -webkit-app-region: no-drag; }
+#copy:hover, #find-u:hover, #exts:hover { background: var(--hover); color: var(--fg); }
 #copy[disabled] { opacity: 0.4; }
-#copy svg, #find-u svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+#copy svg, #find-u svg, #exts svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 #copy.done { color: var(--accent); }
 /* Menu « Ouvrir dans… » : la barre passe au-dessus de la page, qui reste visible derrière un voile. */
 body.menu { background: transparent; }
@@ -51,6 +51,8 @@ body.menu #bar { background: var(--paint, color-mix(in srgb, var(--accent) var(-
 <div id="bar">
   <button id="find-u" data-t-title="cmd.placeholder"><svg viewBox="0 0 16 16"><circle cx="7.2" cy="7.2" r="3.8"/><path d="m10.2 10.2 3 3"/></svg></button>
   <div id="u-wrap"><input id="u" spellcheck="false" autocomplete="off" data-t-ph="cmd.placeholder"><div id="u-site"></div></div>
+  <!-- As in Little Arc: a puzzle button, left of the copy button, lists the extensions (little.js). -->
+  <button id="exts" data-t-title="menu.extensions" hidden><svg viewBox="0 0 16 16"><path d="M3 5.5h2.6a1.6 1.6 0 1 1 3 0h2.4v2.4a1.6 1.6 0 1 1 0 3V13H3z"/></svg></button>
   <button id="copy" data-t-title="side.copyLink"><svg viewBox="0 0 16 16"><path d="M6.9 9.1a2.7 2.7 0 0 0 3.8 0l1.9-1.9a2.7 2.7 0 0 0-3.8-3.8l-.7.7"/><path d="M9.1 6.9a2.7 2.7 0 0 0-3.8 0L3.4 8.8a2.7 2.7 0 0 0 3.8 3.8l.7-.7"/></svg></button>
   <!-- « Open in ‹Espace› ⌘O », comme dans Arc : l'Espace qui recevra la page. -->
   <button id="open"><span id="open-label" data-t="little.open"></span><kbd>⌘O</kbd></button>

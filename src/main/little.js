@@ -1,6 +1,6 @@
 // Petite fenêtre (⌥⌘N) : une page seule, sans barre latérale, pour un coup
 // d'œil rapide. Un bouton l'envoie dans la fenêtre principale.
-const { BaseWindow, WebContentsView, clipboard, nativeTheme } = require('electron');
+const { BaseWindow, Menu, WebContentsView, clipboard, nativeTheme } = require('electron');
 const platform = require('./platform');
 const { store } = require('./store');
 const sessions = require('./sessions');
@@ -86,6 +86,7 @@ function showHere(win, show) {
 }
 
 const littles = new Map(); // id webContents de la barre -> LittleWindow
+const extHost = () => require('./ext-host'); // loaded on use: ext-host.js reads LittleWindow back
 const hooks = { openInOrbe: () => {}, profileId: () => 'default', spaces: () => [], profiles: () => ['default'], profileOfSpace: () => null };
 
 class LittleWindow {
@@ -153,10 +154,11 @@ class LittleWindow {
     this.win.on('resized', () => this.rememberSize());
     // Revenue au premier plan : l'Espace visé a pu changer dans la fenêtre principale.
     this.win.on('focus', () => { this.usedAt = Date.now(); this.send(); });
-    this.win.on('blur', () => { this.usedAt = Date.now(); });
+    this.win.on('blur', () => { this.usedAt = Date.now(); extHost().sync(); });
     this.win.on('closed', () => {
       littles.delete(this.uiId);
       for (const v of [this.ui, this.view]) if (v && !v.webContents.isDestroyed()) v.webContents.close();
+      extHost().sync(); // its page is no longer a tab for extensions
     });
     if (this.url) this.load(this.url);
     this.layout();
@@ -252,9 +254,26 @@ class LittleWindow {
 
   send() {
     if (this.ui.webContents.isDestroyed()) return;
+    // The page is a tab for extensions: tell them it opened, loaded, changed or got focus.
+    extHost().sync();
     const s = store.state.settings;
     // `spaces` : liste du menu « Ouvrir dans… », tant qu'il est ouvert.
-    this.ui.webContents.send('state', { lang: s.lang, appearance: s.appearance, url: this.url, title: this.title, loading: this.loading, hint: !!this.hint, spaces: this.menu ? hooks.spaces() : null, target: this.target() });
+    // `extensions`: whether the bar shows its extensions button.
+    this.ui.webContents.send('state', { lang: s.lang, appearance: s.appearance, url: this.url, title: this.title, loading: this.loading, hint: !!this.hint, spaces: this.menu ? hooks.spaces() : null, target: this.target(), extensions: extHost().actionsFor(this).length > 0 });
+  }
+
+  // Like Little Arc's puzzle button: a menu of the extensions, each opening its popup against this page,
+  // right-aligned under the button (`a`: its left, right and bottom edges in the window).
+  extMenu(a) {
+    const at = { x: Number(a && a.x), y: Number(a && a.y), right: Number(a && a.right) };
+    const items = extHost().actionsFor(this).map((x) => ({
+      label: x.badgeText ? `${x.title}  (${x.badgeText})` : x.title,
+      enabled: x.enabled !== false,
+      click: () => extHost().openPopup(this, x.id, at),
+    }));
+    if (!items.length || this.win.isDestroyed()) return;
+    const pos = Number.isFinite(at.x) && Number.isFinite(at.y) ? { x: Math.round(at.x), y: Math.round(at.y) } : {};
+    Menu.buildFromTemplate(items).popup({ window: this.win, ...pos });
   }
 
   // Espace où ⌘O enverra la page (celui de la fenêtre principale) : son nom et son thème.
@@ -313,6 +332,7 @@ class LittleWindow {
     if (action === 'openInSpace') return this.openInSpace(String(a));
     if (action === 'copyUrl') return this.copyUrl();
     if (action === 'closeHint') return this.closeHint();
+    if (action === 'extMenu') return this.extMenu(a);
     return undefined;
   }
 
@@ -334,6 +354,8 @@ class LittleWindow {
       // Comme dans Arc : ⌘O envoie la page dans la fenêtre principale.
       case 'expandPeek': case 'togglePin': this.openInOrbe(); return true;
       case 'openInSpace': this.openInMenu(); return true;
+      // ⌘E: the extensions take turns on this page, as in the main window.
+      case 'cycleExtensions': extHost().cycle(this); return true;
       default: return false;
     }
   }
