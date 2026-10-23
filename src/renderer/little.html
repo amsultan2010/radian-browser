@@ -8,62 +8,94 @@
 <style>
 /* Cadre aux couleurs de l'Espace où ⌘O enverra la page (little.js) ; à défaut, l'accent par défaut. */
 body { background: var(--paint, color-mix(in srgb, color-mix(in srgb, var(--accent) var(--tint), var(--base)) 80%, transparent)); }
-#bar { height: 42px; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 76px; -webkit-app-region: drag; }
-/* Comme dans Arc : le domaine seul, centré dans la barre ; le champ ne paraît qu'à la saisie. */
-#u { flex: 1; min-width: 0; height: 28px; border-radius: 8px; border: 0; outline: 0; background: none; padding: 0 10px; text-align: center; -webkit-app-region: no-drag; user-select: text; }
-#u:focus, #u:hover { background: var(--pill); }
-#u-wrap { flex: 1; min-width: 0; position: relative; display: flex; }
+/* Arc 1.170 (live capture): a 47 pt toolbar; one rounded 30 pt field from x = 83 pt, then "Open in ‹Space› ⌘O" and its ⌄. */
+#bar { height: 47px; display: flex; align-items: center; gap: 8px; padding: 0 6px 0 83px; -webkit-app-region: drag; }
+/* The field: magnifier on the left, the host centred, the extensions and copy buttons at its right end. */
+#u-wrap { flex: 1; min-width: 0; height: 30px; position: relative; display: flex; align-items: center; padding: 0 2px; border-radius: 8px; background: var(--pill); -webkit-app-region: no-drag; }
+#u-wrap:has(#u:focus) { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); }
+#u { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none; padding: 0 6px; text-align: center; user-select: text; }
 /* Hors saisie : le site, domaine en avant, coupé par la gauche s'il est trop long (common.js). */
-#u-site { position: absolute; inset: 0 10px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+#u-site { position: absolute; inset: 0 40px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
 #u-wrap.site #u:not(:focus) { color: transparent; }
 #u:focus + #u-site { display: none; }
-#u:focus { text-align: left; outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); }
-#open { height: 28px; padding: 0 12px; border-radius: 8px; background: var(--accent); color: #fff; font-weight: 600; -webkit-app-region: no-drag; white-space: nowrap; }
-#open[disabled] { opacity: 0.4; }
-#open kbd { margin-left: 6px; font: inherit; font-weight: 500; opacity: 0.75; }
-#open { border-radius: 8px 0 0 8px; margin-right: -7px; }
-#open-in { height: 28px; width: 24px; border-radius: 0 8px 8px 0; background: color-mix(in srgb, var(--accent) 82%, #000); color: #fff; -webkit-app-region: no-drag; }
-#copy, #find-u, #exts { height: 28px; width: 28px; flex: none; border-radius: 8px; display: grid; place-items: center; color: var(--dim); -webkit-app-region: no-drag; }
+#u:focus { text-align: left; }
+#copy, #find-u, #exts { height: 26px; width: 26px; flex: none; border-radius: 6px; display: grid; place-items: center; color: var(--dim); }
 #copy:hover, #find-u:hover, #exts:hover { background: var(--hover); color: var(--fg); }
 #copy[disabled] { opacity: 0.4; }
 #copy svg, #find-u svg, #exts svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 #copy.done { color: var(--accent); }
-/* Menu « Ouvrir dans… » : la barre passe au-dessus de la page, qui reste visible derrière un voile. */
+/* One navy box: "Open in" grey, the Space bold white, a ⌘O keycap; a hairline, then ⌄ (More Spaces). */
+#open, #open-in { height: 30px; background: #050625; color: rgba(255, 255, 255, 0.55); -webkit-app-region: no-drag; }
+#open:hover, #open-in:hover { background: #10123a; }
+#open { display: flex; align-items: center; gap: 6px; margin-right: -8px; padding: 0 8px 0 10px; border-radius: 8px 0 0 8px; white-space: nowrap; }
+#open b { color: #fff; font-weight: 600; }
+#open[disabled] { opacity: 0.4; }
+#open kbd { font: inherit; font-size: 12px; line-height: 18px; padding: 0 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.1); }
+#open-in { position: relative; width: 28px; display: grid; place-items: center; border-radius: 0 8px 8px 0; }
+#open-in::before { content: ''; position: absolute; left: 0; top: 7px; bottom: 7px; width: 1px; background: rgba(255, 255, 255, 0.16); }
+#open-in svg, #space-close svg, #space-head > svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+/* Menu « Ouvrir dans… » : la barre passe au-dessus de la page ; Arc's navy list covers the button, the page is not dimmed. */
 body.menu { background: transparent; }
 body.menu #bar { background: var(--paint, color-mix(in srgb, var(--accent) var(--tint), var(--base))); }
-#veil { position: fixed; inset: 42px 0 0 0; background: rgba(0, 0, 0, 0.22); }
-#spaces { position: fixed; top: 40px; right: 8px; width: 250px; max-height: calc(100vh - 56px); display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 12px; background: var(--base); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 0 0.5px var(--line); }
-#space-search { height: 28px; border: 0; outline: 0; border-radius: 8px; background: var(--pill); padding: 0 10px; user-select: text; }
-#space-list { overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
-#space-list button { height: 30px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 8px; border-radius: 7px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#space-list button.sel, #space-list button:hover { background: var(--hover); }
-#space-none { color: var(--dim); font-size: 12px; padding: 4px 8px; }
-/* Première petite fenêtre : un bandeau d'explication entre la barre et la page. */
-#hint { position: fixed; top: 42px; left: 6px; right: 6px; height: 28px; display: flex; align-items: center; gap: 8px; padding: 0 4px 0 12px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 16%, transparent); font-size: 12px; color: var(--fg); animation: hint-in var(--spring-smooth) both; }
-#hint span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#hint button { width: 22px; height: 22px; border-radius: 6px; color: var(--dim); }
-#hint button:hover { background: var(--hover); color: var(--fg); }
-@keyframes hint-in { from { opacity: 0; transform: translateY(-6px); } }
+#veil { position: fixed; inset: 47px 0 0 0; }
+#spaces { position: fixed; top: 4px; right: 4px; width: 243px; max-height: calc(100vh - 16px); display: flex; flex-direction: column; border-radius: 10px; background: #050625; color: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); overflow: hidden; }
+#space-head { height: 44px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 14px; color: rgba(255, 255, 255, 0.55); }
+#space-search { flex: 1; min-width: 0; height: 28px; border: 0; outline: 0; background: none; color: #fff; user-select: text; }
+#space-search::placeholder { color: rgba(255, 255, 255, 0.55); }
+#space-close { position: relative; width: 26px; height: 26px; border-radius: 6px; display: grid; place-items: center; color: inherit; }
+#space-close::before { content: ''; position: absolute; left: -4px; top: 5px; bottom: 5px; width: 1px; background: rgba(255, 255, 255, 0.16); }
+#space-list { overflow-y: auto; display: flex; flex-direction: column; }
+#space-list button { height: 46px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 10px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; font-weight: 500; }
+#space-list .ic { width: 26px; height: 26px; flex: none; border-radius: 6px; display: grid; place-items: center; background: var(--accent); font-size: 14px; }
+#space-list button.sel, #space-list button:hover { background: rgba(255, 255, 255, 0.07); }
+#space-none { color: rgba(255, 255, 255, 0.55); font-size: 12px; padding: 4px 14px 12px; }
+/* little.html#float, a view over the page's top right (little.js): Arc's first-run coach mark, and its round
+   Close / Enter Full Screen buttons when the pointer reaches the page's right edge. */
+#float { display: none; }
+body.float { background: transparent; }
+body.float #bar, body.float #veil, body.float #spaces { display: none !important; }
+body.float #float { position: fixed; top: 0; right: 0; display: inline-flex; flex-direction: column; align-items: flex-end; gap: 8px; padding: 8px 10px 0 0; }
+body.float #float:not(:has(> :not([hidden]))) { padding: 0; }
+#coach { position: relative; width: 282px; padding: 9px 30px 10px 12px; border-radius: 4px; background: #3139fb; color: rgba(255, 255, 255, 0.82); font-size: 13px; line-height: 17px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+#coach b { display: block; margin-bottom: 1px; color: #fff; font-weight: 700; }
+#coach button { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 5px; color: rgba(255, 255, 255, 0.8); }
+#coach button:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+#edge { display: flex; flex-direction: column; gap: 10px; }
+.pk { width: 34px; height: 33px; border-radius: 50%; display: grid; place-items: center; background: #050625; color: #fff; }
+.pk:hover { background: #10123a; }
+.pk svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 [hidden] { display: none !important; }
 </style>
 </head>
 <body>
 <div id="bar">
-  <button id="find-u" data-t-title="cmd.placeholder"><svg viewBox="0 0 16 16"><circle cx="7.2" cy="7.2" r="3.8"/><path d="m10.2 10.2 3 3"/></svg></button>
-  <div id="u-wrap"><input id="u" spellcheck="false" autocomplete="off" data-t-ph="cmd.placeholder"><div id="u-site"></div></div>
-  <!-- As in Little Arc: a puzzle button, left of the copy button, lists the extensions (little.js). -->
-  <button id="exts" data-t-title="menu.extensions" hidden><svg viewBox="0 0 16 16"><path d="M3 5.5h2.6a1.6 1.6 0 1 1 3 0h2.4v2.4a1.6 1.6 0 1 1 0 3V13H3z"/></svg></button>
-  <button id="copy" data-t-title="side.copyLink"><svg viewBox="0 0 16 16"><path d="M6.9 9.1a2.7 2.7 0 0 0 3.8 0l1.9-1.9a2.7 2.7 0 0 0-3.8-3.8l-.7.7"/><path d="M9.1 6.9a2.7 2.7 0 0 0-3.8 0L3.4 8.8a2.7 2.7 0 0 0 3.8 3.8l.7-.7"/></svg></button>
+  <div id="u-wrap">
+    <button id="find-u" data-t-title="cmd.placeholder"><svg viewBox="0 0 16 16"><circle cx="7.2" cy="7.2" r="3.8"/><path d="m10.2 10.2 3 3"/></svg></button>
+    <input id="u" spellcheck="false" autocomplete="off" data-t-ph="cmd.placeholder"><div id="u-site"></div>
+    <!-- Extensions (little.js), shown only when some are installed; Arc's Little Arc has none. -->
+    <button id="exts" data-t-title="menu.extensions" hidden><svg viewBox="0 0 16 16"><path d="M3 5.5h2.6a1.6 1.6 0 1 1 3 0h2.4v2.4a1.6 1.6 0 1 1 0 3V13H3z"/></svg></button>
+    <button id="copy"><svg viewBox="0 0 16 16"><path d="M6.9 9.1a2.7 2.7 0 0 0 3.8 0l1.9-1.9a2.7 2.7 0 0 0-3.8-3.8l-.7.7"/><path d="M9.1 6.9a2.7 2.7 0 0 0-3.8 0L3.4 8.8a2.7 2.7 0 0 0 3.8 3.8l.7-.7"/></svg></button>
+  </div>
   <!-- « Open in ‹Espace› ⌘O », comme dans Arc : l'Espace qui recevra la page. -->
   <button id="open"><span id="open-label" data-t="little.open"></span><kbd>⌘O</kbd></button>
-  <button id="open-in" title="⌥⌘O">▾</button>
+  <button id="open-in" data-t-title="little.moreSpaces"><svg viewBox="0 0 16 16"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg></button>
 </div>
-<div id="hint" hidden><span data-t="little.hint"></span><button id="hint-close" data-t-title="little.hintClose">×</button></div>
 <div id="veil" hidden></div>
 <div id="spaces" hidden>
-  <input id="space-search" spellcheck="false" autocomplete="off" data-t-ph="little.searchSpaces">
+  <div id="space-head">
+    <svg viewBox="0 0 16 16"><circle cx="7.2" cy="7.2" r="3.8"/><path d="m10.2 10.2 3 3"/></svg>
+    <input id="space-search" spellcheck="false" autocomplete="off" data-t-ph="little.searchSpaces">
+    <button id="space-close" data-t-title="little.moreSpaces"><svg viewBox="0 0 16 16"><path d="m4.5 9.5 3.5-3.5 3.5 3.5"/></svg></button>
+  </div>
   <div id="space-list"></div>
   <div id="space-none" data-t="little.noSpace" hidden></div>
+</div>
+<div id="float">
+  <div id="coach" hidden><b id="coach-title"></b><span data-t="little.coachBody"></span><button id="coach-close" data-t-title="little.hintClose">×</button></div>
+  <div id="edge" hidden>
+    <button class="pk" id="edge-close" data-t-title="sheet.close"><svg viewBox="0 0 16 16"><path d="m4.8 4.8 6.4 6.4m0-6.4-6.4 6.4"/></svg></button>
+    <button class="pk" id="edge-full" data-t-title="view.fullscreen"><svg viewBox="0 0 16 16"><path d="M9.5 3h3.5v3.5M13 3 8.8 7.2M6.5 13H3V9.5M3 13l4.2-4.2"/></svg></button>
+  </div>
 </div>
 <script src="common.js"></script>
 <script src="theme.js"></script>

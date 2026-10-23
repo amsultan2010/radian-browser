@@ -7,8 +7,9 @@ const { systemPreferences } = require('electron');
 // docs/parity/web-research.md §3.3 viennent de vidéos promotionnelles). Le système n'offre
 // que quatre courbes : ease-out en 50 et 60 ms est le plus proche de ces trajets (8 pt d'écart
 // moyen). Barre flottante : elle repart en 90 ms (--sidebar-reveal-out de base.css). Vue
-// scindée par dépôt d'un onglet : la page s'écarte en 200 ms. Aperçu : ouverture 200 ms, fermeture 150 ms.
-const MOTION = { sidebarIn: 50, sidebarOut: 60, revealOut: 90, split: 200, peekIn: 200, peekOut: 150, peekExpand: 220, peekBack: 180 };
+// scindée par dépôt d'un onglet : la page s'écarte en 200 ms. Peek, measured frame by frame in Arc 1.170
+// (docs/parity/captures/live/motion.md): opens in 230 ms and closes in 180 ms, both ease-out without overshoot.
+const MOTION = { sidebarIn: 50, sidebarOut: 60, revealOut: 90, split: 200, peekIn: 230, peekOut: 180, peekExpand: 220, peekBack: 180 };
 const stats = { animated: 0, direct: 0 }; // appels à setBounds, pour les mesures
 let nativeAnim = true;
 

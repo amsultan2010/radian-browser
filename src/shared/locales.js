@@ -834,7 +834,7 @@ const fr = {
   'little.openIn': 'Ouvrir dans un Espace…',
   'little.open': 'Ouvrir dans Radian',
   'little.openSpace': 'Ouvrir dans {space}',
-  'little.searchSpaces': 'Chercher un Espace',
+  'little.searchSpaces': 'Chercher un Espace…',
   'little.hint': 'Petite fenêtre : un coup d’œil sans encombrer la barre. ⌘O l’envoie dans Radian.',
   'little.hintClose': 'Compris',
   'little.noSpace': 'Aucun Espace à ce nom',
@@ -1365,6 +1365,11 @@ const fr = {
   'keys.more': 'Plus',
   'set.currentIcon': 'Icône actuelle',
   'set.importBtn': 'Importer depuis un autre navigateur…',
+  // Little Radian, as in Arc
+  'little.moreSpaces': 'Autres Espaces',
+  'little.coachTitle': 'Les liens s’ouvrent dans une {name}',
+  'little.coachName': 'petite fenêtre',
+  'little.coachBody': 'Cliquez sur « Ouvrir dans » pour passer cette page dans une fenêtre entière, ou ⌘W pour fermer',
 };
 
 const en = {
@@ -2179,7 +2184,7 @@ const en = {
   'little.openIn': 'Open Little Radian or Peek in…',
   'little.open': 'Open in Radian',
   'little.openSpace': 'Open in {space}',
-  'little.searchSpaces': 'Search Spaces',
+  'little.searchSpaces': 'Search Spaces…',
   'little.hint': 'Little Radian: a quick look that stays out of your sidebar. ⌘O opens it in Radian.',
   'little.hintClose': 'Got it',
   'little.noSpace': 'No Space by that name',
@@ -2710,6 +2715,11 @@ const en = {
   'keys.more': 'More',
   'set.currentIcon': 'Current icon',
   'set.importBtn': 'Import from Another Browser…',
+  // Little Radian, as in Arc
+  'little.moreSpaces': 'More Spaces',
+  'little.coachTitle': 'Links Open in {name}',
+  'little.coachName': 'Little Radian',
+  'little.coachBody': 'Click “Open in” to move this page in a full window, or ⌘W to close',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).

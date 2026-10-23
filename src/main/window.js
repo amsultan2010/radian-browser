@@ -29,6 +29,9 @@ const RADIUS = 6;
 const TOOLBAR_H = 40;
 const PEEK_PULL = 150; // déplacement (px) au bout duquel un aperçu tiré se ferme
 const PEEK_BAR = 40; // marge au-dessus de la carte de l'aperçu quand son adresse s'affiche
+// Peek card in Arc 1.170 (live capture, 1280 × 800 window): 1024 × 776 pt, centred, 12 pt from the window's top
+// (and bottom); a smaller window shrinks it, keeping `side` free on each side for the buttons on its right.
+const PEEK = { width: 1024, height: 776, top: 12, side: 56 };
 const SPLIT_BAR = 28; // petite barre de chaque volet d'une vue scindée (adresse, options, fermer)
 // Feux tricolores : bouton de fermeture à (12, 16), comme dans Arc (cadres d’accessibilité).
 const TRAFFIC = { x: 13, y: 17 }; // Electron les pose 1 pt plus haut et plus à gauche que demandé
@@ -3335,9 +3338,10 @@ class OrbeWindow {
   // Place de la carte dans la zone des pages. Barre d'outils affichée : l'aperçu
   // montre aussi son adresse, au-dessus de la carte, qui descend d'autant.
   peekRect(rect = this.contentRect()) {
-    const m = Math.round(Math.min(90, Math.max(44, rect.width * 0.07)));
-    const top = this.toolbarShown ? PEEK_BAR : 16;
-    return { x: rect.x + m, y: rect.y + top, width: Math.max(200, rect.width - 2 * m), height: Math.max(120, rect.height - top) };
+    const [, H] = this.win.getContentSize();
+    const y = this.toolbarShown ? rect.y + PEEK_BAR : PEEK.top;
+    const width = Math.max(200, Math.min(PEEK.width, rect.width - 2 * PEEK.side));
+    return { x: rect.x + Math.round((rect.width - width) / 2), y, width, height: Math.max(120, Math.min(PEEK.height, H - PEEK.top - y)) };
   }
 
   // Rectangle de départ (et de retour) : une petite carte autour du point cliqué
@@ -3407,6 +3411,8 @@ class OrbeWindow {
     on('page-title-updated', (e, title) => { state.title = title; });
     on('page-favicon-updated', (e, icons) => { state.favicon = icons[0] || ''; });
     on('did-navigate', (e, u) => { state.url = u; this.peekAddress(); });
+    const pane = { view, wc, peek: state };
+    on('update-target-url', (e, u) => this.linkStatus(pane, String(u || '').slice(0, STATUS_MAX)));
     on('did-navigate-in-page', (e, u, main) => { if (main) { state.url = u; this.peekAddress(); } });
     on('will-prevent-unload', (e) => { if (hooks.leave(this, wc)) e.preventDefault(); });
     on('destroyed', () => { if (this.peekState === state) this.closePeek(); });
@@ -3479,7 +3485,7 @@ class OrbeWindow {
     this.flushPeek();
     const state = this.peekState;
     this.peekState = null;
-    place(state.view, this.peekSeed(this.peekRect(), state.point), ms, 'ease-in');
+    place(state.view, this.peekSeed(this.peekRect(), state.point), ms); // Arc closes it ease-out too
     this.peekOverlay({ leaving: true, ms });
     const done = () => {
       if (!this.win.isDestroyed()) {
@@ -4129,8 +4135,10 @@ class OrbeWindow {
   }
 
   // Adresse du lien survolé, en bas à gauche de la page.
+  // `rt` can also be the open Peek (`{ view, wc, peek }`): the pill then sits at the card's bottom left.
   linkStatus(rt, url) {
-    if (this.win.isDestroyed() || !this.visibleIds().includes(rt.id)) return;
+    const gone = (x) => (x.peek ? this.peekState !== x.peek : !this.visibleIds().includes(x.id));
+    if (this.win.isDestroyed() || gone(rt)) return;
     clearTimeout(this.statusTimer);
     clearTimeout(this.statusGrow);
     const hide = () => {
@@ -4151,7 +4159,7 @@ class OrbeWindow {
     };
     const dodge = () => {
       const st = this.status;
-      if (!st || this.win.isDestroyed() || st.rt.wc.isDestroyed()) return hide();
+      if (!st || this.win.isDestroyed() || st.rt.wc.isDestroyed() || (st.rt.peek && gone(st.rt))) return hide();
       const p = this.statusPointer();
       const r = rect(st);
       if (!p || p.x < r.x - STATUS.margin || p.x > r.x + r.width + STATUS.margin || p.y < r.y - STATUS.margin || p.y > r.y + r.height + STATUS.margin) return;

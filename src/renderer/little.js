@@ -1,5 +1,8 @@
 // Barre de la petite fenêtre : une loupe, une adresse, les extensions, la copie du lien et le bouton
 // « Ouvrir dans ‹Espace› ⌘O », avec son menu des Espaces (recherche comprise).
+// little.html#float is the view over the page (little.js): the coach mark and the right edge's buttons.
+const FLOAT = location.hash === '#float';
+document.body.classList.toggle('float', FLOAT);
 const u = document.getElementById('u');
 const open = document.getElementById('open');
 const copy = document.getElementById('copy');
@@ -14,12 +17,13 @@ let first = true; // premier état reçu : sans page, le champ prend le clavier
 O.on('state', (s) => {
   setLang(s.lang);
   url = s.url;
-  if (first) { first = false; if (!url) u.focus(); }
+  if (first) { first = false; if (!url && !FLOAT) u.focus(); }
   if (document.activeElement !== u) u.value = host(s.url);
   addressInto(document.getElementById('u-site'), s.url ? host(s.url) : '');
   document.getElementById('u-wrap').classList.toggle('site', !!s.url);
   open.disabled = !s.url;
   copy.disabled = !s.url;
+  copy.title = `${t('edit.copyUrl')}  ${KEYS.copyUrl || ''}`.trim(); // Arc: "Copy URL ⇧⌘C"
   exts.hidden = !s.extensions;
   document.title = s.title || 'Radian';
   // Comme dans Arc : la fenêtre prend les couleurs de l'Espace où ⌘O enverra la page, et le bouton le nomme.
@@ -27,8 +31,18 @@ O.on('state', (s) => {
     const vars = OrbeTheme.cssVars(OrbeTheme.palette(s.target.space, s.target.dark));
     for (const [k, v] of Object.entries(vars)) document.documentElement.style.setProperty(k, v);
   }
-  document.getElementById('open-label').textContent = s.target ? t('little.openSpace', { space: s.target.name }) : t('little.open');
-  document.getElementById('hint').hidden = !s.hint;
+  // Arc: "Open in" grey, the Space's name bold white.
+  const label = document.getElementById('open-label');
+  const [before, after = ''] = t('little.openSpace').split('{space}');
+  const name = document.createElement('b');
+  name.textContent = s.target ? s.target.name : '';
+  if (s.target) label.replaceChildren(before, name, after); else label.textContent = t('little.open');
+  const [lead, tail = ''] = t('little.coachTitle').split('{name}');
+  const brand = document.createElement('i');
+  brand.textContent = t('little.coachName');
+  document.getElementById('coach-title').replaceChildren(lead, brand, tail);
+  document.getElementById('coach').hidden = !s.hint;
+  document.getElementById('edge').hidden = !s.edge;
   const was = !!spaces;
   spaces = Array.isArray(s.spaces) ? s.spaces : null;
   document.body.classList.toggle('menu', !!spaces);
@@ -46,7 +60,15 @@ u.addEventListener('keydown', (e) => {
 });
 open.onclick = () => O.send('openInOrbe');
 document.getElementById('find-u').onclick = () => u.focus();
-document.getElementById('hint-close').onclick = () => O.send('closeHint');
+document.getElementById('coach-close').onclick = () => O.send('closeHint');
+document.getElementById('edge-close').onclick = () => O.send('closeWindow');
+document.getElementById('edge-full').onclick = () => O.send('openInOrbe');
+document.getElementById('space-close').onclick = () => O.send('closeMenu');
+// The float view takes the size of what it shows; nothing shown, it goes away (little.js `placeFloat`).
+if (FLOAT) {
+  const box = document.getElementById('float');
+  new ResizeObserver(() => O.send('floatSize', { width: box.offsetWidth, height: box.offsetHeight })).observe(box);
+}
 document.getElementById('open-in').onclick = () => O.send('openInMenu');
 // The menu and the popups open under the button, right-aligned to it.
 exts.onclick = () => {
@@ -70,7 +92,10 @@ function drawSpaces() {
     const b = document.createElement('button');
     b.dataset.space = sp.id;
     b.className = i === sel ? 'sel' : '';
-    b.textContent = `${sp.icon}  ${sp.name}`;
+    const ic = document.createElement('span');
+    ic.className = 'ic';
+    ic.textContent = sp.icon;
+    b.append(ic, sp.name);
     list.appendChild(b);
   });
   document.getElementById('space-none').hidden = found.length > 0;

@@ -721,6 +721,28 @@ module.exports = async function fenetresTests(ctx) {
     const calls = [];
     const openInOrbe = little.hooks.openInOrbe;
 
+    // ⌥⌘N: Little Radian's own Command Bar, as in Arc 1.170 (docs/parity/captures/live/chrome.md)
+    {
+      const { screen } = require('electron');
+      commands.run(null, 'newLittle');
+      const bar = little.LittleCommand.open(); // already open: the same window comes forward
+      const barJs = (code) => bar.view.webContents.executeJavaScript(code);
+      await until(() => bar.win.isVisible() && barJs(`document.body.classList.contains('little') && !document.getElementById('command').hidden && document.activeElement === document.getElementById('cmd-input')`).catch(() => false), 'Little Radian command window');
+      const b = bar.win.getBounds();
+      const { bounds: d } = screen.getDisplayMatching(b);
+      check('⌥⌘N: a borderless 490 × 329 Command Bar, 20 pt from the right and 50 pt from the top of the display, no full window yet',
+        b.width === 490 && b.height === 329 && b.x + b.width === d.x + d.width - 20 && b.y === d.y + 50 && count() === 0 && await barJs(`getComputedStyle(document.getElementById('cmd-close')).display !== 'none'`), JSON.stringify([b, d]));
+      await barJs(`(() => { const i = document.getElementById('cmd-input'); i.value = ${JSON.stringify(base + '/p/barre')}; i.dispatchEvent(new Event('input')); i.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); })()`);
+      await until(() => count() === 1 && bar.win.isDestroyed(), 'result opened in a Little Radian window');
+      check('choosing a result: a full Little Radian window opens with it and the command window closes', LittleWindow.all[0].url === base + '/p/barre');
+      await closeAll();
+      const bar2 = little.LittleCommand.open();
+      await until(() => bar2.view.webContents.executeJavaScript(`!document.getElementById('command').hidden`).catch(() => false), 'command window again');
+      await bar2.view.webContents.executeJavaScript(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+      await until(() => bar2.win.isDestroyed(), 'command window closed by Escape');
+      check('Escape closes the command window without opening anything', count() === 0);
+    }
+
     // Liens venus d'autres applications
     settings.externalLinks = 'little';
     settings.routes = [];
@@ -768,7 +790,7 @@ module.exports = async function fenetresTests(ctx) {
     await lui(`(() => { const s = document.getElementById('space-search'); s.value = 'zzz'; s.dispatchEvent(new Event('input', { bubbles: true })); })()`);
     check('recherche d’Espace sans résultat : dit', await lui(`document.querySelectorAll('#space-list button').length === 0 && !document.getElementById('space-none').hidden`));
     await lui(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
-    await until(() => !l1.menu && l1.win.contentView.children[l1.win.contentView.children.length - 1] === l1.view, 'menu refermé');
+    await until(() => !l1.menu && l1.win.contentView.children.indexOf(l1.view) > l1.win.contentView.children.indexOf(l1.ui), 'menu refermé');
     check('Échap referme le menu : la page repasse devant, la fenêtre reste', await lui(`document.getElementById('spaces').hidden && !document.body.classList.contains('menu')`) && count() === 1);
     check('Espace inconnu ou message forgé : rien ne s’ouvre', l1.handle('openInSpace', 'inconnu') === undefined && l1.handle('openInSpace', { id: extra.id }) === undefined && calls.length === 0 && count() === 1);
     l1.run('openInSpace');
@@ -854,7 +876,8 @@ module.exports = async function fenetresTests(ctx) {
     w.activate(Pn);
     const plain = w.peekRect();
     const zone = w.contentRect();
-    check('aperçu sans barre d’outils : la carte commence à 16 px du haut de la zone des pages', plain.y === zone.y + 16);
+    check('Peek without the toolbar: a card of at most 1024 × 776, centred in the page area, 12 pt from the window top (Arc 1.170)',
+      plain.y === 12 && plain.width <= 1024 && plain.height <= 776 && Math.abs(plain.x - zone.x - (zone.width - plain.width) / 2) <= 1, JSON.stringify([plain, zone]));
     commands.setSetting('showToolbar', true);
     await until(() => w.toolbarShown && w.contentRect().y > zone.y, 'barre d’outils affichée');
     // The address as the toolbar shows it: whole, or without the scheme by default (`showFullUrl`, as in Arc).
@@ -870,7 +893,7 @@ module.exports = async function fenetresTests(ctx) {
     check('l’adresse de l’aperçu suit sa navigation', true);
     commands.setSetting('showToolbar', false);
     await until(() => !w.toolbarShown && w.peekChrome.webContents.executeJavaScript(`document.getElementById('peek-url').hidden`), 'barre d’outils masquée');
-    check('barre d’outils masquée : plus d’adresse, la carte remonte', w.peekRect().y === w.contentRect().y + 16);
+    check('barre d’outils masquée : plus d’adresse, la carte remonte', w.peekRect().y === 12);
     w.closePeek({ animate: false });
     w.togglePin(Pn);
     d.spaces.splice(d.spaces.indexOf(other), 1);

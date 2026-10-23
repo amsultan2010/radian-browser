@@ -416,7 +416,7 @@ function setupIpc() {
     if (action.startsWith('welcome:')) return welcomeAction(action, e.sender);
     if (action.startsWith('lib:')) return library.action(action, payload, e.sender);
     if (/^(settings|shortcuts|ext|notes|tasks):/.test(action)) return globalAction(action, payload, e.sender);
-    const owner = OrbeWindow.ownerOf(e.sender) || little.LittleWindow.ownerOf(e.sender) || OrbeWindow.primary;
+    const owner = OrbeWindow.ownerOf(e.sender) || little.LittleWindow.ownerOf(e.sender) || little.LittleCommand.ownerOf(e.sender) || OrbeWindow.primary;
     return owner ? owner.handle(action, payload) : undefined;
   });
 }
@@ -481,7 +481,7 @@ app.whenReady().then(async () => {
   setupIpc();
 
   commands.hooks.newWindow = newWindow;
-  commands.hooks.newLittle = (url) => new little.LittleWindow(url);
+  commands.hooks.newLittle = () => little.LittleCommand.open(); // ⌥⌘N: Little Radian's own Command Bar first, as in Arc
   commands.hooks.openSettings = openSettings;
   commands.hooks.openBoost = (w, mode) => boostEditor.open(w, mode);
   boostEditor.hooks.openSettings = () => openSettings('advanced'); // where the Boosts settings are
