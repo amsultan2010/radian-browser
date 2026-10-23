@@ -313,6 +313,18 @@ function noteDownload(phase, d, wc) {
   if (!downloading.has(wc.id)) downloading.set(wc.id, new Set());
   downloading.get(wc.id).add(d.id);
 }
+// What spares a live tab from automatic sleep (veille.js), shared by every sleep rule.
+function spared(rt, visible, now, s) {
+  return {
+    // Épargné par les règles automatiques : l'utilisateur y a agi, la page charge, ou elle a refusé une veille.
+    // … ou c'est un site qui reste vivant (keepalive.js : messagerie, courrier, musique, et la liste de l'utilisateur).
+    typed: !!rt.typed || !!rt.loading || !!rt.objected || keepalive.matches(liveUrl(rt), s),
+    kept: visible.has(rt.id) || rt.wc.isCurrentlyAudible() || rt.wc.isDevToolsOpened() || hooks.busy(rt)
+      // Image dans l'image, page filmée par une autre, téléchargement en cours, veille demandée à
+      // l'instant (une page qui n'y a toujours pas répondu redevient candidate, limite en nombre comprise).
+      || !!rt.pip || rt.wc.isBeingCaptured() || downloading.has(rt.wc.id) || (!!rt.sleeping && now - (rt.sleepAsked || 0) < SLEEP_WAIT),
+  };
+}
 // Pastille de l'adresse du lien survolé : largeur courte, délai avant qu'elle ne s'étende,
 // durées de ses mouvements, marge autour d'elle où le pointeur la fait s'écarter.
 const STATUS = { short: 420, expandAfter: 1500, grow: 160, dodge: 140, margin: 10, poll: 90, height: 26 };
@@ -1461,13 +1473,7 @@ class OrbeWindow {
       id: rt.id,
       lastUsed: rt.lastUsed,
       mb: mem ? mem.of(rt.id) : 0,
-      // Épargné par les règles automatiques : l'utilisateur y a agi, la page charge, ou elle a refusé une veille.
-      // … ou c'est un site qui reste vivant (keepalive.js : messagerie, courrier, musique, et la liste de l'utilisateur).
-      typed: !!rt.typed || !!rt.loading || !!rt.objected || keepalive.matches(liveUrl(rt), s),
-      kept: visible.has(rt.id) || rt.wc.isCurrentlyAudible() || rt.wc.isDevToolsOpened() || hooks.busy(rt)
-        // Image dans l'image, page filmée par une autre, téléchargement en cours, veille demandée à
-        // l'instant (une page qui n'y a toujours pas répondu redevient candidate, limite en nombre comprise).
-        || !!rt.pip || rt.wc.isBeingCaptured() || downloading.has(rt.wc.id) || (!!rt.sleeping && now - (rt.sleepAsked || 0) < SLEEP_WAIT),
+      ...spared(rt, visible, now, s),
     }));
     const picked = veille.pick(tabs, {
       max: s.maxLiveTabs,
