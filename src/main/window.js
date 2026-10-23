@@ -1414,7 +1414,8 @@ class OrbeWindow {
   // not reach) goes to sleep instead.
   static freezeView(id) {
     const rt = live.get(id);
-    if (!rt || rt.wc.isDestroyed()) return;
+    // Radian's own pages (an Easel receiving a capture) must keep answering: only web pages freeze.
+    if (!rt || rt.wc.isDestroyed() || isInternal(rt.wc.getURL())) return;
     if (rt.frozen) { OrbeWindow.sleepView(id); return; }
     const dbg = rt.wc.debugger;
     // Held by an extension, a full-page capture or the unload shield: left alone this round.
@@ -1445,6 +1446,8 @@ class OrbeWindow {
     // A frozen page cannot answer beforeunload: it is resumed first.
     if (rt.frozen) { OrbeWindow.thaw(rt).then(() => { if (!rt.wc.isDestroyed()) OrbeWindow.consult(rt, why); }); return; }
     note(rt, 'consultée (' + why + ')');
+    // A closed tab's page is hidden at once, and Chromium slows hidden pages: it must still get to answer.
+    try { rt.wc.setBackgroundThrottling(false); } catch {}
     hooks.shield(rt.wc);
     rt.wc.close({ waitForBeforeUnload: true });
   }
@@ -1466,7 +1469,7 @@ class OrbeWindow {
     OrbeWindow.consult(rt, 'fermeture de l’onglet');
     // (`asking` : la page a répondu et la question est à l'écran ; elle ne doit pas être
     // fermée sous la boîte de dialogue.)
-    setTimeout(() => { if (rt.pendingClose && !rt.asking && !rt.wc.isDestroyed()) { note(rt, 'sans réponse après 4 s : fermée'); rt.wc.close({ waitForBeforeUnload: false }); } }, 4000).unref();
+    setTimeout(() => { if (rt.pendingClose && !rt.asking && !rt.wc.isDestroyed()) { note(rt, 'sans réponse après 6 s : fermée'); rt.wc.close({ waitForBeforeUnload: false }); } }, 6000).unref();
   }
 
   // La page refuse d'être quittée (beforeunload) : la question est posée. Pour un

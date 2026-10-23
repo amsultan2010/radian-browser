@@ -372,7 +372,9 @@ function deliver(id, item) {
   const pages = pagesOf(id);
   if (pages.length) {
     inbox.set(id, [...(inbox.get(id) || []), item]);
-    pages[0].send('easel', { op: 'inbox', board: id });
+    // Every page showing the board is told: the first one that has loaded takes the items (a page
+    // still loading takes them when it is ready), so none are left waiting on the wrong page.
+    for (const page of pages) page.send('easel', { op: 'inbox', board: id });
     return 'page';
   }
   appendToFile(id, [item]);
