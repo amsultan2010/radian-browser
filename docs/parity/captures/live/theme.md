@@ -13,15 +13,15 @@ Change Space Icon… · Rename Space… · **Edit Theme Color…** · Set Profil
 
 ## Geometry (points)
 
-- Popover: **382 × 534**, at window x = 233, y = 10 (just right of the 250 pt sidebar, near the top). Content inset 13 pt (content 356 × 508). Corner radius ≈ 24 pt.
-- **Colour field** ("DotGrid"): **340 × 340**, 8 pt from the content's top-left. Dotted grid texture (≈ 4 pt dot pitch). Centred text when no colour is set: **"Tap to pick a color for this space"** (13 pt semibold, white).
+- Popover: AX frame 382 × 534 (includes a 13 pt shadow margin); the **visible panel is 356 × 508**, at window x = 246, y = 23 (just right of the sidebar, near the top). Corner radius ≈ 22 pt.
+- **Colour field** ("DotGrid"): **340 × 340**, 8 pt from the content's top-left. Dotted grid texture (fine light dots). Centred text when no colour is set: **"Tap to pick a color for this space"** (13 pt semibold, white).
 - **Appearance buttons**: three 32 × 32 buttons, 40 pt pitch, centred, 24 pt below the field's top edge. Order and tooltips:
   1. sparkles icon: **"Automatic Appearance"** (selected here; selected = rounded chip `#6D6C7A` ≈, radius 8)
   2. sun icon: **"Light Appearance"**
   3. moon-with-star icon: **"Dark Appearance"**
 - **Remove / Add** colour-point buttons: 32 × 32 icons "−" and "+" (AX "Remove", "Add"), centred at the bottom of the colour field (y = field top + 292); both disabled when no colour is set.
 - **Preset strip** (16 pt below the field): ‹ button 32 × 32 ("Move to previous preset page."), 9 swatches **24 × 24** circles at **29.5 pt pitch**, › button 32 × 32 ("Move to next preset page."). ‹ is disabled on page 1, › on the last page. Paging slides the strip horizontally.
-  - Each swatch has a 2 pt lighter ring (same hue, ~20 % lighter) inside its edge.
+  - Each swatch has a ≈1.5 pt ring inside its edge, same hue ≈10 % darker (e.g. `#E1686F` fill, `#CA5E64` ring).
   - AX label pattern: "Set space color to Catalog color: #$assets-… ColorPicker<Name><n>".
 - **Intensity slider** (AX help "Intensity"): 224 × 44 at content x = 18, y = 430; drawn as a translucent track (≈ 10 pt tall, fully rounded) with a sine-wave line (6 periods) over it.
 - **Noise texture dial**: 84 × 84 at content x = 258, y = 412: a ring of 24 small dots around a 40 pt circle. Two AX elements share it: top half button **"Cycle noise texture"** (tap cycles textures), bottom half an `AXSlider` (no label; drag/rotate = grain amount). With no theme set, both slider and dial draw dimmed.
@@ -62,8 +62,8 @@ Hex sampled at each swatch centre (6 × 6 px mean) from 2× screenshots, sRGB.
 
 ## Colours of the editor itself (over the default purple theme)
 
-- Popover fill ≈ `#554C5F` (translucent material; varies with the theme behind it).
-- Colour field ≈ `#5C596A` with lighter dots.
+- Popover fill ≈ `#49485B` near the top-left, ≈ `#554C5F` bottom-right (translucent material over the window gradient).
+- Colour field ≈ `#525164`–`#5C596A` with lighter dots.
 - Tooltips (all Arc custom tooltips, here and in Little Arc): pill, fill `#0A0D4B`, white 13 pt semibold text, ≈ 26 pt tall, appear ≈ 1 s after hover, 8 pt below the control; shortcut keycaps inside are `#D3D4FD` rounded squares with navy glyphs.
 
 ## Not captured
