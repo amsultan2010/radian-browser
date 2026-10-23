@@ -1314,15 +1314,16 @@ const fr = {
   'theme.autoAppearance': 'Apparence automatique',
   'theme.lightAppearance': 'Apparence claire',
   'theme.darkAppearance': 'Apparence sombre',
-  'theme.tapToPick': 'Cliquez pour choisir une couleur pour cet Espace',
-  'toast.batterySaverOff': 'Mode économie de batterie désactivé',  // Developer Mode bar
+  'theme.tapToPick': 'Clique pour choisir une couleur pour cet Espace',
+  // Developer Mode bar
   'dev.siteSettings': 'Réglages du site',
   'dev.captureWindow': 'Capturer la fenêtre',
   'dev.console': 'Afficher ou masquer la console',
   'dev.network': 'Afficher ou masquer le panneau Réseau',
   'dev.inspect': 'Inspecter l’élément',
   'dev.extensions': 'Menu des extensions',
-  'dev.split': 'Menu de la vue scindée',  // Developer Mode reload menu
+  'dev.split': 'Menu de la vue scindée',
+  // Developer Mode reload menu
   'dev.reloadMenu': 'Options d’actualisation',
   'dev.ignoreCache': 'Actualiser (en ignorant le cache)',
   // Site Control Center
@@ -2641,14 +2642,15 @@ const en = {
   'theme.lightAppearance': 'Light Appearance',
   'theme.darkAppearance': 'Dark Appearance',
   'theme.tapToPick': 'Tap to pick a color for this space',
-  'toast.batterySaverOff': 'Battery Saver Mode Deactivated',  // Developer Mode bar
+  // Developer Mode bar
   'dev.siteSettings': 'Site Settings',
   'dev.captureWindow': 'Capture Window',
   'dev.console': 'Toggle Console',
   'dev.network': 'Toggle Network Panel',
   'dev.inspect': 'Inspect Element',
   'dev.extensions': 'Extensions Menu',
-  'dev.split': 'Split View Menu',  // Developer Mode reload menu
+  'dev.split': 'Split View Menu',
+  // Developer Mode reload menu
   'dev.reloadMenu': 'Reload Options',
   'dev.ignoreCache': 'Refresh (Ignore Cache)',
   // Site Control Center
