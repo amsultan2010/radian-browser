@@ -1,7 +1,7 @@
-# Tests de Radian sur macOS et Windows, à chaque envoi.
-# Sous Windows s'ajoutent la fabrication de l'application, sa vérification
-# (fusibles, icône, informations de version, inscription comme navigateur) et
-# des captures d'écran, publiées comme pièces jointes de l'exécution.
+# Radian's tests on macOS and Windows, on every push.
+# On Windows the workflow also builds the app, checks it (fuses, icon, version
+# info, registration as a browser) and takes screenshots, uploaded as
+# artifacts of the run.
 name: Tests
 
 on:
@@ -23,53 +23,53 @@ jobs:
         with:
           node-version: 22
 
-      - name: Bloqueur de publicités
+      - name: Ad blocker
         run: node tests/adblock.test.js
 
       - name: Extensions
         run: node --test tests/extensions.test.js
 
-      # L'écran par défaut des machines Windows est trop petit pour la fenêtre.
-      - name: Écran en 1920 × 1080 (Windows)
+      # The default screen on Windows runners is too small for the window.
+      - name: Screen at 1920 × 1080 (Windows)
         if: runner.os == 'Windows'
         continue-on-error: true
         shell: pwsh
         run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
 
-      - name: Dossier des captures, version
+      - name: Screenshot folder and version
         shell: bash
         run: |
           mkdir -p "$RUNNER_TEMP/captures"
           echo "ORBE_SHOTS=$RUNNER_TEMP/captures" >> "$GITHUB_ENV"
           echo "ORBE_VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
 
-      - name: Tests de bout en bout
+      - name: End-to-end tests
         run: node scripts/dev.js --selftest
 
-      # Couche d'API des extensions, dans le vrai navigateur, sans réseau.
-      - name: Extensions dans le navigateur
+      # Extension API layer, in the real browser, without the network.
+      - name: Extensions in the browser
         run: node scripts/test-ext.js
 
-      # Après les tests de bout en bout : sous Windows, le moteur installé
-      # (electron.exe) sert d'exécutable d'essai. Ailleurs, ces essais sont sautés.
-      - name: Fabrication pour Windows (fusibles, ressources de l'exécutable, registre)
+      # After the end-to-end tests: on Windows, the installed engine
+      # (electron.exe) is the test executable. Elsewhere these tests are skipped.
+      - name: Windows build parts (fuses, executable resources, registry)
         run: node --test tests/pe-resources.test.js
 
-      - name: Fabrication de l'application (Windows)
+      - name: Build the app (Windows)
         if: runner.os == 'Windows'
         run: node scripts/build-win.js --icon
 
-      - name: L'application fabriquée démarre (Windows)
+      - name: Built app starts (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: ORBE_SCENARIO=tests/smoke.js ORBE_USER_DATA="$RUNNER_TEMP/orbe-smoke" "$HOME/.orbe-dev/dist/Radian/Radian.exe" --selftest --orbe-test
 
-      - name: Archive, fusibles, version et icône de Radian.exe (Windows)
+      - name: Archive, fuses, version and icon of Radian.exe (Windows)
         if: runner.os == 'Windows'
         run: node tests/win-package.js
 
-      # Relecture indépendante par PowerShell, sans passer par le code d'Orbe.
-      - name: Informations de version lues par PowerShell (Windows)
+      # Independent check with PowerShell, without going through Radian's code.
+      - name: Version info read by PowerShell (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
@@ -78,12 +78,12 @@ jobs:
           if ($v.ProductName -ne 'Radian' -or $v.FileDescription -ne 'Radian' -or $v.CompanyName -ne 'Radian' -or $v.OriginalFilename -ne 'Radian.exe') { throw 'Informations de version inattendues' }
           if ($v.FileVersion -ne $env:ORBE_VERSION -or $v.ProductVersion -ne $env:ORBE_VERSION) { throw "Version inattendue : $($v.FileVersion)" }
 
-      - name: Navigateur par défaut — inscription (Windows)
+      - name: Default browser, register (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: ORBE_WIN_DEFAULT_STEP=register ORBE_SCENARIO=tests/win-default.js ORBE_USER_DATA="$RUNNER_TEMP/orbe-defaut" "$HOME/.orbe-dev/dist/Radian/Radian.exe" --selftest --orbe-test
 
-      - name: Navigateur par défaut — registre relu après l'inscription (Windows)
+      - name: Default browser, registry after registering (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
@@ -94,7 +94,7 @@ jobs:
           if ($LASTEXITCODE) { throw 'StartMenuInternet\Radian absent' }
           reg query 'HKCU\Software\RegisteredApplications' /v Radian
           if ($LASTEXITCODE) { throw 'Radian absent de RegisteredApplications' }
-          # Liste des applications inscrites : Orbe y figure, et son chemin mène à des capacités lisibles.
+          # List of registered apps: Radian is in it, and its path leads to readable capabilities.
           $apps = Get-ItemProperty 'HKCU:\Software\RegisteredApplications'
           Write-Host "Applications inscrites pour l'utilisateur : $(($apps.PSObject.Properties | Where-Object { $_.Name -notlike 'PS*' } | ForEach-Object Name) -join ', ')"
           $caps = "HKCU:\$($apps.Radian)"
@@ -106,12 +106,12 @@ jobs:
           if ($cmd -ne "`"$exe`" `"%1`"") { throw "Commande inattendue : $cmd" }
           Write-Host "Commande d'ouverture : $cmd"
 
-      - name: Navigateur par défaut — retrait (Windows)
+      - name: Default browser, unregister (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: ORBE_WIN_DEFAULT_STEP=unregister ORBE_SCENARIO=tests/win-default.js ORBE_USER_DATA="$RUNNER_TEMP/orbe-defaut" "$HOME/.orbe-dev/dist/Radian/Radian.exe" --selftest --orbe-test
 
-      - name: Navigateur par défaut — registre relu après le retrait (Windows)
+      - name: Default browser, registry after unregistering (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
@@ -124,7 +124,7 @@ jobs:
           }
           Write-Host 'Plus aucune trace de l''inscription dans le registre.'
 
-      - name: Captures d'écran
+      - name: Screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -132,7 +132,7 @@ jobs:
           path: ${{ runner.temp }}/captures
           if-no-files-found: ignore
 
-      - name: Application Windows (zip)
+      - name: Windows app (zip)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
