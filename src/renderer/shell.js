@@ -2001,52 +2001,16 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// --- Infobulles maison ---------------------------------------------------------
-// Un bouton de la barre survolé une demi-seconde montre son nom et le raccourci en
-// vigueur (celui que l'utilisateur a choisi, s'il l'a changé). L'infobulle reste
-// dans la barre latérale : les pages sont posées par-dessus le reste de la fenêtre.
-const TIP_DELAY = 500;
-const tipEl = $('tip');
-let tipFor = null;
-let tipTimer = null;
-function tipHide() {
-  clearTimeout(tipTimer);
-  tipFor = null;
-  if (tipEl.hidden) return;
-  tipEl.classList.remove('on');
-  tipEl.hidden = true;
-}
-function tipShow(el) {
-  if (!el.isConnected || el.disabled || drag) return;
-  // « Actualiser » devient « Arrêter » pendant le chargement, comme son icône.
-  const stop = el.id === 'b-reload' && S && S.nav.loading;
-  $('tip-text').textContent = t(stop ? 'view.stop' : el.dataset.tip);
-  const keys = (stop ? KEYS.stop : KEYS[el.dataset.tipKey]) || '';
-  $('tip-key').textContent = keys;
-  $('tip-key').hidden = !keys;
-  tipEl.hidden = false;
-  const r = el.getBoundingClientRect();
-  const w = tipEl.offsetWidth;
-  const h = tipEl.offsetHeight;
-  const right = (FLOATING || !S || !S.sidebar.visible ? innerWidth : Math.min(innerWidth, S.sidebar.width)) - 6;
-  const x = Math.max(6, Math.min(right - w, r.left + r.width / 2 - w / 2));
-  const y = r.bottom + 6 + h > innerHeight - 4 ? r.top - h - 6 : r.bottom + 6;
-  tipEl.style.transform = `translate(${Math.round(x)}px,${Math.round(y)}px)`;
-  tipEl.classList.add('on');
-}
-document.addEventListener('mouseover', (e) => {
-  const el = e.target.closest ? e.target.closest('[data-tip]') : null;
-  if (el === tipFor) return;
-  tipHide();
-  if (!el) return;
-  tipFor = el;
-  tipTimer = setTimeout(() => { if (tipFor === el) tipShow(el); }, TIP_DELAY);
+// --- Infobulles maison (common.js) ---------------------------------------------
+// L'infobulle reste dans la barre latérale : les pages sont posées par-dessus le
+// reste de la fenêtre. « Actualiser » devient « Arrêter » pendant le chargement, comme son icône.
+const tipStop = (el) => el.id === 'b-reload' && S && S.nav.loading;
+tooltips({
+  right: () => (FLOATING || !S || !S.sidebar.visible ? innerWidth : Math.min(innerWidth, S.sidebar.width)),
+  blocked: () => !!drag,
+  text: (el) => t(tipStop(el) ? 'view.stop' : el.dataset.tip),
+  keys: (el) => (tipStop(el) ? KEYS.stop : KEYS[el.dataset.tipKey]),
 });
-for (const ev of ['mousedown', 'keydown', 'wheel', 'dragstart', 'blur']) addEventListener(ev, tipHide, true);
-// Le pointeur quitte le bouton : l'infobulle s'efface, même s'il passe sur un bouton
-// grisé (qui ne signale aucun survol).
-document.addEventListener('mouseout', (e) => { if (tipFor && e.target.closest && e.target.closest('[data-tip]') === tipFor && !(e.relatedTarget && tipFor.contains(e.relatedTarget))) tipHide(); });
-document.addEventListener('mouseleave', tipHide);
 
 // Pointeur posé 150 ms sur un onglet en veille : le processus principal prépare
 // la connexion à son site, pour un réveil plus rapide au clic.

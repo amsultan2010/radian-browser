@@ -139,6 +139,17 @@ svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-widt
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
 
+/* Arc's tooltip (common.js, `tooltips`), measured in Arc 1.170: a 27 pt navy pill, 13 pt
+   semibold text, the shortcut as lavender keycaps with a deeper bottom edge. Arc's own
+   colours: the same over every Space theme, in the sidebar, Little Arc and the theme editor. */
+#tip { position: fixed; left: 0; top: 0; z-index: 50; display: flex; align-items: center; gap: 7px; max-width: 280px; height: 27px; padding: 0 10px 0 11px; border-radius: 13.5px; background: #0a0d4b; box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1); color: #dedffd; font-size: 13px; font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 90ms var(--ease-out); -webkit-app-region: no-drag; }
+#tip[hidden] { display: none; }
+#tip.on { opacity: 1; }
+#tip-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#tip-key { flex: none; display: flex; gap: 3px; font: inherit; }
+#tip-key[hidden] { display: none; }
+#tip-key kbd { min-width: 19px; height: 19px; padding: 0 4px; display: grid; place-items: center; border: 1px solid #898eee; border-bottom-width: 2.5px; border-radius: 4.5px; background: #d3d4fd; color: #212afb; font-family: inherit; font-size: 10.5px; font-weight: 700; line-height: 1; }
+
 /* Adresse affichée à l'étroit (common.js, `addressInto`) : le domaine en avant ; quand la
    place manque, le chemin cède d'abord, puis le nom d'hôte s'efface par la GAUCHE — sa
    fin (le domaine enregistré) reste toujours visible. */
