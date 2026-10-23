@@ -1334,6 +1334,8 @@ const fr = {
   'side.reloadOptions': 'Options d’actualisation',
   'side.devReload': 'Actualiser',
   'side.devForceReload': 'Actualiser (sans le cache)',
+  'side.copyCurrentUrl': 'Copier l’URL actuelle',
+  'side.siteControl': 'Centre de contrôle du site',
 };
 
 const en = {
@@ -2648,6 +2650,8 @@ const en = {
   'side.reloadOptions': 'Reload options',
   'side.devReload': 'Reload',
   'side.devForceReload': 'Refresh (Ignore Cache)',
+  'side.copyCurrentUrl': 'Copy Current URL',
+  'side.siteControl': 'Site Control Center',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).

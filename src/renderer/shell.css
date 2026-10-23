@@ -110,19 +110,15 @@ svg.i.tb { width: 20px; height: 20px; }
 /* Au repos, rien dans la pastille (comme Arc) : cadenas d’une page sûre et bouclier paraissent au survol.
    As in Arc, hovering anywhere over the sidebar reveals them, pinned extensions included (help center GIF). */
 #sidebar:not(:hover) #shield, #sidebar:not(:hover) #exts { display: none; }
+/* Site Control Center (Arc's sliders button); its blocked-ads count lives in the panel. */
 #shield {
+  width: 28px;
   height: 28px;
-  min-width: 28px;
-  padding: 0 7px;
   border-radius: 8px;
   background: transparent;
   color: var(--dim);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  display: grid;
+  place-items: center;
   transition: background 120ms, color 120ms, transform var(--spring-snappy);
 }
 #shield[hidden] { display: none; }
@@ -144,8 +140,6 @@ svg.i.tb { width: 20px; height: 20px; }
 .share-on .row.tab.live.web:not(.sharing):hover .act.inst { display: grid; }
 #shield:hover { color: var(--fg); }
 #shield:active { transform: scale(0.94); transition: transform var(--press); }
-#shield.on { color: var(--accent-text, color-mix(in srgb, var(--accent) 55%, var(--fg))); }
-#shield.off svg, #shield.allowed svg { opacity: 0.45; }
 #shield svg { width: 15px; height: 15px; }
 #url {
   flex: 1;

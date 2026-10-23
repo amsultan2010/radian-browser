@@ -4993,8 +4993,6 @@ class OrbeWindow {
         progress: this.activeRt ? this.activeRt.progress : 1,
         canBack: !!(wc && wc.navigationHistory.canGoBack()),
         canForward: !!(wc && wc.navigationHistory.canGoForward()),
-        blocked: wc && settings.adblock ? (adblock.stats().blockedByTab.get(wc.id) || 0) : 0,
-        shield: !settings.adblock ? 'off' : (tab && adblock.isSiteAllowed(tab.url) ? 'allowed' : 'on'),
         // Share Quote: text selected in the page, except on Gmail, Slack and YouTube, as in Arc.
         quote: !!(tab && this.activeRt && this.activeRt.quote) && !/(^|\.)(mail\.google|slack|youtube)\.com(:\d+)?$/.test(prefs.hostOf(tab.url)),
         // Connexion (cadenas, « Non sécurisé »), fenêtres surgissantes bloquées, captures en cours.

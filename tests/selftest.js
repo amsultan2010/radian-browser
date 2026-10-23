@@ -1056,7 +1056,6 @@ module.exports = async function selftest(ctx) {
   await sleep(300);
   const pubWc = win.live.get(pub.id).wc;
   check('le bloqueur annule la requête tierce listée, pas celle du site', server.hits.pixel === 1 && adblock.stats().blockedByTab.get(pubWc.id) === 1, JSON.stringify([server.hits.pixel, adblock.stats().blockedByTab.get(pubWc.id)]));
-  await until(() => ui('document.getElementById("shield-n").textContent === "1"'), 'compteur du bouclier');
   server.hits.pixel = 0;
   w.toggleSiteBlocking();
   await until(() => server.hits.pixel === 2, 'exception pour le site');

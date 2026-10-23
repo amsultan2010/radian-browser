@@ -412,7 +412,7 @@ module.exports = async function finitions2Tests(ctx) {
     const over = (id) => ui(`document.getElementById(${JSON.stringify(id)}).dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))`);
     const tip = () => ui(`(() => { const el = document.getElementById('tip'); const r = el.getBoundingClientRect(); return { on: !el.hidden && el.classList.contains('on'), text: document.getElementById('tip-text').textContent, key: document.getElementById('tip-key').hidden ? '' : document.getElementById('tip-key').textContent, left: r.left, right: r.right, top: r.top, sw: S.sidebar.width, events: getComputedStyle(el).pointerEvents }; })()`);
     check('boutons de la barre : plus d’infobulle native (pas de « title »), un nom pour les aides techniques',
-      await ui(`['b-sidebar', 'b-back', 'b-forward', 'b-library', 'b-clear'].every((id) => { const el = document.getElementById(id); return !el.title && el.getAttribute('aria-label') === t(el.dataset.tip); })`));
+      await ui(`['b-sidebar', 'b-back', 'b-forward', 'b-library', 'b-clear', 'url-copy', 'shield'].every((id) => { const el = document.getElementById(id); return !el.title && el.getAttribute('aria-label') === t(el.dataset.tip); })`));
     check('« Actualiser » : pas d’infobulle (Arc), mais un nom pour les aides techniques',
       await ui(`(() => { const el = document.getElementById('b-reload'); return !el.title && !el.dataset.tip && el.getAttribute('aria-label') === t(S.nav.loading ? 'view.stop' : 'side.reload'); })()`));
     check('« Nouvel onglet » : pas d’infobulle, son raccourci écrit au bout de la ligne (comme dans Arc)',
@@ -430,6 +430,10 @@ module.exports = async function finitions2Tests(ctx) {
     check('bouton sans raccourci : le nom seul', (await tip()).key === '');
     await ui(`document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
     check('un clic referme l’infobulle', (await tip()).on === false);
+    await over('shield');
+    await until(async () => { const x = await tip(); return x.on && x.text === T('side.siteControl'); }, 'infobulle du centre de contrôle');
+    check('bouton du centre de contrôle du site (curseurs, Arc) : « Site Control Center », sans raccourci ni compteur', (await tip()).key === '' && await ui(`document.getElementById('shield').textContent === '' && document.querySelector('#shield use').getAttribute('href') === '#i-sliders'`));
+    await ui(`document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
     // Raccourci changé par l'utilisateur : l'infobulle le suit.
     const free = ['Alt+Cmd+F9', 'Alt+Shift+Cmd+F9', 'Ctrl+Alt+Cmd+F9'].find((a) => !shortcuts.owner(shortcuts.canon(a), 'library'));
     const r = free ? shortcuts.assign('library', free) : { error: 'pris' };

@@ -393,8 +393,6 @@ function render(s) {
   $('url').title = s.nav.internal ? '' : s.nav.url;
   const shield = $('shield');
   shield.hidden = !s.activeId || s.nav.internal || false;
-  shield.className = s.nav.shield;
-  $('shield-n').textContent = s.nav.shield === 'on' && s.nav.blocked ? (s.nav.blocked > 99 ? '99+' : String(s.nav.blocked)) : '';
   // Connexion : cadenas discret en https, « Non sécurisé » en http ou avec un certificat refusé.
   const sec = s.activeId && !s.nav.internal ? (s.nav.security || '') : '';
   const lock = $('lock');
