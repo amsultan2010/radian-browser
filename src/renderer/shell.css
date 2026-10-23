@@ -612,20 +612,24 @@ body.fullscreen #page-drag, .floating #page-drag { display: none; }
   transition: transform 140ms var(--ease);
 }
 
-/* Developer Mode, as observed in Arc 1.170: the tab's row gets a yellow and black dashed
-   outline, and the toolbar becomes a blue bar with the full URL in a monospaced font. */
+/* Developer Mode, as observed in Arc 1.170: the tab's row gets a caution-tape outline (yellow #F8D849
+   and near-black dashes of ≈ 6 pt, 2 pt stroke, following its corners; measured on tabrow-zoom.png) and
+   a second line with host:port in grey. The tape is a dashed border over a dark fill, masked to the ring. */
+.row .host { display: none; }
 body.dev-site .row.tab.active::after {
   content: '';
   position: absolute;
   inset: 0;
-  padding: 1.5px;
+  border: 2px dashed #f8d849;
   border-radius: inherit;
-  background: repeating-linear-gradient(-45deg, #facc15 0 5px, #18181b 5px 10px);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  background: #322b0f;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
 }
+body.dev-site .row.tab.active .title { align-self: flex-start; margin-top: 3px; line-height: 17px; }
+body.dev-site .row.tab.active .host { display: block; position: absolute; left: 36px; right: 10px; top: 19px; font-size: 11.5px; line-height: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 /* The bar itself (live capture, docs/parity/captures/live/devmode.md): 40 pt across the top of the page
    card, 45° stripes of rgba(76, 84, 251, 0.81) laid over the page's own colour (light bands ≈ 21 pt and
    dark ≈ 24 pt measured across), a 1 px lighter bottom line, white glyphs, the URL in SF Mono. */

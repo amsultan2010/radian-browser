@@ -275,7 +275,7 @@ module.exports = {
       await c.click('#c-dev');
       await jusqua(() => ctx.principal(({ store }, h) => store.state.settings.devSites.includes(h), new URL(A).host), 'mode développeur activé pour le site');
       await jusqua(() => c.evaluate(() => document.getElementById('c-dev').checked), 'case cochée par l’état rendu');
-      await jusqua(() => shell.evaluate(() => document.body.classList.contains('toolbar') && document.body.classList.contains('dev-site') && getComputedStyle(document.querySelector('.row.tab.active'), '::after').backgroundImage.includes('repeating-linear-gradient')), 'barre d’outils et liseré jaune et noir');
+      await jusqua(() => shell.evaluate(() => document.body.classList.contains('toolbar') && document.body.classList.contains('dev-site') && getComputedStyle(document.querySelector('.row.tab.active'), '::after').borderTopStyle === 'dashed'), 'barre d’outils et liseré jaune et noir');
       await ctx.capture('19-centre-de-controle', c);
       await c.click('#c-dev');
       await jusqua(() => ctx.principal(({ store }) => store.state.settings.devSites.length === 0), 'mode développeur coupé');
