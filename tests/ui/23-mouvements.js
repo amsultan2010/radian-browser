@@ -171,11 +171,11 @@ module.exports = {
         const a = i.getAnimations()[0];
         const page = S.sidebar.width; // bord gauche de la page
         const r = g.getBoundingClientRect();
-        return { nom: a && a.animationName, etat: a && a.playState, props: a ? [...new Set(a.effect.getKeyframes().flatMap((k) => Object.keys(k)))].filter((k) => k === 'transform' || k === 'left' || k === 'width' || k === 'backgroundPosition') : [], gauche: Math.round(r.left), page, haut: Math.round(r.top), h: Math.round(r.height), pastille: getComputedStyle(document.getElementById('url'), '::after').animationName };
+        return { nom: a && a.animationName, etat: a && a.playState, props: a ? [...new Set(a.effect.getKeyframes().flatMap((k) => Object.keys(k)))].filter((k) => k === 'transform' || k === 'left' || k === 'width' || k === 'backgroundPosition') : [], gauche: Math.round(r.left), page, haut: Math.round(r.top), h: Math.round(r.height), pastille: getComputedStyle(document.getElementById('url'), '::after').content };
       }), 'lueur affichée pendant le chargement', 5000);
       assert.deepEqual([m.nom, m.etat, m.props], ['glow-run', reduit ? m.etat : 'running', ['transform']]);
       assert.deepEqual([m.gauche, m.haut, m.h], [m.page, 0, 10], 'dans la marge au-dessus de la page');
-      assert.equal(m.pastille, 'sweep', 'le reflet de la pastille d’adresse est une transformation lui aussi');
+      assert.equal(m.pastille, 'none', 'plus de reflet sur la pastille d’adresse (Arc montre le chargement en haut, au centre)');
       const perf = reduit ? null : await mesurer(500);
       if (perf) {
         console.log(`    lueur : ${perf.images} images, médiane ${perf.mediane} ms, 95e centile ${perf.p95} ms, ${perf.misesEnPage} mise(s) en page`);

@@ -375,7 +375,6 @@ function render(s) {
   const label = s.nav.internal ? (s.nav.title || 'Radian') : host(s.nav.url);
   $('url-text').textContent = label || t('side.search');
   $('url-text').classList.toggle('placeholder', !label);
-  $('url').classList.toggle('loading', s.nav.loading);
   // Lueur de chargement le long du bord haut de la page.
   b.classList.toggle('loading', !!s.nav.loading && !!s.activeId);
   $('url').title = s.nav.internal ? '' : s.nav.url;
