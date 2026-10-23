@@ -256,12 +256,19 @@ function keepCapture(name, png, { incognito = false, done = null } = {}) {
 
 // --- Espaces, Boosts --------------------------------------------------------------
 const count = (nodes) => nodes.reduce((n, x) => n + (x.type === 'folder' ? count(x.children) : 1), 0);
+// A tab in a column of the Space manager: its title over its address, as in the sidebar.
+const tabItem = (id) => { const tab = store.state.tabs[id]; return tab ? { id, title: tab.customTitle || tab.title || tab.url, url: tab.url, favicon: tab.favicon || '' } : null; };
 
 function spaceRows(w, q) {
   const profiles = new Map(store.state.profiles.map((p) => [p.id, p.name]));
   return store.state.spaces
     .filter((s) => !q || s.name.toLowerCase().includes(q))
-    .map((s) => ({ id: s.id, name: s.name, icon: s.icon, color: s.color, profile: profiles.get(s.profileId) || '', pinned: count(s.pinned), today: s.today.length, current: !!w && w.spaceId === s.id, only: store.state.spaces.length < 2 }));
+    .map((s) => ({
+      id: s.id, name: s.name, icon: s.icon, color: s.color, profile: profiles.get(s.profileId) || '', pinned: count(s.pinned), today: s.today.length, current: !!w && w.spaceId === s.id, only: store.state.spaces.length < 2,
+      // Space manager (Arc): each column in its Space's colours, its top-level pinned items, then its Today tabs.
+      theme: { color: s.color, color2: s.color2, color3: s.color3, plain: s.plain, intensity: s.intensity, mode: s.mode },
+      items: { pinned: s.pinned.map((n) => (n.type === 'folder' ? { id: n.id, folder: true, title: n.name } : tabItem(n.id))).filter(Boolean), today: s.today.map(tabItem).filter(Boolean) },
+    }));
 }
 
 function boostRows(q) {
@@ -358,6 +365,24 @@ async function action(name, a, sender) {
       if (o.do === 'rename') { w.switchSpace(sp.id); w.askRename(sp.id); return true; }
       if (o.do === 'theme') { w.switchSpace(sp.id); w.openTheme(); return true; }
       if (o.do === 'delete') { await w.deleteSpace(sp.id); return true; }
+      // Space manager: a tab of the column (shown in its Space), its "↓ Clear", its move handle, its "…" menu.
+      if (o.do === 'tab') {
+        if (!sp.today.includes(o.tab) && !sp.pinned.some((n) => n.type !== 'folder' && n.id === o.tab)) return false;
+        w.activate(o.tab);
+        return true;
+      }
+      if (o.do === 'clear') { w.clearToday(sp); return true; }
+      if (o.do === 'move') { if (!Number.isInteger(o.index)) return false; w.moveSpace(sp.id, o.index); return true; }
+      if (o.do === 'menu') {
+        const go = (what) => () => action('lib:space', { id: sp.id, do: what }, sender);
+        env.popup(w, [
+          { label: t('spaces.rename'), click: go('rename') },
+          { label: t('spaces.editTheme'), click: go('theme') },
+          { type: 'separator' },
+          { label: t('spaces.delete'), enabled: s.spaces.length > 1, click: go('delete') },
+        ]);
+        return true;
+      }
       return false;
     }
     case 'lib:newSpace':

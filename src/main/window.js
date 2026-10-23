@@ -1858,9 +1858,9 @@ class OrbeWindow {
     else this.restoreClosed([last]);
   }
 
-  clearToday() {
-    const space = this.space;
-    const active = this.activeId;
+  // `space`: another Space's column in the Library's Space manager; its shown tab stays, as here.
+  clearToday(space = this.space) {
+    const active = space === this.space ? this.activeId : this.activeBySpace[space.id];
     // Comme dans Arc : un onglet qui joue un média n'est pas effacé.
     const playing = (id) => { const rt = live.get(id); return !!rt && !rt.wc.isDestroyed() && rt.wc.isCurrentlyAudible(); };
     const ids = space.today.filter((id) => id !== active && !playing(id)).reverse();

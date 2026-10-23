@@ -206,6 +206,31 @@ module.exports = async function bibliothequeTests(ctx) {
   await lib('lib:space', { id: other.id, do: 'delete' });
   dialog.showMessageBox = box0;
   check('supprimer un Espace depuis la Bibliothèque : même confirmation que par le menu', asked.length === 1 && asked[0].message === T('spaces.deleteConfirm', { name: 'Musique' }) && d.spaces.includes(other));
+  // Gestionnaire d'Espaces (Arc) : colonnes, clic sur un onglet, « ↓ Clear », poignée, menu « … ».
+  w.switchSpace(space.id);
+  w.openLibrary('spaces');
+  got = await lib('lib:get', {});
+  const col = got.spaces.find((s) => s.id === other.id);
+  check('gestionnaire d’Espaces : chaque colonne porte le thème de son Espace, ses épinglés et ses onglets du jour',
+    !!col && col.theme.color === other.color && col.items.pinned.length === 0 && col.items.today.map((x) => x.id).join() === other.today.join() && col.items.today.every((x) => typeof x.title === 'string' && typeof x.url === 'string'), JSON.stringify(col));
+  const theirs = other.today[0];
+  check('onglet pris dans la colonne d’un autre Espace : refusé', (await lib('lib:space', { id: space.id, do: 'tab', tab: theirs })) === false && w.libraryShown);
+  check('clic sur un onglet d’une colonne : son Espace s’affiche, sur lui ; la Bibliothèque se ferme',
+    (await lib('lib:space', { id: other.id, do: 'tab', tab: theirs })) === true && w.spaceId === other.id && w.activeId === theirs && !w.libraryShown);
+  w.switchSpace(space.id);
+  const extra = [make('vider1', other), make('vider2', other)];
+  check('« ↓ Clear » d’une colonne : ses onglets du jour partent, sauf celui que l’Espace affiche ; l’Espace affiché ne change pas',
+    (await lib('lib:space', { id: other.id, do: 'clear' })) === true && other.today.join() === theirs && extra.every((id) => !d.tabs[id]) && w.spaceId === space.id);
+  const ids0 = d.spaces.map((s) => s.id);
+  check('poignée d’une colonne : l’Espace change de rang ; un rang illisible est refusé',
+    (await lib('lib:space', { id: other.id, do: 'move', index: 0 })) === true && d.spaces[0] === other && (await lib('lib:space', { id: other.id, do: 'move', index: 'x' })) === false);
+  d.spaces.sort((a, b) => ids0.indexOf(a.id) - ids0.indexOf(b.id));
+  let spaceTpl = null;
+  const popup0 = library.env.popup;
+  library.env.popup = (win2, tpl) => { spaceTpl = tpl; };
+  check('menu « … » d’une colonne : renommer, modifier le thème, supprimer',
+    (await lib('lib:space', { id: other.id, do: 'menu' })) === true && spaceTpl.filter((x) => x.label).map((x) => x.label).join('|') === [T('spaces.rename'), T('spaces.editTheme'), T('spaces.delete')].join('|'));
+  library.env.popup = popup0;
   w.switchSpace(space.id);
   w.openLibrary('spaces');
 
