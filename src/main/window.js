@@ -1,7 +1,7 @@
 // Une fenêtre Orbe : une vue « coque » (barre latérale) qui occupe toute la
 // fenêtre, les vues web des onglets posées par-dessus dans la zone de contenu,
 // et des vues flottantes (barre de commande, recherche, notifications).
-const { app, BaseWindow, WebContentsView, Menu, clipboard, ClipboardItem, screen, dialog, nativeTheme } = require('electron');
+const { app, BaseWindow, WebContentsView, Menu, clipboard, ClipboardItem, screen, dialog, nativeTheme, webContents } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -262,6 +262,7 @@ function liveUrl(rt) {
   try { return rt.wc.getURL() || ''; } catch { return ''; }
 }
 let lastSweep = null; // dernier passage de veille : { at, totalMb, budgetMb, real }
+const cpuWatch = { timer: null, state: new Map() }; // CPU rule, see `OrbeWindow.watchCpu`
 
 function tabMemory() {
   const byPid = new Map(app.getAppMetrics().map((m) => [m.pid, processMb(m)]));
@@ -312,6 +313,18 @@ function noteDownload(phase, d, wc) {
   if (!wc || wc.isDestroyed()) return;
   if (!downloading.has(wc.id)) downloading.set(wc.id, new Set());
   downloading.get(wc.id).add(d.id);
+}
+// What spares a live tab from automatic sleep (veille.js), shared by every sleep rule.
+function spared(rt, visible, now, s) {
+  return {
+    // Épargné par les règles automatiques : l'utilisateur y a agi, la page charge, ou elle a refusé une veille.
+    // … ou c'est un site qui reste vivant (keepalive.js : messagerie, courrier, musique, et la liste de l'utilisateur).
+    typed: !!rt.typed || !!rt.loading || !!rt.objected || keepalive.matches(liveUrl(rt), s),
+    kept: visible.has(rt.id) || rt.wc.isCurrentlyAudible() || rt.wc.isDevToolsOpened() || hooks.busy(rt)
+      // Image dans l'image, page filmée par une autre, téléchargement en cours, veille demandée à
+      // l'instant (une page qui n'y a toujours pas répondu redevient candidate, limite en nombre comprise).
+      || !!rt.pip || rt.wc.isBeingCaptured() || downloading.has(rt.wc.id) || (!!rt.sleeping && now - (rt.sleepAsked || 0) < SLEEP_WAIT),
+  };
 }
 // Pastille de l'adresse du lien survolé : largeur courte, délai avant qu'elle ne s'étende,
 // durées de ses mouvements, marge autour d'elle où le pointeur la fait s'écarter.
@@ -1039,6 +1052,10 @@ class OrbeWindow {
     clearTimeout(this.toastTimer);
     clearTimeout(this.focusTimer);
     clearTimeout(this.spareLater);
+    // CPU rule: the next sweep arms it again for the windows left.
+    clearTimeout(cpuWatch.timer);
+    cpuWatch.timer = null;
+    cpuWatch.state.clear();
     windows.delete(this.id);
     for (const [id, rt] of [...live]) if (rt.owner === this) OrbeWindow.destroyView(id);
     this.closePeek({ animate: false });
@@ -1464,13 +1481,7 @@ class OrbeWindow {
       id: rt.id,
       lastUsed: rt.lastUsed,
       mb: mem ? mem.of(rt.id) : 0,
-      // Épargné par les règles automatiques : l'utilisateur y a agi, la page charge, ou elle a refusé une veille.
-      // … ou c'est un site qui reste vivant (keepalive.js : messagerie, courrier, musique, et la liste de l'utilisateur).
-      typed: !!rt.typed || !!rt.loading || !!rt.objected || keepalive.matches(liveUrl(rt), s),
-      kept: visible.has(rt.id) || rt.wc.isCurrentlyAudible() || rt.wc.isDevToolsOpened() || hooks.busy(rt)
-        // Image dans l'image, page filmée par une autre, téléchargement en cours, veille demandée à
-        // l'instant (une page qui n'y a toujours pas répondu redevient candidate, limite en nombre comprise).
-        || !!rt.pip || rt.wc.isBeingCaptured() || downloading.has(rt.wc.id) || (!!rt.sleeping && now - (rt.sleepAsked || 0) < SLEEP_WAIT),
+      ...spared(rt, visible, now, s),
     }));
     const picked = veille.pick(tabs, {
       max: s.maxLiveTabs,
@@ -1482,7 +1493,39 @@ class OrbeWindow {
     // La limite en nombre s'applique tout de suite ; ancienneté et mémoire consultent la page.
     for (const p of picked) { if (p.why === 'count') OrbeWindow.destroyView(p.id); else OrbeWindow.sleepView(p.id); }
     if (deep && picked.length) OrbeWindow.pushAll();
+    OrbeWindow.watchCpu(tabs);
     return picked;
+  }
+
+  // CPU rule (veille.burning): hidden tabs that keep burning CPU sleep like idle ones. Sampled only
+  // while a live tab could sleep, so nothing runs at rest; `trimLive` (each sweep) arms it again.
+  static watchCpu(tabs) {
+    if (cpuWatch.timer || !tabs.some((t) => !t.kept && !t.typed)) return;
+    const s = store.state.settings;
+    const saver = veille.saving(OrbeWindow.battery, s.batterySaver !== false);
+    cpuWatch.timer = setTimeout(OrbeWindow.sampleCpu, (saver ? veille.CPU_SAVER : veille.CPU).everyMs);
+    cpuWatch.timer.unref();
+  }
+
+  static sampleCpu() {
+    cpuWatch.timer = null;
+    const s = store.state.settings;
+    const now = Date.now();
+    const visible = new Set();
+    for (const w of windows.values()) for (const id of w.visibleIds()) visible.add(id);
+    // Cumulative CPU seconds, not `percentCPUUsage`: every caller of getAppMetrics (sweep, task
+    // manager) restarts that one, so it would only cover the time since the last of them.
+    const readings = new Map(app.getAppMetrics().map((m) => [m.pid, m.cpu.cumulativeCPUUsage]));
+    const pidsOf = (wc) => { const pids = new Set(); try { for (const f of wc.mainFrame.framesInSubtree) pids.add(f.osProcessId); } catch {} return [...pids]; };
+    const tabs = [...live.values()].filter((rt) => !rt.wc.isDestroyed()).map((rt) => ({ id: rt.id, pids: pidsOf(rt.wc), ...spared(rt, visible, now, s) }));
+    // Any other page sharing a process (Little Arc window, extension, interface) keeps it awake.
+    const ours = new Set([...live.values()].map((rt) => rt.wc));
+    tabs.push({ id: '', pids: webContents.getAllWebContents().filter((wc) => !ours.has(wc) && !wc.isDestroyed()).flatMap(pidsOf), kept: true, typed: false });
+    const { ids, state } = veille.burning(tabs, readings, cpuWatch.state, { now, saver: veille.saving(OrbeWindow.battery, s.batterySaver !== false) });
+    cpuWatch.state = state;
+    for (const id of ids) OrbeWindow.sleepView(id);
+    if (ids.length) OrbeWindow.pushAll();
+    OrbeWindow.watchCpu(tabs);
   }
 
   // Passage de fond (toutes les minutes) : relève d'abord l'empreinte réelle des processus
