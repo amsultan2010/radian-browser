@@ -225,8 +225,7 @@ module.exports = {
       await a.keyboard.press('ArrowRight');
       await a.keyboard.press('ArrowRight');
       await jusqua(async () => (await etape()) === 'ready', 'dernière étape');
-      assert.equal(await a.textContent('.support b'), await ctx.texte('support.title'));
-      assert.equal(await a.textContent('.support .sub'), await ctx.texte('support.body'));
+      assert.equal(await a.locator('.support').count(), 0);
       assert.equal(await a.locator('.tips .line').count(), 6);
       assert.equal(await a.locator('#skip').isVisible(), false);
       await a.click('#next');

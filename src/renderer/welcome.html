@@ -62,8 +62,6 @@ h1 { font-size: 28px; margin-bottom: 8px; }
 #colors button[aria-pressed=true] { box-shadow: 0 0 0 3px var(--base), 0 0 0 5px var(--c); }
 #colors button:focus-visible { outline: 2px solid var(--fg); outline-offset: 4px; }
 
-.support { border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
-.support .line { align-items: center; padding: 14px; }
 .tips { display: grid; grid-template-columns: 1fr 1fr; }
 .tips .line { border-top: 0.5px solid var(--line); min-height: 48px; }
 .tips .line:nth-child(-n+2) { border-top: 0; }
@@ -179,12 +177,6 @@ footer .btn { height: 32px; padding: 0 16px; }
       <div class="line"><i class="demo d-little" aria-hidden="true"><b class="pg"></b><b class="r r1"></b><b class="r r2"></b><b class="lw"></b></i><span class="grow" data-t="file.newLittle"></span><kbd data-key="newLittle">⌥⌘N</kbd></div>
     </div>
     <p style="margin:12px 0 14px"><button class="btn" data-cmd="shortcuts" data-t="help.shortcuts"></button></p>
-    <div class="card support">
-      <div class="line">
-        <div class="grow"><b data-t="support.title"></b><span class="sub wrap" data-t="support.body"></span></div>
-        <button class="btn primary" data-cmd="support" data-t="support.button"></button>
-      </div>
-    </div>
   </section>
 </main>
 <footer>
