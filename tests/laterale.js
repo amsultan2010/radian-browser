@@ -665,6 +665,12 @@ module.exports = async function lateraleTests(ctx) {
   await w.run('copyUrlQuote');
   await until(async () => (await clipboard.readText()) === `> une phrase à citer\n>\n> — [P1](${base}/p1)`, 'citation copiée');
   check('Édition → « Copier l’URL en citation » : la sélection en citation Markdown, avec sa source', true);
+  // Share Quote: with text selected, the URL row offers it; a click copies the same quote.
+  await until(() => ui('!document.getElementById("quote-note").hidden'), 'bouton « Share Quote » affiché');
+  clipboard.writeText('');
+  await ui('document.getElementById("quote-note").click()');
+  await until(async () => (await clipboard.readText()) === `> une phrase à citer\n>\n> — [P1](${base}/p1)`, 'citation copiée par le bouton');
+  check('« Share Quote » : le bouton paraît dans la ligne de l’adresse avec une sélection et copie la citation', true);
 
   // « Utiliser la sélection pour rechercher ».
   await w.run('useSelectionFind');
@@ -675,6 +681,8 @@ module.exports = async function lateraleTests(ctx) {
   await w.run('useSelectionFind');
   await sleep(120);
   check('… sans sélection, elle ne s’ouvre pas', !w.findOpen);
+  await until(() => ui('document.getElementById("quote-note").hidden'), 'bouton « Share Quote » caché');
+  check('… et le bouton « Share Quote » s’en va avec la sélection', true);
 
   // Enregistrer la page.
   const saveAs = dialog.showSaveDialog;

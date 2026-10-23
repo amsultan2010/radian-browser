@@ -1299,6 +1299,8 @@ const fr = {
   // New Note app choice
   'set.noteApp': 'Application de documents par défaut',
   'set.noteAppNotes': 'Notes de Radian',
+  // Share Quote
+  'side.shareQuote': 'Partager la citation',
 };
 
 const en = {
@@ -2578,6 +2580,8 @@ const en = {
   // New Note app choice
   'set.noteApp': 'Default Document App',
   'set.noteAppNotes': 'Radian Notes',
+  // Share Quote
+  'side.shareQuote': 'Share Quote',
 };
 
 module.exports = { fr, en };
