@@ -204,6 +204,16 @@ module.exports = {
       await jusqua(async () => (await espace()).grain === 0 && !(await rendu()).grainy, 'grain retiré');
     });
 
+    await t.verifier('un clic sur la molette passe à la texture suivante, dans l’ordre d’Arc (grain, sand, denim, tweed)', async () => {
+      const avant = Theme.normalize(await espace()).texture;
+      const suivante = Theme.TEXTURES[(Theme.TEXTURES.indexOf(avant) + 1) % Theme.TEXTURES.length];
+      const grain = (await espace()).grain;
+      await ctx.clic(modal, '#theme-dial');
+      await jusqua(async () => (await espace()).texture === suivante, 'texture ' + suivante);
+      assert.equal((await espace()).grain, grain, 'un clic ne tourne pas la molette');
+      assert.match(await modal.evaluate(() => document.getElementById('theme-dial').style.getPropertyValue('--knob')), new RegExp(`textures/${suivante}\\.png`));
+    });
+
     await t.avecEcran('verifier', 'apparence de l’Espace (automatique, claire, sombre) : l’icône s’anime, la barre et les panneaux suivent', async () => {
       for (const [mode, anim] of [['dark', 'moon-rock'], ['light', 'rays-turn'], ['auto', 'star-twinkle']]) {
         await ctx.clic(modal, `#theme-modes .mode[data-mode=${mode}]`);

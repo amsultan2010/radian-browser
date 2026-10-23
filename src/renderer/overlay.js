@@ -275,7 +275,7 @@ function openSwitcher(p) {
 const SMAX = 0.8; // saturation au bord du champ
 const V_FIELD = 0.93; // clarté des couleurs du champ : des pastels vifs, comme les fonds clairs d'Arc
 const wheel = $('theme-wheel');
-let theme = null; // { dots: [{h, s, v}], sel, intensity, grain, mode, page }
+let theme = null; // { dots: [{h, s, v}], sel, intensity, grain, texture, mode, page }
 let themeFrame = 0;
 let themePatch = {};
 
@@ -350,6 +350,7 @@ function drawTheme() {
   $('theme-next').disabled = theme.page === OrbeTheme.SWATCHES.length - 1;
   for (const b of $('theme-modes').children) { b.classList.toggle('sel', b.dataset.mode === theme.mode); b.setAttribute('aria-checked', String(b.dataset.mode === theme.mode)); }
   $('theme-dial').style.setProperty('--turn', `${-135 + 270 * theme.grain}deg`);
+  $('theme-dial').style.setProperty('--knob', `url("textures/${theme.texture}.png")`);
   // Le panneau suit la couleur principale.
   document.documentElement.style.setProperty('--accent', colors[0] || OrbeTheme.DEFAULT_COLOR);
 }
@@ -357,7 +358,7 @@ function drawTheme() {
 function openTheme(p) {
   show('theme');
   const t0 = OrbeTheme.normalize(p.space);
-  theme = { dots: t0.colors.map(OrbeTheme.hexToHsv), sel: 0, intensity: t0.intensity, grain: t0.grain, mode: t0.mode, page: pageOf(t0.colors) };
+  theme = { dots: t0.colors.map(OrbeTheme.hexToHsv), sel: 0, intensity: t0.intensity, grain: t0.grain, texture: t0.texture, mode: t0.mode, page: pageOf(t0.colors) };
   $('theme').style.left = (p.x || 260) + 'px';
   $('theme-intensity').value = String(Math.round(t0.intensity * 100));
   $('theme-grain').value = String(Math.round(t0.grain * 100));
@@ -447,6 +448,18 @@ $('theme-prev').onclick = () => turnPage(-1);
 $('theme-next').onclick = () => turnPage(1);
 $('theme-intensity').addEventListener('input', (e) => { theme.intensity = Number(e.target.value) / 100; pushTheme({ intensity: theme.intensity }); });
 $('theme-grain').addEventListener('input', (e) => { theme.grain = Number(e.target.value) / 100; drawTheme(); pushTheme({ grain: theme.grain }); });
+// Arc's "Cycle noise texture": a click on the dial (or Enter / Space on it) moves to the next texture.
+function cycleTexture() {
+  const all = OrbeTheme.TEXTURES;
+  theme.texture = all[(all.indexOf(theme.texture) + 1) % all.length];
+  drawTheme();
+  pushTheme({ texture: theme.texture });
+}
+$('theme-grain').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  e.preventDefault();
+  cycleTexture();
+});
 // Molette : on la tourne en tirant autour de son centre, de −135° (sans grain) à +135°.
 $('theme-dial').addEventListener('pointerdown', (e) => {
   if (!theme || e.button !== 0) return;
@@ -454,7 +467,11 @@ $('theme-dial').addEventListener('pointerdown', (e) => {
   const dial = e.currentTarget;
   const input = $('theme-grain');
   input.focus();
+  let turned = false;
   const turn = (ev) => {
+    // Under 3 px of travel the gesture is still a click (texture), not a turn.
+    if (!turned && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) < 3) return;
+    turned = true;
     const r = dial.getBoundingClientRect();
     const a = (Math.atan2(ev.clientX - r.left - r.width / 2, r.top + r.height / 2 - ev.clientY) * 180) / Math.PI;
     const v = String(Math.round(Math.max(0, Math.min(1, (a + 135) / 270)) * 100));
@@ -466,9 +483,9 @@ $('theme-dial').addEventListener('pointerdown', (e) => {
     input.dispatchEvent(new Event('input'));
   };
   dial.setPointerCapture(e.pointerId);
-  turn(e);
   dial.onpointermove = turn;
-  dial.onpointerup = dial.onpointercancel = () => { dial.onpointermove = null; };
+  dial.onpointerup = () => { dial.onpointermove = null; if (!turned) cycleTexture(); };
+  dial.onpointercancel = () => { dial.onpointermove = null; };
 });
 $('theme-modes').addEventListener('click', (e) => {
   const b = e.target.closest('.mode');

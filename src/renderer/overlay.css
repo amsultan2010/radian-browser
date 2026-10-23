@@ -227,6 +227,8 @@
 #theme-dial::before, #theme-dial::after { content: ''; position: absolute; pointer-events: none; transform: rotate(var(--turn, -135deg)); }
 #theme-dial::before { inset: 1px; border-radius: 50%; background: radial-gradient(closest-side, var(--panel) 76%, transparent 78%), repeating-conic-gradient(var(--faint) 0 5deg, transparent 5deg 15deg); }
 #theme-dial::after { left: 50%; top: 5px; width: 3px; height: 7px; margin-left: -1.5px; border-radius: 2px; background: var(--fg); transform-origin: 50% 10px; }
+/* Face: the chosen texture under a light sphere shading, like Arc's grey knob. */
+#theme-dial .face { position: absolute; inset: 5px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.35) 75%), var(--knob) center / 96px 96px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18); pointer-events: none; }
 #theme-dial:active { cursor: grabbing; }
 #theme-dial:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 #theme-dial input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; pointer-events: none; }

@@ -1296,6 +1296,8 @@ const fr = {
   'ext.updateAsk': 'La nouvelle version de « {name} » demande davantage',
   'ext.updateRefused': 'Mise à jour non installée : les nouvelles autorisations ont été refusées. La version {version} reste en place.',
   'impb.undoExpired': 'Trop tard pour annuler cet import d’ici : retire les signets à la main.',
+  // theme texture dial
+  'theme.cycleTexture': 'Changer de texture',
 };
 
 const en = {
@@ -2572,6 +2574,8 @@ const en = {
   'ext.updateAsk': 'The new version of “{name}” asks for more',
   'ext.updateRefused': 'Update not installed: the new permissions were declined. Version {version} stays in place.',
   'impb.undoExpired': 'Too late to undo this import from here: remove the bookmarks by hand.',
+  // theme texture dial
+  'theme.cycleTexture': 'Cycle noise texture',
 };
 
 module.exports = { fr, en };

@@ -62,7 +62,8 @@
       <svg viewBox="0 0 200 20" preserveAspectRatio="none"><path d="M0 10 Q3.8 -4.3 7.7 10 Q11.5 23.6 15.4 10 Q19.2 -2.9 23.1 10 Q26.9 22.2 30.8 10 Q34.6 -1.5 38.5 10 Q42.3 20.9 46.2 10 Q50 -0.2 53.8 10 Q57.7 19.6 61.5 10 Q65.4 1 69.2 10 Q73.1 18.4 76.9 10 Q80.8 2.3 84.6 10 Q88.5 17.2 92.3 10 Q96.2 3.4 100 10 Q103.8 16 107.7 10 Q111.5 4.6 115.4 10 Q119.2 14.9 123.1 10 Q126.9 5.6 130.8 10 Q134.6 13.9 138.5 10 Q142.3 6.6 146.2 10 Q150 12.9 153.8 10 Q157.7 7.5 161.5 10 Q165.4 12 169.2 10 Q173.1 8.4 176.9 10 Q180.8 11.3 184.6 10 Q188.5 9.1 192.3 10 Q196.2 10.7 200 10"/></svg>
       <input id="theme-intensity" type="range" min="0" max="100" value="50" data-t-title="theme.intensity">
     </div>
-    <div id="theme-dial" data-t-title="theme.grain"><input id="theme-grain" type="range" min="0" max="100" value="0" data-t-title="theme.grain"></div>
+    <!-- As in Arc, a click on the dial switches to the next texture, shown on its face. -->
+    <div id="theme-dial" data-t-title="theme.cycleTexture"><span class="face"></span><input id="theme-grain" type="range" min="0" max="100" value="0" data-t-title="theme.grain"></div>
   </div>
 </div>
 
