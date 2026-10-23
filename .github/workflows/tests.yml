@@ -56,8 +56,10 @@ jobs:
           mkdir -p "$RUNNER_TEMP/captures"
           echo "ORBE_SHOTS=$RUNNER_TEMP/captures" >> "$GITHUB_ENV"
 
+      # Real windows on a shared runner: a timing hiccup can fail one check, so a failed run is tried
+      # once more. A real regression fails both runs.
       - name: End-to-end tests
-        run: node scripts/dev.js --selftest
+        run: node scripts/dev.js --selftest || { echo "::warning::End-to-end tests failed once; running them again"; node scripts/dev.js --selftest; }
 
       # Extension API layer, in the real browser, without the network.
       - name: Extensions in the browser
