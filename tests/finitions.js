@@ -309,10 +309,9 @@ module.exports = async function finitionsTests(ctx) {
   await until(() => lot.every((id) => { const rt = ctx.win.live.get(id); return !rt || (!rt.loading && !rt.wc.isLoading()); }), 'onglets du lot au repos');
   await sleep(450); // fin des animations d'apparition : les lignes sont au repos
   const rows = await ui(`document.querySelectorAll('#today .row.tab, #pinned .row.tab, #fav .tile').length`);
-  const drawnAfter = async (act) => {
+  const drawnAfter = async (act, settle = true) => {
     // Let any late change of the lot (a failed load's title or icon) reach the bar before counting.
-    w.sendState();
-    await sleep(300);
+    if (settle) { w.sendState(); await sleep(300); }
     await ui('window.__vu = 0; void O.on("state", () => { window.__vu += 1; }); rowStats.drawn = 0; rowStats.kept = 0; 1');
     const seen0 = await ui('window.__vu');
     await act();
@@ -335,8 +334,10 @@ module.exports = async function finitionsTests(ctx) {
   check('changement d’onglet affiché : seules l’ancienne et la nouvelle ligne actives sont redessinées', st.drawn >= 2 && st.drawn <= 6 && await ui(`document.querySelector('#today .row.active').dataset.id`) === lot[5], JSON.stringify(st));
   await until(() => !win.live.get(lot[5]) || !win.live.get(lot[5]).loading, 'chargement retombé');
   await sleep(500);
+  w.sendState();
+  await sleep(300);
   await ui(`document.querySelector('#today [data-id="${lot[7]}"]').classList.add('témoin')`);
-  st = await drawnAfter(() => w.sendState());
+  st = await drawnAfter(() => w.sendState(), false); // settled above: a settle here would repaint the marked row first
   check('classe posée hors du rendu (geste, animation) : la ligne est redessinée et retrouve ses classes, comme avant',
     st.drawn >= 1 && st.drawn <= 2 && await ui(`!document.querySelector('#today [data-id="${lot[7]}"]').classList.contains('témoin')`), JSON.stringify(st));
   await ui(`setSel(${JSON.stringify([lot[8], lot[9]])}); 1`);
