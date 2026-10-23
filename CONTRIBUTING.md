@@ -113,6 +113,54 @@ tests for what they do.
 - Pull requests are merged with a merge commit, never squashed or rebased, so
   the history (including Orbe's) stays intact.
 
+## Release process
+
+Releases are built by GitHub Actions, in
+[.github/workflows/release.yml](.github/workflows/release.yml), on an Apple
+Silicon Mac.
+
+1. Bump `version` in `package.json`.
+2. In `CHANGELOG.md`, move the entries under `[Unreleased]` into a new
+   `[X.Y.Z] - YYYY-MM-DD` section, and add its link at the bottom.
+3. Commit, then tag the commit with the same version and push the tag:
+
+   ```sh
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+
+The workflow builds Radian and attaches `Radian-X.Y.Z-mac-arm64.dmg` and
+`Radian-X.Y.Z-mac-arm64.zip` to a GitHub Release for the tag. You can also start
+it by hand from the Actions tab. Radian's update check finds the new release on
+its own.
+
+### Signing and notarization
+
+Without signing secrets, the release is ad-hoc signed and not notarized, so
+users see the first-launch steps in the [README](README.md#first-launch). To
+sign with a Developer ID and notarize in CI, add these repository secrets:
+
+| Secret | What it is |
+| --- | --- |
+| `MACOS_CERTIFICATE` | The Developer ID Application certificate and its private key, exported as a `.p12` file, base64-encoded |
+| `MACOS_CERTIFICATE_PASSWORD` | The password of that `.p12` file |
+| `APPLE_ID` | The Apple ID used to notarize |
+| `APPLE_TEAM_ID` | The team ID of the Apple Developer account |
+| `APPLE_APP_PASSWORD` | An app-specific password for that Apple ID |
+
+To sign and notarize a local build, store your notarization credentials in the
+keychain once, then set two environment variables before `npm run dist`:
+
+```sh
+xcrun notarytool store-credentials radian-notary   # asks for your Apple ID, team ID and app-specific password
+export RADIAN_SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+export RADIAN_NOTARY_PROFILE=radian-notary
+npm run dist
+```
+
+With both set, the app is signed with the hardened runtime, and the DMG is
+notarized and stapled. Without them, the build is ad-hoc signed.
+
 ## Security
 
 Don't report vulnerabilities in public issues or pull requests. See
