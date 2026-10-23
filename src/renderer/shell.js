@@ -386,10 +386,10 @@ function render(s) {
   // Connexion : cadenas discret en https, « Non sécurisé » en http ou avec un certificat refusé.
   const sec = s.activeId && !s.nav.internal ? (s.nav.security || '') : '';
   const lock = $('lock');
-  lock.hidden = !(sec === 'secure' || sec === 'insecure' || sec === 'broken');
+  // As in Arc, a secure site shows nothing; only an unsafe one gets a warning.
+  lock.hidden = !(sec === 'insecure' || sec === 'broken');
   lock.className = sec;
-  $('lock-icon').setAttribute('href', sec === 'secure' ? '#i-lock' : '#i-warn');
-  $('lock-text').textContent = sec === 'secure' ? '' : t('site.notSecure');
+  $('lock-text').textContent = t('site.notSecure');
   lock.title = sec ? t('site.sec.' + sec) : '';
   const blocked = s.activeId ? (s.nav.popups || 0) : 0;
   $('popup-note').hidden = !blocked;

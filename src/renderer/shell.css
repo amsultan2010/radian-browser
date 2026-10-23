@@ -101,7 +101,7 @@ svg.i.tb { width: 20px; height: 20px; }
 #shield { grid-area: 1 / 6; margin-right: 4px; }
 #lock, #url-row .note, #shield { z-index: 1; } /* au-dessus de la pastille, qui les précède ou les suit */
 /* Au repos, rien dans la pastille (comme Arc) : cadenas d’une page sûre et bouclier paraissent au survol. */
-#url-row:not(:hover) #shield, #url-row:not(:hover) #lock.secure { display: none; }
+#url-row:not(:hover) #shield { display: none; }
 #shield {
   height: 28px;
   min-width: 28px;
