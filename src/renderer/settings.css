@@ -98,11 +98,8 @@ body { display: flex; flex-direction: column; background: color-mix(in srgb, var
 #keys-list h3 { margin: 0; padding: 12px 5px 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--dim); }
 #keys-list h3:first-child { padding-top: 2px; }
 #keys-list .card { border-radius: 10px; margin: 0 1px 2px; }
-/* Barres de défilement fines, de la couleur de l'interface. */
-#panes::-webkit-scrollbar, #keys-list::-webkit-scrollbar { width: 8px; }
-#panes::-webkit-scrollbar-thumb, #keys-list::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
-#panes::-webkit-scrollbar-track, #keys-list::-webkit-scrollbar-track { background: transparent; }
-#keys-list { padding-right: 4px; margin-right: -12px; }
+/* The macOS overlay scroller sits in the 12 px pulled out on the right; the rows stay aligned. */
+#keys-list { padding-right: 12px; margin-right: -12px; }
 #keys-list .line { min-height: 36px; padding: 4px 8px 4px 14px; gap: 6px; }
 .key-row.flash { animation: key-flash 900ms var(--ease-out); }
 @keyframes key-flash { from { background: color-mix(in srgb, var(--accent) 26%, transparent); } to { background: transparent; } }
