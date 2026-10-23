@@ -24,16 +24,17 @@ h1 { font-size: 28px; margin-bottom: 8px; }
 /* L'orbe : anneau blanc sur un fond qui tourne lentement, halo de couleurs à l'ouverture. */
 .orb { position: relative; width: 84px; height: 84px; margin: 4vh 0 30px; }
 .orb .halo { position: absolute; inset: -34px; border-radius: 50%; background: conic-gradient(from 0deg, #7c6cf0, #06b6d4, #10b981, #f59e0b, #ec4899, #7c6cf0); filter: blur(30px); opacity: 0.55; animation: halo-in 1400ms var(--ease-out, ease-out) both, turn 14s linear infinite; }
-.orb .mark { position: absolute; inset: 0; border-radius: 22px; background: linear-gradient(140deg, #8f7dff, #2a1f8f); display: grid; place-items: center; box-shadow: 0 10px 30px rgba(60, 40, 180, 0.35); animation: mark-in 700ms var(--ease-out, ease-out) both; }
-.orb .mark i { width: 38px; height: 38px; border-radius: 50%; border: 7px solid #fff; border-top-color: transparent; transform: rotate(8deg); animation: ring-in 1100ms cubic-bezier(0.3, 1.4, 0.5, 1) 120ms both, ring-breathe 5200ms ease-in-out 1300ms infinite; }
+.orb .mark { position: absolute; inset: 0; border-radius: 22px; background: #fff; display: grid; place-items: center; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28); animation: mark-in 700ms var(--ease-out, ease-out) both; }
+/* Radian's R (brand/radian-mark.svg), as on the app icon. */
+.orb .mark svg { width: 68px; height: 68px; animation: ring-in 1100ms cubic-bezier(0.3, 1.4, 0.5, 1) 120ms both, ring-breathe 5200ms ease-in-out 1300ms infinite; }
 /* La vague : trois anneaux partent du logo à l'ouverture, l'un après l'autre (transformation et opacité). */
 .orb .wave { position: absolute; inset: 0; border-radius: 22px; border: 1.5px solid color-mix(in srgb, var(--accent) 70%, #fff); opacity: 0; pointer-events: none; animation: wave 1800ms var(--ease-out, ease-out) both; }
 .orb .wave:nth-child(2) { animation-delay: 260ms; }
 .orb .wave:nth-child(3) { animation-delay: 520ms; }
 .orb .wave:nth-child(4) { animation-delay: 780ms; }
 @keyframes wave { 0% { opacity: 0; transform: scale(0.9); } 18% { opacity: 0.55; } 100% { opacity: 0; transform: scale(2.3); } }
-@keyframes ring-in { from { transform: rotate(-262deg) scale(0.6); opacity: 0; } to { transform: rotate(8deg); opacity: 1; } }
-@keyframes ring-breathe { 0%, 100% { transform: rotate(8deg) scale(1); } 50% { transform: rotate(20deg) scale(1.05); } }
+@keyframes ring-in { from { transform: rotate(-90deg) scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes ring-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 /* Musique de l'accueil : un bouton pour la couper, en haut à droite. */
 #music { position: fixed; top: 14px; right: 16px; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: var(--dim); transition: background 120ms, color 120ms, transform var(--spring-bouncy); }
 #music[hidden] { display: none; }
@@ -49,7 +50,7 @@ h1 { font-size: 28px; margin-bottom: 8px; }
 @keyframes mark-in { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: none; } }
 @keyframes turn { to { rotate: 360deg; } }
 @media (prefers-reduced-motion: reduce) { .demo b { animation: none !important; } }
-@media (prefers-reduced-motion: reduce) { .step, .orb .halo, .orb .mark, .orb .mark i, #music.playing .on { animation: none; } .orb .wave { display: none; } }
+@media (prefers-reduced-motion: reduce) { .step, .orb .halo, .orb .mark, .orb .mark svg, #music.playing .on { animation: none; } .orb .wave { display: none; } }
 
 #langs { display: flex; gap: 8px; margin: 0; }
 #langs .btn[aria-pressed=true] { background: var(--accent); color: #fff; }
@@ -118,7 +119,23 @@ footer .btn { height: 32px; padding: 0 16px; }
 <button id="music" aria-pressed="true" data-t-title="welcome.music" hidden><svg viewBox="0 0 16 16"><path d="M3 6.4h2L7.800 4v8L5 9.600H3z"/><path class="on" d="M10 6.200a2.600 2.600 0 0 1 0 3.600M11.600 4.600a4.800 4.800 0 0 1 0 6.800"/><path class="off" d="m10.400 6.400 3.200 3.200m0-3.200-3.200 3.200"/></svg></button>
 <main>
   <section class="step on" data-step="hello">
-    <div class="orb"><div class="halo"></div><div class="wave"></div><div class="wave"></div><div class="wave"></div><div class="mark"><i></i></div></div>
+    <div class="orb"><div class="halo"></div><div class="wave"></div><div class="wave"></div><div class="wave"></div><div class="mark"><svg viewBox="136 136 768 768" aria-hidden="true">
+      <defs>
+        <mask id="radian-band" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><path d="M284.3 493A275 275 0 0 0 755.7 394" fill="none" stroke="#fff" stroke-width="128" stroke-linecap="round"/></mask>
+        <clipPath id="radian-left"><path d="M56.1 -523.3L1129.5 1623.3L56.1 2160L-1017.2 13.3Z"/></clipPath>
+        <clipPath id="radian-right"><path d="M56.1 -523.3L1129.5 1623.3L2202.8 1086.6L1129.5 -1060Z"/></clipPath>
+        <clipPath id="radian-stem"><rect x="306.3" y="0" width="128" height="1024"/></clipPath>
+      </defs>
+      <g fill="none" stroke-width="128" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M370.3 697V326" stroke="#FF6378"/>
+        <path d="M370.3 559.8V697" stroke="#1A007F"/>
+        <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#1942CD" clip-path="url(#radian-left)"/>
+        <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#FF9396" clip-path="url(#radian-right)"/>
+        <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#0229C0" clip-path="url(#radian-stem)"/>
+        <path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#FF6378"/>
+        <path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#ED4A5F" mask="url(#radian-band)"/>
+      </g>
+    </svg></div></div>
     <h1 data-t="welcome.title"></h1>
     <p class="lead" data-t="welcome.lead"></p>
     <p class="lead" data-t="welcome.tour"></p>
