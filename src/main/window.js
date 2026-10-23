@@ -113,6 +113,13 @@ function resumed(saved, spaces, on) {
   if (!on) return { spaceId: spaces[0].id, activeBySpace: {} };
   return { spaceId: spaces.some((s) => s.id === saved.spaceId) ? saved.spaceId : spaces[0].id, activeBySpace: { ...(saved.activeBySpace || {}) } };
 }
+// What a normal window keeps of itself across launches (global flags stay in state.window).
+function keep(into, w) {
+  if (!w.win.isFullScreen() && !w.win.isMinimized()) into.bounds = w.win.getBounds();
+  into.spaceId = w.spaceId;
+  into.activeBySpace = w.activeBySpace;
+  into.sidebarVisible = w.sidebarVisible;
+}
 // Nom d'un Espace dans un menu. Quand son profil n'est pas celui de l'Espace d'où l'on
 // part (`from`), il est rappelé à la suite (pastille de profil d'Arc) : déplacer un onglet
 // vers un Espace d'un autre profil change ses cookies et ses identifiants, autant le voir avant.
@@ -360,6 +367,8 @@ class OrbeWindow {
     const apart = incognito || this.blank;
     const saved = apart ? {} : store.state.window;
     const first = !OrbeWindow.all.some((w) => w.shared);
+    // This window's entry in state.windows (see `remember`).
+    this.entry = apart ? undefined : {};
     this.data = apart
       ? { spaces: [incognito ? store.makeSpace(t('incognito.title'), '🕶️', '#52525b') : store.makeSpace(t('blank.title'), '◻️', '#71717a')], tabs: {}, favs: { default: [] }, profiles: [{ id: 'default', name: '' }] }
       : store.state;
@@ -420,11 +429,12 @@ class OrbeWindow {
     this.win.on('close', (e) => {
       // Les pages qui ont quelque chose à perdre (beforeunload) sont consultées d'abord.
       if (this.askUnload(e)) return;
+      // Marked closing first: `remember` then drops it from state.windows, unless Orbe is quitting.
+      this.closing = true;
       this.remember();
       // La fenêtre se ferme sans plus porter aucune vue : sous Windows, détruire
       // une fenêtre avec ses vues encore attachées (parfois en cours d'animation,
       // ou reprises à une autre fenêtre) pouvait bloquer l'application.
-      this.closing = true;
       try { for (const v of [...this.win.contentView.children]) this.win.contentView.removeChildView(v); } catch {}
       this.attached = new Set();
     });
@@ -457,6 +467,8 @@ class OrbeWindow {
     });
     this.layout();
     this.setButtons(this.sidebarVisible);
+    // Listed in state.windows right away: a window left untouched until quitting still comes back.
+    this.remember();
   }
 
   // Feux tricolores : masqués avec la barre latérale ; macOS oublie leur
@@ -1022,12 +1034,13 @@ class OrbeWindow {
   }
 
   remember() {
-    if (!this.persistent || this.win.isDestroyed()) return;
-    const w = store.state.window;
-    if (!this.win.isFullScreen() && !this.win.isMinimized()) w.bounds = this.win.getBounds();
-    w.spaceId = this.spaceId;
-    w.activeBySpace = this.activeBySpace;
-    w.sidebarVisible = this.sidebarVisible;
+    if (!this.shared || this.win.isDestroyed()) return;
+    // state.window: the oldest normal window, as before (all an older Orbe, or the setting off, reads).
+    if (this.persistent) keep(store.state.window, this);
+    // state.windows: every normal window open now, in opening order (Arc reopens them all).
+    // Quitting leaves the list as it is: windows the quit has already closed stay in it.
+    if (hooks.quitState.quitting) keep(this.entry, this);
+    else store.state.windows = OrbeWindow.all.filter((w) => w.shared && !w.gone).map((w) => (keep(w.entry, w), w.entry));
     store.save();
   }
 
