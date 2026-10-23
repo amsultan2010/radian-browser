@@ -6,13 +6,12 @@ const { store } = require('./store');
 const sessions = require('./sessions');
 const suggest = require('./suggest');
 const palette = require('./palette');
-const { trusted, UI_PRELOAD, INTERNAL, isInternal, cleanUrl, motion, place, OrbeWindow } = require('./window');
+const { trusted, UI_PRELOAD, INTERNAL, isInternal, cleanUrl, motion, OrbeWindow } = require('./window');
 
-const BAR = 42;
-const PAD = 6;
+// Arc 1.170 (live capture): a 47 pt toolbar, the page flush with the window's edges below it.
+const BAR = 47;
 const SIZE = { width: 860, height: 640 };
 const MIN = { width: 380, height: 260 };
-const HINT = 34; // bandeau d'explication de la première petite fenêtre
 // Ouverture : la fenêtre monte de quelques points en se dévoilant. Dans Arc, elle est
 // entière en moins de 140 ms (deux images de 70 ms de la vidéo de l'aide).
 const OPEN = { ms: 120, rise: 14, step: 8 };
@@ -87,11 +86,13 @@ function showHere(win, show) {
 }
 
 const littles = new Map(); // id webContents de la barre -> LittleWindow
+const floats = new Map(); // id webContents of the view over the page -> LittleWindow
+const EDGE = 60; // pointer this close to the page's right edge: the round buttons float in
 const extHost = () => require('./ext-host'); // loaded on use: ext-host.js reads LittleWindow back
 const hooks = { openInOrbe: () => {}, profileId: () => 'default', spaces: () => [], profiles: () => ['default'], profileOfSpace: () => null };
 
 class LittleWindow {
-  static ownerOf(wc) { return littles.get(wc.id) || null; }
+  static ownerOf(wc) { return littles.get(wc.id) || floats.get(wc.id) || null; }
   static get all() { return [...littles.values()]; }
 
   // Lien venu d'une autre application : s'il est déjà affiché dans une petite
@@ -139,7 +140,7 @@ class LittleWindow {
       show: false,
       minWidth: MIN.width,
       minHeight: MIN.height,
-      ...platform.windowChrome({ traffic: { x: 14, y: 13 } }),
+      ...platform.windowChrome({ traffic: { x: 10, y: 16 } }),
     });
     this.win.orbeLittle = this;
     this.ui = new WebContentsView({ webPreferences: { preload: UI_PRELOAD, sandbox: true, contextIsolation: true } });
@@ -158,13 +159,46 @@ class LittleWindow {
     this.win.on('blur', () => { this.usedAt = Date.now(); extHost().sync(); });
     this.win.on('closed', () => {
       littles.delete(this.uiId);
-      for (const v of [this.ui, this.view]) if (v && !v.webContents.isDestroyed()) v.webContents.close();
+      if (this.float) floats.delete(this.floatId);
+      for (const v of [this.ui, this.view, this.float]) if (v && !v.webContents.isDestroyed()) v.webContents.close();
       extHost().sync(); // its page is no longer a tab for extensions
     });
     if (this.url) this.load(this.url);
     this.layout();
     showHere(this.win, () => (ms ? this.animateIn(ms) : this.win.show()));
-    if (this.hint) { this.hintTimer = setTimeout(() => this.closeHint(), HINT_MS); if (this.hintTimer.unref) this.hintTimer.unref(); }
+    if (this.hint) { this.ensureFloat(); this.hintTimer = setTimeout(() => this.closeHint(), HINT_MS); if (this.hintTimer.unref) this.hintTimer.unref(); }
+  }
+
+  // The view over the page's top right (little.html#float): Arc's coach mark, and the round Close /
+  // Enter Full Screen buttons. Made the first time one of them shows; it reports its size (`placeFloat`).
+  ensureFloat() {
+    if (this.float) return;
+    this.float = new WebContentsView({ webPreferences: { preload: UI_PRELOAD, sandbox: true, contextIsolation: true } });
+    this.float.setBackgroundColor('#00000000');
+    this.float.setVisible(false);
+    trusted.add(this.float.webContents);
+    this.floatId = this.float.webContents.id;
+    floats.set(this.floatId, this);
+    this.win.contentView.addChildView(this.float);
+    this.float.webContents.loadURL(INTERNAL + 'little.html#float');
+  }
+
+  placeFloat(size = this.floatSize) {
+    if (!this.float || this.win.isDestroyed()) return;
+    const width = Math.max(0, Math.min(400, Math.round(Number(size && size.width) || 0)));
+    const height = Math.max(0, Math.min(400, Math.round(Number(size && size.height) || 0)));
+    this.floatSize = { width, height };
+    const [W] = this.win.getContentSize();
+    this.float.setBounds({ x: W - width, y: BAR, width, height });
+    this.float.setVisible(width > 0 && height > 0);
+  }
+
+  // Pointer at the page's right edge (or not): the round buttons float in (or out).
+  setEdge(on) {
+    if (this.edge === on || this.win.isDestroyed()) return;
+    this.edge = on;
+    if (on) this.ensureFloat();
+    this.send();
   }
 
   // Ouverture : opacité de 0 à 1 et montée de quelques points, en `ms`. Seules la
@@ -202,7 +236,6 @@ class LittleWindow {
     clearTimeout(this.hintTimer);
     if (!this.hint || this.win.isDestroyed()) return;
     this.hint = false;
-    this.layout(motion(160));
     this.send();
   }
 
@@ -213,12 +246,16 @@ class LittleWindow {
     store.save();
   }
 
-  // `ms` : la page glisse à sa place (bandeau refermé), animée par le système.
-  layout(ms = 0) {
+  layout() {
     const [W, H] = this.win.getContentSize();
     this.ui.setBounds({ x: 0, y: 0, width: W, height: H });
-    const top = BAR + (this.hint ? HINT : 0);
-    if (this.view) place(this.view, { x: PAD, y: top, width: W - 2 * PAD, height: H - top - PAD }, ms);
+    if (this.view) this.view.setBounds({ x: 0, y: BAR, width: W, height: H - BAR });
+    this.placeFloat();
+  }
+
+  // The page above the bar, the float view above the page.
+  raise() {
+    for (const v of [this.view, this.float]) if (v) this.win.contentView.addChildView(v);
   }
 
   load(input) {
@@ -229,9 +266,9 @@ class LittleWindow {
     if (!this.view) {
       this.view = new WebContentsView({ webPreferences: { session: sessions.profileSession(this.profileId), sandbox: true, contextIsolation: true } });
       this.view.setBackgroundColor('#ffffff');
-      this.view.setBorderRadius(9);
-      this.win.contentView.addChildView(this.view);
+      this.raise();
       const wc = this.view.webContents;
+      wc.on('before-mouse-event', (e, m) => { if (m.type === 'mouseMove') this.setEdge(m.x >= this.view.getBounds().width - EDGE); });
       wc.on('did-start-loading', () => { this.loading = true; this.send(); });
       wc.on('did-stop-loading', () => { this.loading = false; this.send(); });
       wc.on('page-title-updated', (e, title) => { this.title = title; this.send(); });
@@ -260,7 +297,9 @@ class LittleWindow {
     const s = store.state.settings;
     // `spaces` : liste du menu « Ouvrir dans… », tant qu'il est ouvert.
     // `extensions`: whether the bar shows its extensions button.
-    this.ui.webContents.send('state', { lang: s.lang, appearance: s.appearance, url: this.url, title: this.title, loading: this.loading, hint: !!this.hint, spaces: this.menu ? hooks.spaces() : null, target: this.target(), extensions: extHost().actionsFor(this).length > 0 });
+    // `edge`: the round buttons of the page's right edge, shown by the float view.
+    const state = { lang: s.lang, appearance: s.appearance, url: this.url, title: this.title, loading: this.loading, hint: !!this.hint, edge: !!this.edge, spaces: this.menu ? hooks.spaces() : null, target: this.target(), extensions: extHost().actionsFor(this).length > 0 };
+    for (const v of [this.ui, this.float]) if (v && !v.webContents.isDestroyed()) v.webContents.send('state', state);
   }
 
   // Like Little Arc's puzzle button: a menu of the extensions, each opening its popup against this page,
@@ -302,7 +341,7 @@ class LittleWindow {
   closeMenu() {
     if (!this.menu || this.win.isDestroyed()) return;
     this.menu = false;
-    if (this.view) { this.win.contentView.addChildView(this.view); this.view.webContents.focus(); }
+    if (this.view) { this.raise(); this.view.webContents.focus(); }
     this.send();
   }
 
@@ -334,6 +373,8 @@ class LittleWindow {
     if (action === 'copyUrl') return this.copyUrl();
     if (action === 'closeHint') return this.closeHint();
     if (action === 'extMenu') return this.extMenu(a);
+    if (action === 'floatSize') return this.placeFloat(a);
+    if (action === 'closeWindow') return this.win.close();
     return undefined;
   }
 
@@ -457,4 +498,4 @@ class LittleCommand {
   }
 }
 
-module.exports = { LittleWindow, LittleCommand, hooks, savedSize, OPEN, HINT, rememberedProfile, rememberProfile, siteOf, profileMap };
+module.exports = { LittleWindow, LittleCommand, hooks, savedSize, OPEN, BAR, rememberedProfile, rememberProfile, siteOf, profileMap };

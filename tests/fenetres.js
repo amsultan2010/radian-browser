@@ -790,7 +790,7 @@ module.exports = async function fenetresTests(ctx) {
     await lui(`(() => { const s = document.getElementById('space-search'); s.value = 'zzz'; s.dispatchEvent(new Event('input', { bubbles: true })); })()`);
     check('recherche d’Espace sans résultat : dit', await lui(`document.querySelectorAll('#space-list button').length === 0 && !document.getElementById('space-none').hidden`));
     await lui(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
-    await until(() => !l1.menu && l1.win.contentView.children[l1.win.contentView.children.length - 1] === l1.view, 'menu refermé');
+    await until(() => !l1.menu && l1.win.contentView.children.indexOf(l1.view) > l1.win.contentView.children.indexOf(l1.ui), 'menu refermé');
     check('Échap referme le menu : la page repasse devant, la fenêtre reste', await lui(`document.getElementById('spaces').hidden && !document.body.classList.contains('menu')`) && count() === 1);
     check('Espace inconnu ou message forgé : rien ne s’ouvre', l1.handle('openInSpace', 'inconnu') === undefined && l1.handle('openInSpace', { id: extra.id }) === undefined && calls.length === 0 && count() === 1);
     l1.run('openInSpace');

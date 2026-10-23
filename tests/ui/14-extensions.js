@@ -131,7 +131,7 @@ module.exports = {
       await ctx.principal(({ req }) => req('ext-host.js').closePopup());
       await jusqua(() => !pageExt('popup.html'), 'fenêtres d’extension refermées', 8000);
       await ctx.principal(({ req }, url) => { new (req('little.js').LittleWindow)(url); }, ctx.url('/b'));
-      const barre = await ctx.attendrePage('little.html');
+      const barre = await jusqua(() => ctx.pages().find((p) => p.url().endsWith('/little.html')), 'barre de la petite fenêtre');
       await jusqua(() => barre.locator('#exts').isVisible(), 'bouton d’extensions de la petite fenêtre');
       const [b, c] = [await barre.locator('#exts').boundingBox(), await barre.locator('#copy').boundingBox()];
       assert.ok(b.x + b.width <= c.x + 0.5, JSON.stringify([b, c]));
