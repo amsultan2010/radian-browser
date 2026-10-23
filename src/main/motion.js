@@ -9,7 +9,8 @@ const { systemPreferences } = require('electron');
 // moyen). Barre flottante : elle repart en 90 ms (--sidebar-reveal-out de base.css). Vue
 // scindée par dépôt d'un onglet : la page s'écarte en 200 ms. Peek, measured frame by frame in Arc 1.170
 // (docs/parity/captures/live/motion.md): opens in 230 ms and closes in 180 ms, both ease-out without overshoot.
-const MOTION = { sidebarIn: 50, sidebarOut: 60, revealOut: 90, split: 200, peekIn: 230, peekOut: 180, peekExpand: 220, peekBack: 180 };
+// Library: the page card slides past its panel in 200 ms (not measured in Arc; --library-slide in base.css).
+const MOTION = { sidebarIn: 50, sidebarOut: 60, revealOut: 90, split: 200, peekIn: 230, peekOut: 180, peekExpand: 220, peekBack: 180, library: 200 };
 const stats = { animated: 0, direct: 0 }; // appels à setBounds, pour les mesures
 let nativeAnim = true;
 

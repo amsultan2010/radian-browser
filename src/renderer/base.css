@@ -25,6 +25,8 @@
      MOTION.sidebarIn / sidebarOut) : bord de la barre et bord de la page restent collés. */
   --sidebar-out: 60ms var(--ease-out);
   --sidebar-in: 50ms var(--ease-out);
+  /* Library: its panel slides in from the left as the page card slides past it (MOTION.library). */
+  --library-slide: 200ms var(--ease-out);
   /* Barre flottante (survol du bord gauche), relevée de même : elle entre en 240 ms avec un
      dépassement de 1,5 % (≈ 3 pt), repart en 90 ms (MOTION.revealOut). Courbes ajustées au relevé. */
   --sidebar-reveal: 240ms cubic-bezier(0.3, 1.22, 0.32, 1);

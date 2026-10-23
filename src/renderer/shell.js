@@ -365,6 +365,9 @@ function render(s) {
   b.classList.toggle('share-on', !!s.nav.sharing);
   b.classList.toggle('blank-window', !!s.blank);
   b.classList.toggle('toolbar', s.toolbar);
+  // Library open (window.js `contentRect`): the page card sits right of its panel; its shadow, toolbar and glow go along.
+  b.classList.toggle('library', !!s.library);
+  if (s.library) b.style.setProperty('--lib-dx', s.library - (s.sidebar.visible ? s.sidebar.width : 10) + 'px');
   b.classList.toggle('dev-site', !!s.devMode); // liseré jaune et noir sous l'adresse (mode développeur du site)
   fxToolbar(s.pageColor);
   b.classList.toggle('fullscreen', s.fullScreen);

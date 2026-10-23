@@ -37,6 +37,9 @@ const SPLIT_BAR = 28; // petite barre de chaque volet d'une vue scindée (adress
 const TRAFFIC = { x: 13, y: 17 }; // Electron les pose 1 pt plus haut et plus à gauche que demandé
 const SIDEBAR_MIN = 200;
 const SIDEBAR_MAX = 420;
+// Library panel in the sidebar's place: 417 pt, 744 pt for its Spaces section (Arc 1.170, live capture).
+const LIBRARY_W = 417;
+const LIBRARY_WIDE = 744;
 const UI_PRELOAD = path.join(__dirname, '../preload/ui.js');
 const INTERNAL = 'orbe://app/';
 // Tout ce qui compte pour la sécurité est écrit ici, sans rien laisser à l'héritage : ces
@@ -423,6 +426,7 @@ class OrbeWindow {
     this.switcher = null;
     this.libraryView = null; // the Library's panel, loaded at its first opening (`openLibrary`)
     this.libraryShown = false;
+    this.librarySection = null; // section shown in it: the Spaces section is wider
 
     const b = onScreen((restore && saved.bounds) || {});
     const offset = restore ? 0 : 28 * (OrbeWindow.all.length % 6);
@@ -863,7 +867,8 @@ class OrbeWindow {
     const docked = this.sidebarVisible && this.p === 1;
     const top = PAD + (this.toolbarShown ? TOOLBAR_H : 0);
     return {
-      x: Math.round(PAD + (sw - PAD) * this.p),
+      // Library open: as in Arc, the card is pushed right of its panel without being resized.
+      x: this.libraryShown ? this.libraryWidth : Math.round(PAD + (sw - PAD) * this.p),
       y: top,
       width: Math.max(100, (docked ? W - sw - PAD : W - 2 * PAD) - hooks.rightInset(this)),
       height: Math.max(100, H - top - PAD),
@@ -986,25 +991,23 @@ class OrbeWindow {
     }
     this.attached = shown;
     if (this.peekChrome && (this.peekState || this.peekJob)) {
-      place(this.peekChrome, rect);
+      place(this.peekChrome, this.shownRect(rect));
       this.peekChrome.setBorderRadius(this.htmlFullscreen ? 0 : RADIUS);
     }
-    if (this.peekState) place(this.peekState.view, this.peekRect(rect));
-    if (this.libraryShown) {
-      place(this.libraryView, rect);
-      this.libraryView.setBorderRadius(this.htmlFullscreen ? 0 : RADIUS);
-    }
+    if (this.peekState) place(this.peekState.view, this.peekRect(this.shownRect(rect)));
+    if (this.libraryShown) this.libraryView.setBounds({ x: 0, y: 0, width: Math.min(W, this.libraryWidth), height: H });
     if (this.floatView && this.peek) this.floatView.setBounds({ x: 0, y: 0, width: Math.min(W, this.sidebarWidth + 24), height: H });
     if (this.modalMode) this.modal.setBounds(full);
     if (this.findOpen && this.findView) {
       const i = Math.max(0, ids.indexOf(this.activeId));
-      const right = panes[i] ? panes[i].x + panes[i].width : rect.x + paneW;
+      // (Library open: the card runs off the window; the bar stays on the part that shows.)
+      const right = Math.min(panes[i] ? panes[i].x + panes[i].width : rect.x + paneW, W - PAD);
       this.findView.setBounds({ x: Math.round(right - 372), y: (panes[i] ? panes[i].y + panes[i].bar : rect.y) + 10, width: 360, height: this.findReplace ? 90 : 50 });
     }
     if (this.toastView) {
       // Au-dessus du volet concerné (le volet actif), pas au milieu de la vue scindée.
       const i = this.toastPane && ids.includes(this.toastPane) ? ids.indexOf(this.toastPane) : Math.max(0, ids.indexOf(this.activeId));
-      const zone = panes[i] ? this.pageRect(panes[i]) : rect;
+      const zone = this.shownRect(panes[i] ? this.pageRect(panes[i]) : rect);
       // En haut à droite de la page, comme dans Arc (le message s'aligne à droite dans sa vue).
       const width = Math.min(380, Math.max(160, zone.width - 16));
       this.toastView.setBounds({ x: Math.round(zone.x + zone.width - width - 6), y: zone.y + 6, width, height: 52 });
@@ -1046,7 +1049,7 @@ class OrbeWindow {
   }
 
   setPeek(on) {
-    if (this.peek === on || this.sidebarVisible) return;
+    if (this.peek === on || this.sidebarVisible || (on && this.libraryShown)) return;
     this.peek = on;
     this.setButtons(on);
     // Comme dans Arc : la barre revient en flottant par-dessus la page, qui ne
@@ -1074,7 +1077,7 @@ class OrbeWindow {
   }
 
   pollPeek() {
-    if (this.sidebarVisible || this.win.isDestroyed() || !this.win.isFocused() || this.modalMode || this.menuOpen || this.peekHeld) return;
+    if (this.sidebarVisible || this.win.isDestroyed() || !this.win.isFocused() || this.modalMode || this.menuOpen || this.peekHeld || this.libraryShown) return;
     const pt = screen.getCursorScreenPoint();
     const b = this.win.getContentBounds();
     const x = pt.x - b.x;
@@ -1860,9 +1863,9 @@ class OrbeWindow {
     else this.restoreClosed([last]);
   }
 
-  clearToday() {
-    const space = this.space;
-    const active = this.activeId;
+  // `space`: another Space's column in the Library's Space manager; its shown tab stays, as here.
+  clearToday(space = this.space) {
+    const active = space === this.space ? this.activeId : this.activeBySpace[space.id];
     // Comme dans Arc : un onglet qui joue un média n'est pas effacé.
     const playing = (id) => { const rt = live.get(id); return !!rt && !rt.wc.isDestroyed() && rt.wc.isCurrentlyAudible(); };
     const ids = space.today.filter((id) => id !== active && !playing(id)).reverse();
@@ -3335,9 +3338,15 @@ class OrbeWindow {
     return !this.incognito && hooks.route(url) ? 'route' : 'peek';
   }
 
+  // Library open: the card runs off the window's right edge; Peek keeps to the part that shows.
+  shownRect(rect = this.contentRect()) {
+    if (!this.libraryShown) return rect;
+    return { ...rect, width: Math.max(200, Math.min(rect.width, this.win.getContentSize()[0] - rect.x - PAD)) };
+  }
+
   // Place de la carte dans la zone des pages. Barre d'outils affichée : l'aperçu
   // montre aussi son adresse, au-dessus de la carte, qui descend d'autant.
-  peekRect(rect = this.contentRect()) {
+  peekRect(rect = this.shownRect()) {
     const [, H] = this.win.getContentSize();
     const y = this.toolbarShown ? rect.y + PEEK_BAR : PEEK.top;
     const width = Math.max(200, Math.min(PEEK.width, rect.width - 2 * PEEK.side));
@@ -4424,11 +4433,18 @@ class OrbeWindow {
   }
 
   // --- Bibliothèque -----------------------------------------------------------
-  // As in Arc, the Library is not a tab: it takes the place of the pages, in a panel of
-  // its own, until the user goes back to a tab (click, new tab, Space), presses Esc, or
-  // clicks its icon again. The panel stays loaded once opened: it reopens at once.
+  // As in Arc, the Library is not a tab: a full-height panel takes the sidebar's place
+  // (hidden, floating or docked) and pushes the page card right, until the user goes back
+  // to a tab (click, new tab, Space), presses Esc or ⇧⌘L, or clicks its icon or its ←.
+  // The panel stays loaded once opened: it reopens at once.
+  get libraryWidth() {
+    return this.librarySection === 'spaces' ? LIBRARY_WIDE : LIBRARY_W;
+  }
+
   openLibrary(section) {
     const page = 'library.html#' + section;
+    const width = this.libraryShown && this.libraryWidth;
+    this.librarySection = section;
     let view = this.libraryView;
     if (!view) {
       view = this.libraryView = this.makeUiView(page);
@@ -4442,19 +4458,30 @@ class OrbeWindow {
     if (!this.libraryShown) {
       this.libraryShown = true;
       this.closePeek({ animate: false });
+      if (this.peek) this.setPeek(false);
       if (this.findOpen) this.closeFind();
       this.win.contentView.addChildView(view);
       this.sendUi(view, 'overlay', { mode: 'library-in' }, () => this.libraryShown);
-      OrbeWindow.pushAll();
     }
-    this.layout();
+    this.layout({ slide: width === this.libraryWidth ? 0 : motion(MOTION.library) });
+    OrbeWindow.pushAll();
     view.webContents.focus();
+  }
+
+  // Section picked inside the panel (lib:section): the Spaces section widens it.
+  setLibrarySection(section) {
+    const width = this.libraryWidth;
+    this.librarySection = section;
+    if (!this.libraryShown || width === this.libraryWidth) return;
+    this.layout({ slide: motion(MOTION.library) });
+    OrbeWindow.pushAll();
   }
 
   closeLibrary() {
     if (!this.libraryShown) return;
     this.libraryShown = false;
     try { this.win.contentView.removeChildView(this.libraryView); } catch {}
+    this.layout({ slide: motion(MOTION.library) });
     this.focusContent();
     OrbeWindow.pushAll();
   }
@@ -5004,7 +5031,7 @@ class OrbeWindow {
       blank: this.blank,
       tracing: require('./trace').state.on, // trace de Chromium en cours : la barre le montre
       sidebar: { visible: this.sidebarVisible, peek: this.peek, width: this.sidebarWidth },
-      library: !!this.libraryShown,
+      library: this.libraryShown ? this.libraryWidth : 0, // width of the Library panel the page card is pushed past
       toolbar,
       fullUrl: settings.showFullUrl !== false || (!!tab && prefs.devMode(tab.url)),
       devMode: !!tab && prefs.devMode(tab.url),
@@ -5076,7 +5103,7 @@ class OrbeWindow {
     const look = JSON.stringify(this.themeNow());
     if (look !== this.themeSig) {
       this.themeSig = look;
-      for (const v of [this.modal, this.findView, this.toastView, this.statusView]) {
+      for (const v of [this.modal, this.findView, this.toastView, this.statusView, this.libraryView]) {
         if (v && !v.webContents.isDestroyed()) v.webContents.send('theme', JSON.parse(look));
       }
     }
