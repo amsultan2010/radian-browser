@@ -282,12 +282,12 @@ module.exports = async function reglagesTests(ctx) {
   await set({ showFullUrl: false });
   await until(async () => (await ui('document.getElementById("tb-url-text").textContent')) === base + '/?externe' && (await ui('document.body.classList.contains("toolbar")')), 'barre d’outils du mode développeur');
   // Shown buttons, in order; "+tip" marks a tooltip and "-label" a missing accessibility label (Arc has labels, no tooltips).
-  const devBar = await ui('[...document.querySelectorAll("#toolbar .ib")].filter((b) => b.offsetWidth).map((b) => (b.dataset.cmd || b.dataset.menu || b.id) + (b.title ? "+tip" : "") + (b.getAttribute("aria-label") ? "" : "-label")).join() + "|" + document.getElementById("toolbar").getBoundingClientRect().height');
+  const devBar = await ui('[...document.querySelectorAll("#toolbar .ib")].filter((b) => b.offsetWidth).map((b) => (b.dataset.cmd || b.dataset.menu || b.id) + (b.title ? "+tip" : "") + (b.getAttribute("aria-label") ? "" : "-label")).join() + "|" + document.getElementById("toolbar").getBoundingClientRect().height + "|" + !!document.getElementById("b-reload-more").offsetWidth');
   commands.run(w, 'toggleDevMode');
   await sleep(60);
   check('mode développeur d’un site : barre d’outils et adresse entière pour lui seul', devOn && !s().devSites.length && !w.toolbarShown && w.contentRect().y === yBefore);
-  check('Developer Mode bar: Arc’s controls in Arc’s order (Site Settings, copy | capture window, capture | console, network, inspect | extensions, split), 40 pt tall',
-    devBar === 'tb-site,copyUrl,capturePortrait,capture,console,network,inspect,extensions,split|40', devBar);
+  check('Developer Mode bar: Arc’s controls in Arc’s order (Site Settings, copy | capture window, capture | console, network, inspect | extensions, split), 40 pt tall; reload gets its chevron',
+    devBar === 'tb-site,copyUrl,capturePortrait,capture,console,network,inspect,extensions,split|40|true', devBar);
   // Automatique sur les sites locaux (localhost, 127.0.0.1), avec son liseré jaune et noir.
   {
     const prefs2 = require('../src/main/prefs');

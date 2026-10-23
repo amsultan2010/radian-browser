@@ -1334,7 +1334,9 @@ const fr = {
   'dev.network': 'Afficher ou masquer le panneau Réseau',
   'dev.inspect': 'Inspecter l’élément',
   'dev.extensions': 'Menu des extensions',
-  'dev.split': 'Menu de la vue scindée',
+  'dev.split': 'Menu de la vue scindée',  // Developer Mode reload menu
+  'dev.reloadMenu': 'Options d’actualisation',
+  'dev.ignoreCache': 'Actualiser (en ignorant le cache)',
 };
 
 const en = {
@@ -2649,7 +2651,9 @@ const en = {
   'dev.network': 'Toggle Network Panel',
   'dev.inspect': 'Inspect Element',
   'dev.extensions': 'Extensions Menu',
-  'dev.split': 'Split View Menu',
+  'dev.split': 'Split View Menu',  // Developer Mode reload menu
+  'dev.reloadMenu': 'Reload Options',
+  'dev.ignoreCache': 'Refresh (Ignore Cache)',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).

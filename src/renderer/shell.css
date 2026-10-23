@@ -59,6 +59,10 @@ body.ready #sidebar { animation: side-in 90ms var(--ease-out); }
   -webkit-app-region: drag;
 }
 body.fullscreen #top { padding-left: 0; }
+/* Developer Mode (Arc): an 8 pt chevron just right of reload, for Reload / Refresh (Ignore Cache) / Clear Cookies and Refresh. */
+#b-reload-more { display: none; width: 14px; margin-left: -8px; }
+body.dev-site #b-reload-more { display: grid; }
+#b-reload-more svg.i { width: 10px; height: 10px; stroke-width: 2; transform: rotate(90deg); }
 
 .ib {
   width: 32px;

@@ -854,6 +854,7 @@ for (const box of [$('exts'), $('tb-exts')]) {
   });
 }
 $('b-sidebar').onclick = () => send('toggleSidebar');
+$('b-reload-more').onclick = () => { const r = $('b-reload-more').getBoundingClientRect(); send('reloadMenu', { dev: true, x: Math.round(r.left), y: Math.round(r.bottom + 4) }); };
 $('url').onclick = () => send('openCommand', 'edit');
 $('shield').onclick = () => send('siteControl');
 $('shield').addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); send('shieldMenu'); });

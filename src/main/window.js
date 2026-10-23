@@ -2041,6 +2041,17 @@ class OrbeWindow {
     ];
   }
 
+  // The chevron next to reload in Developer Mode: Arc's three items, under the chevron.
+  devReloadMenu(a) {
+    const on = !!this.activeWc;
+    this.popup([
+      { label: t('side.reload'), enabled: on, click: () => this.reload(false) },
+      { label: t('dev.ignoreCache'), enabled: on, click: () => this.reload(true) },
+      { type: 'separator' },
+      { label: t('view.clearCookies'), enabled: on, click: () => this.clearAndReload('cookies') },
+    ], Number.isFinite(a.x) && Number.isFinite(a.y) ? { x: Math.round(a.x), y: Math.round(a.y) } : undefined);
+  }
+
   toggleMute(id = this.activeId) {
     const tab = id && this.data.tabs[id];
     if (!tab) return;
@@ -5105,7 +5116,7 @@ class OrbeWindow {
       case 'favHintOff': return require('./commands').setSetting('favHintOff', true);
       case 'navMenu': return this.navMenu(Number(a));
       case 'navNew': return this.navNew(Number(a));
-      case 'reloadMenu': return this.popup(this.reloadMenuTemplate());
+      case 'reloadMenu': return a && a.dev ? this.devReloadMenu(a) : this.popup(this.reloadMenuTemplate());
       case 'resetPinnedAside': return this.resetPinnedAside(a);
       case 'moveSpace': return a && typeof a === 'object' ? this.moveSpace(String(a.id), Number(a.index)) : undefined;
       case 'moveToSpace': {
