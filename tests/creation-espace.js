@@ -51,7 +51,7 @@ module.exports = async function creationEspaceTests(ctx) {
       ['la commande « Nouvel Espace… »', () => w.run('newSpace')],
       ['la barre de menus', () => find(Menu.getApplicationMenu(), T('spaces.new')).click()],
       ['le menu de l’Espace', () => w.spaceMenuTemplate().find((x) => x.label === T('spaces.new')).click()],
-      ['le menu « + » de la barre latérale', () => w.sidebarMenuTemplate(true).find((x) => x.label === T('spaces.new')).click()],
+      ['le menu « + » de la barre latérale', () => ui(`document.getElementById('b-plus').click(); document.querySelector('#plus-menu [data-cmd=newSpace]').click()`)],
       ['la Bibliothèque', () => require('../src/main/library').action('lib:newSpace', undefined, w.ui.webContents)],
     ];
     for (const [name, go] of tries) {

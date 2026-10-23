@@ -1338,6 +1338,10 @@ const fr = {
   'side.siteControl': 'Centre de contrôle du site',
   'side.copyQuote': 'Copier la citation en URL',
   'side.viewLibrary': 'Voir la Bibliothèque',
+  'side.plusSpace': 'Nouvel Espace',
+  'side.plusFolder': 'Nouveau dossier',
+  'side.plusBoost': 'Nouveau Boost',
+  'side.plusSplit': 'Nouvelle vue scindée',
   // theme editor as Arc's popover
   'theme.autoAppearance': 'Apparence automatique',
   'theme.lightAppearance': 'Apparence claire',
@@ -2661,6 +2665,10 @@ const en = {
   'side.siteControl': 'Site Control Center',
   'side.copyQuote': 'Copy Quote as URL',
   'side.viewLibrary': 'View Library',
+  'side.plusSpace': 'New Space',
+  'side.plusFolder': 'New Folder',
+  'side.plusBoost': 'New Boost',
+  'side.plusSplit': 'New Split',
   // theme editor as Arc's popover
   'theme.autoAppearance': 'Automatic Appearance',
   'theme.lightAppearance': 'Light Appearance',

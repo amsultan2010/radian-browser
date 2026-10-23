@@ -525,6 +525,17 @@ body.fullscreen #page-drag, .floating #page-drag { display: none; }
 .sp.active::before { display: none; }
 .sp:not(.active) .em { display: none; }
 
+/* Bottom "+" menu (Arc): navy popover of about 222 × 308 pt, arrow down to the button, 42 pt rows with 20 pt line icons. */
+#plus-menu { position: absolute; right: 8px; bottom: 58px; z-index: 6; width: 222px; max-width: calc(100% - 16px); display: flex; flex-direction: column; padding: 9px 8px; border-radius: 14px; background: #050625; color: #fff; box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.35); transform-origin: var(--arrow-x, 90%) 100%; animation: lp-in var(--spring-bouncy) both; -webkit-app-region: no-drag; }
+#plus-menu::after { content: ''; position: absolute; left: calc(var(--arrow-x, 90%) - 7px); bottom: -6px; width: 14px; height: 14px; border-radius: 2px; background: inherit; transform: rotate(45deg); }
+#plus-menu button { position: relative; z-index: 1; display: flex; align-items: center; gap: 13px; height: 42px; padding: 0 12px 0 11px; border-radius: 8px; color: #fff; font-size: 14px; font-weight: 600; text-align: left; }
+#plus-menu button:focus { outline: none; background: #2f338c; }
+#plus-menu button:disabled { color: rgba(255, 255, 255, 0.4); }
+#plus-menu svg.i { width: 20px; height: 20px; }
+#plus-menu span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#plus-menu kbd { font: inherit; font-weight: 500; letter-spacing: 1px; color: rgba(255, 255, 255, 0.5); }
+#plus-menu hr { flex: none; height: 1px; margin: 9px 6px; border: 0; background: rgba(110, 118, 255, 0.35); }
+
 #dl-ring { position: absolute; inset: 2px; width: 28px; height: 28px; transform: rotate(-90deg); display: none; }
 #dl-ring circle { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 75.4; stroke-dashoffset: 75.4; transition: stroke-dashoffset 200ms; }
 #b-library.downloading #dl-ring { display: block; }

@@ -4772,24 +4772,14 @@ class OrbeWindow {
     this.popup(this.spaceMenuTemplate());
   }
 
-  // Bouton « + » du bas (`plus`) : tout ce qu'on peut créer. Clic droit dans le
-  // vide de la barre : thème et profil de l'Espace, dossiers.
-  sidebarMenuTemplate(plus) {
-    const create = [
+  // Clic droit dans le vide de la barre : thème et profil de l'Espace, dossiers.
+  // (The bottom "+" opens Arc's popover in the sidebar itself, shell.js.)
+  sidebarMenuTemplate() {
+    return [
       { label: t('tabs.newTab'), click: () => this.openCommand('new') },
       { label: t('tabs.newFolder'), click: () => this.newFolder() },
       { label: t('spaces.new'), enabled: this.shared, click: () => this.askNewSpace() },
       { type: 'separator' },
-    ];
-    if (plus) {
-      return [...create,
-        { label: t('view.addSplit'), click: () => this.run('addSplit') },
-        { label: t('easel.new'), click: () => this.run('newEasel') },
-        { label: t('notes.new'), click: () => this.run('newNote') },
-        { label: t('boost.edit'), enabled: !!this.activeRt && !this.incognito, click: () => this.run('boost') },
-      ];
-    }
-    return [...create,
       { label: t('spaces.editTheme'), click: () => this.openTheme() },
       { label: t('spaces.profile'), enabled: this.shared, submenu: this.profileItems() },
       { type: 'separator' },
@@ -4798,8 +4788,8 @@ class OrbeWindow {
     ];
   }
 
-  sidebarMenu(plus) {
-    this.popup(this.sidebarMenuTemplate(!!plus));
+  sidebarMenu() {
+    this.popup(this.sidebarMenuTemplate());
   }
 
   pageMenu(rt, p) {
@@ -5072,7 +5062,7 @@ class OrbeWindow {
       case 'stepSpace': return this.stepSpace(a);
       case 'tabMenu': return a && typeof a === 'object' ? this.tabMenu(String(a.id), a.ids) : this.tabMenu(a);
       case 'spaceMenu': return this.spaceMenu(a);
-      case 'sidebarMenu': return this.sidebarMenu(a === 'plus');
+      case 'sidebarMenu': return this.sidebarMenu();
       case 'sidebarWidthReset': return this.setSidebarWidth(DEFAULT_SETTINGS.sidebarWidth);
       case 'favHintOff': return require('./commands').setSetting('favHintOff', true);
       case 'navMenu': return this.navMenu(Number(a));

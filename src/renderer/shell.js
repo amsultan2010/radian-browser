@@ -354,6 +354,7 @@ function render(s) {
   paintTheme(b, s.space, s);
   b.style.setProperty('--sw', s.sidebar.width + 'px');
   b.classList.toggle('open', open);
+  if (!open) plusClose();
   b.classList.toggle('docked', s.sidebar.visible);
   b.classList.toggle('translucent', s.translucent);
   b.classList.toggle('incognito', s.incognito);
@@ -429,6 +430,7 @@ function render(s) {
   $('b-sidebar').setAttribute('aria-label', t(sbTip));
   $('b-reload').setAttribute('aria-label', t(s.nav.loading ? 'view.stop' : 'side.reload'));
   $('b-reload-more').hidden = !s.devMode;
+  $('b-plus').setAttribute('aria-label', t('side.plus'));
   $('b-reload-more').setAttribute('aria-label', t('side.reloadOptions'));
 
   if (editing !== s.space.id) $('space-name').textContent = s.space.name;
@@ -880,7 +882,57 @@ $('b-newtab').onclick = () => send('openCommand', 'new');
 $('b-clear').onclick = () => send('command', 'clearToday');
 // Library open: its icon closes it, as in Arc.
 $('b-library').onclick = () => send('command', S && S.downloads && !S.library ? 'downloads' : 'library');
-$('b-plus').onclick = () => send('sidebarMenu', 'plus');
+// Bottom "+": Arc's navy menu above it, New Tab highlighted; the "+" turns into "✕" while it is open.
+// Each item runs an existing command; one that cannot run here is dimmed.
+const PLUS_ITEMS = [
+  ['newSpace', 'side.plusSpace', 'i-new-space', (s) => !s.incognito && !s.blank],
+  ['newFolder', 'side.plusFolder', 'i-folder-line'],
+  null,
+  ['newEasel', 'easel.new', 'i-easel'],
+  ['boost', 'side.plusBoost', 'i-boost', (s) => !s.incognito && !!s.activeId && /^https?:/i.test(s.nav.url)],
+  null,
+  ['addSplit', 'side.plusSplit', 'i-split', (s) => !!s.activeId],
+  ['newTab', 'tabs.newTab', 'i-new-tab'],
+];
+const plusMenu = $('plus-menu');
+function plusClose() {
+  if (plusMenu.hidden) return;
+  plusMenu.hidden = true;
+  $('b-plus').setAttribute('aria-expanded', 'false');
+  $('b-plus').querySelector('use').setAttribute('href', '#i-plus');
+}
+function plusOpen() {
+  plusMenu.innerHTML = PLUS_ITEMS.map((it) => (it
+    ? `<button role="menuitem" data-cmd="${it[0]}"${it[3] && !it[3](S) ? ' disabled' : ''}><svg class="i"><use href="#${it[2]}"/></svg><span>${esc(t(it[1]))}</span><kbd>${esc(KEYS[it[0]] || '')}</kbd></button>`
+    : '<hr>')).join('');
+  plusMenu.hidden = false;
+  const b = $('b-plus').getBoundingClientRect();
+  plusMenu.style.setProperty('--arrow-x', `${Math.round(b.left + b.width / 2 - plusMenu.getBoundingClientRect().left)}px`);
+  $('b-plus').setAttribute('aria-expanded', 'true');
+  $('b-plus').querySelector('use').setAttribute('href', '#i-close');
+  plusMenu.querySelector('[data-cmd="newTab"]').focus();
+}
+$('b-plus').onclick = () => (plusMenu.hidden && S ? plusOpen() : plusClose());
+plusMenu.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-cmd]');
+  if (!b || b.disabled) return;
+  plusClose();
+  send('command', b.dataset.cmd);
+});
+plusMenu.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); });
+// The highlight follows the pointer and the arrow keys (Enter runs it); Escape closes.
+plusMenu.addEventListener('mouseover', (e) => { const b = e.target.closest('[data-cmd]:not(:disabled)'); if (b) b.focus(); });
+document.addEventListener('keydown', (e) => {
+  if (plusMenu.hidden) return;
+  if (e.key === 'Escape') { plusClose(); return; }
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  e.preventDefault();
+  const items = [...plusMenu.querySelectorAll('[data-cmd]:not(:disabled)')];
+  const i = items.indexOf(document.activeElement);
+  items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+});
+document.addEventListener('mousedown', (e) => { if (!plusMenu.contains(e.target) && !$('b-plus').contains(e.target)) plusClose(); }, true);
+addEventListener('blur', plusClose);
 $('b-reload-more').onclick = () => send('reloadMenu', 'dev');
 $('url-copy').onclick = () => send('command', S && S.nav.quote ? 'copyUrlQuote' : 'copyUrl');
 const LONG_PRESS = 500; // appui long sur précédent / suivant (ms)

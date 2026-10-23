@@ -17,8 +17,7 @@ module.exports = {
 
     await t.verifier('bouton « + » de la barre, puis « Nouvel Espace… » : le panneau s’ouvre au-dessus de la barre, champ de nom actif ; rien n’est créé', async () => {
       await ctx.clic(shell, '#b-plus');
-      await jusqua(() => ctx.principal(({ w }) => !!w.menuVu), 'menu « + »');
-      await ctx.principal(({ w, store }) => w.menuVu.find((x) => x.label === store.t('spaces.new')).click());
+      await ctx.clic(shell, '#plus-menu [data-cmd="newSpace"]');
       await ctx.panneauEspace();
       assert.equal(await modal.textContent('#space h3'), 'Nouvel Espace');
       assert.equal(await modal.getAttribute('#space-input', 'placeholder'), 'Nouvel Espace');

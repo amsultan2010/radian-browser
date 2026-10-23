@@ -330,10 +330,14 @@ module.exports = async function lateraleTests(ctx) {
   await until(() => ui('document.getElementById("space-head").hidden === false'), 'en-tête revenu');
   check('… et « Afficher l’en-tête de l’Espace » le ramène', !space.hideHeader);
 
-  tpl = w.sidebarMenuTemplate(true);
-  check('bouton « + » : onglet, dossier, Espace, vue scindée, tableau, note, Boost',
-    labels(tpl).join('|') === ['tabs.newTab', 'tabs.newFolder', 'spaces.new', 'view.addSplit', 'easel.new', 'notes.new', 'boost.edit'].map((k) => T(k)).join('|'), labels(tpl).join('|'));
-  tpl = w.sidebarMenuTemplate(false);
+  await ui('document.getElementById("b-plus").click()');
+  const plus = await ui(`(() => { const m = document.getElementById('plus-menu'); return { open: !m.hidden, items: [...m.children].map((x) => (x.tagName === 'HR' ? '-' : x.querySelector('span').textContent)).join('|'), cmds: [...m.querySelectorAll('[data-cmd]')].map((x) => x.dataset.cmd).join('|'), focus: document.activeElement && document.activeElement.dataset.cmd, x: document.querySelector('#b-plus use').getAttribute('href'), keys: m.querySelector('[data-cmd=newTab] kbd').textContent === KEYS.newTab }; })()`);
+  check('bouton « + » : le menu d’Arc dans la barre — New Space, New Folder | New Easel, New Boost | New Split, New Tab (en surbrillance), le « + » devient « ✕ »',
+    plus.open && plus.items === ['side.plusSpace', 'side.plusFolder', '-', 'easel.new', 'side.plusBoost', '-', 'side.plusSplit', 'tabs.newTab'].map((k) => (k === '-' ? k : T(k))).join('|')
+    && plus.cmds === 'newSpace|newFolder|newEasel|boost|addSplit|newTab' && plus.focus === 'newTab' && plus.x === '#i-close' && plus.keys, JSON.stringify(plus));
+  await ui(`document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
+  check('… un clic ailleurs le referme et rend le « + »', await ui(`document.getElementById('plus-menu').hidden && document.querySelector('#b-plus use').getAttribute('href') === '#i-plus'`));
+  tpl = w.sidebarMenuTemplate();
   check('clic droit dans le vide de la barre : thème et profil de l’Espace, dossiers à déplier ou replier',
     labels(tpl).join('|') === ['tabs.newTab', 'tabs.newFolder', 'spaces.new', 'spaces.editTheme', 'spaces.profile', 'tabs.expandFolders', 'tabs.collapseFolders'].map((k) => T(k)).join('|')
     && pick(tpl, 'spaces.profile').submenu.some((x) => x.type === 'radio' && x.checked), labels(tpl).join('|'));

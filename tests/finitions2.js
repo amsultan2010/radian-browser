@@ -427,15 +427,12 @@ module.exports = async function finitions2Tests(ctx) {
     const btn = await ui(`(() => { const r = document.getElementById('b-sidebar').getBoundingClientRect(); return { bottom: r.bottom }; })()`);
     check('survol d’une seconde : infobulle maison avec le nom et le raccourci en touches, sous le bouton, dans la barre latérale, sans prendre les clics',
       t1.text === T('side.hideSidebar') && t1.key === shortcuts.keysOf('toggleSidebar') && t1.key.length > 0 && t1.caps === t1.key.match(/[⌃⌥⇧⌘]|[^⌃⌥⇧⌘]+/g).length && t1.fill === 'rgb(10, 13, 75)' && t1.h === 27 && t1.left >= 6 && t1.right <= t1.sw - 5 && t1.top >= btn.bottom && t1.events === 'none', JSON.stringify(t1));
-    await over('b-plus');
-    await until(async () => { const x = await tip(); return x.on && x.text === T('side.plus'); }, 'infobulle du bouton +');
-    check('bouton sans raccourci : le nom seul', (await tip()).key === '');
-    await ui(`document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
-    check('un clic referme l’infobulle', (await tip()).on === false);
     await over('shield');
     await until(async () => { const x = await tip(); return x.on && x.text === T('side.siteControl'); }, 'infobulle du centre de contrôle');
-    check('bouton du centre de contrôle du site (curseurs, Arc) : « Site Control Center », sans raccourci ni compteur', (await tip()).key === '' && await ui(`document.getElementById('shield').textContent === '' && document.querySelector('#shield use').getAttribute('href') === '#i-sliders'`));
+    check('bouton sans raccourci : le nom seul — centre de contrôle du site (curseurs, Arc), sans compteur', (await tip()).key === '' && await ui(`document.getElementById('shield').textContent === '' && document.querySelector('#shield use').getAttribute('href') === '#i-sliders'`));
     await ui(`document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
+    check('un clic referme l’infobulle', (await tip()).on === false);
+    check('« + » du bas : pas d’infobulle (Arc), un nom pour les aides techniques', await ui(`(() => { const b = document.getElementById('b-plus'); return !b.dataset.tip && !b.title && b.getAttribute('aria-label') === t('side.plus'); })()`));
     // Raccourci changé par l'utilisateur : l'infobulle le suit.
     const free = ['Alt+Cmd+F9', 'Alt+Shift+Cmd+F9', 'Ctrl+Alt+Cmd+F9'].find((a) => !shortcuts.owner(shortcuts.canon(a), 'library'));
     const r = free ? shortcuts.assign('library', free) : { error: 'pris' };
