@@ -52,7 +52,7 @@ h1 { font-size: 28px; margin-bottom: 8px; }
 @media (prefers-reduced-motion: reduce) { .demo b { animation: none !important; } }
 @media (prefers-reduced-motion: reduce) { .step, .orb .halo, .orb .mark, .orb .mark svg, #music.playing .on { animation: none; } .orb .wave { display: none; } }
 
-#langs { display: flex; gap: 8px; margin: 0; }
+#langs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
 #langs .btn[aria-pressed=true] { background: var(--accent); color: #fff; }
 
 /* Couleurs. */
@@ -137,7 +137,7 @@ footer .btn { height: 32px; padding: 0 16px; }
     <h1 data-t="welcome.title"></h1>
     <p class="lead" data-t="welcome.lead"></p>
     <p class="lead" data-t="welcome.tour"></p>
-    <p id="langs"><button class="btn" data-lang="fr">Français</button><button class="btn" data-lang="en">English</button></p>
+    <p id="langs"><button class="btn" data-lang="fr">Français</button><button class="btn" data-lang="en">English</button><button class="btn" data-lang="es">Español</button><button class="btn" data-lang="pt">Português</button><button class="btn" data-lang="de">Deutsch</button><button class="btn" data-lang="nl">Nederlands</button><button class="btn" data-lang="it">Italiano</button></p>
   </section>
 
   <section class="step" data-step="import">
