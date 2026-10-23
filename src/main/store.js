@@ -75,6 +75,7 @@ const DEFAULT_SETTINGS = {
   devLocalhost: true,
   devOff: [],
   downloadDir: '',
+  noteApp: 'notes', // New Note opens Radian's Notes unless a document app is chosen (src/main/prefs.js)
   profileSettings: {},
   shortcuts: {},
   // Raccourcis des extensions choisis dans les réglages : { '<id>/<commande>': accélérateur, ou '' s'il a été retiré }.

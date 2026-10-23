@@ -5,6 +5,7 @@ const { app, clipboard, dialog, shell } = require('electron');
 const { store } = require('./store');
 const platform = require('./platform');
 const easels = require('./easels');
+const prefs = require('./prefs');
 
 // Page de soutien de l'auteur d'Orbe.
 const SUPPORT_URL = 'https://buymeacoffee.com/amadouba';
@@ -136,9 +137,9 @@ const COMMANDS = [
   { name: 'back', label: 'archive.back', accel: 'Cmd+[', keys: '⌘[', palette: false, run: (w) => wc(w) && wc(w).navigationHistory.goBack() },
   { name: 'forward', label: 'archive.forward', accel: 'Cmd+]', keys: '⌘]', palette: false, run: (w) => wc(w) && wc(w).navigationHistory.goForward() },
   // ⌃⇧N et ⌃⌥N, comme dans Arc (⌃⌘N y ouvre une fenêtre vierge).
-  { name: 'newNote', label: 'notes.new', accel: 'Ctrl+Shift+N', keys: '⌃⇧N', run: (w) => w.openInternal('notes.html#new') },
+  { name: 'newNote', label: 'notes.new', accel: 'Ctrl+Shift+N', keys: '⌃⇧N', run: (w) => newNote(w) },
   // « New Note (in Split) » d'Arc : la note s'ouvre à côté de la page affichée.
-  { name: 'newNoteSplit', label: 'notes.newSplit', accel: 'Ctrl+Alt+N', keys: '⌃⌥N', run: (w) => noteBeside(w) },
+  { name: 'newNoteSplit', label: 'notes.newSplit', accel: 'Ctrl+Alt+N', keys: '⌃⌥N', run: (w) => newNote(w, true) },
   { name: 'exportNotes', label: 'notes.export', run: (w) => require('./notes').exportNotes(w) },
   { name: 'newEasel', label: 'easel.new', accel: 'Ctrl+Shift+E', keys: '⌃⇧E', run: (w) => easels.open(w) },
   { name: 'exportEasel', label: 'easel.export', run: (w) => easels.exportActive(w) },
@@ -224,11 +225,14 @@ function librarySection() {
   return LIBRARY_SECTIONS.includes(last) ? last : 'history';
 }
 
-// Nouvelle note à côté de la page affichée (vue scindée) ; sans page, une note seule.
-function noteBeside(w) {
-  const beside = w.activeId;
+// New Note, as in Arc: a new document in the Profile's "Default Document App" (a new tab), or a Radian note.
+// `beside`: next to the page shown (split view); with no page, on its own.
+function newNote(w, beside = false) {
+  const app = prefs.get('noteApp', w.space.profileId || 'default');
+  if (Object.hasOwn(prefs.NOTE_APPS, app)) return w.newTab(prefs.NOTE_APPS[app], { split: beside });
+  const prev = w.activeId;
   const tab = w.openInternal('notes.html#new');
-  if (tab && beside && beside !== tab.id && w.locate(beside)) w.splitWith(beside, tab.id);
+  if (beside && tab && prev && prev !== tab.id && w.locate(prev)) w.splitWith(prev, tab.id);
   return tab;
 }
 

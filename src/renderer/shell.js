@@ -393,6 +393,7 @@ function render(s) {
   lock.title = sec ? t('site.sec.' + sec) : '';
   const blocked = s.activeId ? (s.nav.popups || 0) : 0;
   $('popup-note').hidden = !blocked;
+  $('quote-note').hidden = !s.nav.quote;
   $('popup-note').title = t('popup.blocked');
   const caps = s.activeId ? (s.nav.capture || []) : [];
   $('capture-note').hidden = !caps.length;
@@ -846,6 +847,7 @@ $('b-clear').onclick = () => send('command', 'clearToday');
 $('b-library').onclick = () => send('command', S && S.downloads ? 'downloads' : 'library');
 $('b-plus').onclick = () => send('sidebarMenu', 'plus');
 $('url-copy').onclick = () => send('command', 'copyUrl');
+$('quote-note').onclick = () => send('command', 'copyUrlQuote');
 const LONG_PRESS = 500; // appui long sur précédent / suivant (ms)
 for (const p of ['b', 'tb']) {
   // Précédent, suivant : clic = aller ; ⌘clic ou clic molette = dans un nouvel

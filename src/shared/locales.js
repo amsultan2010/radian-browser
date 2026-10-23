@@ -1301,6 +1301,11 @@ const fr = {
   'keys.recentTabs': 'Onglets récents (maintenir ⌃)',
   'keys.goSpaceN': 'Aller à l’Espace 1 à 9',
   'keys.page': 'Page',
+  // New Note app choice
+  'set.noteApp': 'Application de documents par défaut',
+  'set.noteAppNotes': 'Notes de Radian',
+  // Share Quote
+  'side.shareQuote': 'Partager la citation',
 };
 
 const en = {
@@ -2582,6 +2587,11 @@ const en = {
   'keys.recentTabs': 'Recent tabs (hold ⌃)',
   'keys.goSpaceN': 'Go to Space 1 to 9',
   'keys.page': 'Page',
+  // New Note app choice
+  'set.noteApp': 'Default Document App',
+  'set.noteAppNotes': 'Radian Notes',
+  // Share Quote
+  'side.shareQuote': 'Share Quote',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).

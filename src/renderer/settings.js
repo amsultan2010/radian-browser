@@ -2,7 +2,7 @@
 // Tout champ listé ici (case à cocher ou liste dont l'id est la clé du réglage)
 // est rempli et enregistré automatiquement, quel que soit son volet.
 const FIELDS = ['lang', 'searchEngine', 'suggestions', 'archiveAfterHours', 'maxLiveTabs', 'sleepAfterHours', 'memoryBudget', 'appearance', 'translucent', 'externalLinks', 'autoPip', 'batterySaver', 'adblock', 'peekLinks', 'passwordSave', 'passwordFill', 'sounds', 'soundGestures', 'soundVolume',
-  'restoreSession', 'warnOnQuit', 'peekShift', 'littleAltClick', 'littleArchiveHours', 'tabKeysFavorites', 'tabKeysNinthLast', 'showToolbar', 'showFullUrl', 'cookieBanners', 'themeData', 'mediaControls', 'devLocalhost', 'boostsEnabled', 'boostsJs', 'downloadAsk', 'downloadOpenPdf', 'updateCheck', 'haptics'];
+  'restoreSession', 'warnOnQuit', 'peekShift', 'littleAltClick', 'littleArchiveHours', 'tabKeysFavorites', 'tabKeysNinthLast', 'showToolbar', 'showFullUrl', 'cookieBanners', 'themeData', 'mediaControls', 'devLocalhost', 'boostsEnabled', 'boostsJs', 'downloadAsk', 'downloadOpenPdf', 'updateCheck', 'haptics', 'noteApp'];
 const NUMERIC = new Set(['archiveAfterHours', 'maxLiveTabs', 'sleepAfterHours', 'memoryBudget', 'littleArchiveHours', 'soundVolume']);
 const el = (id) => document.getElementById(id);
 const make = (tag, className, text) => { const n = document.createElement(tag); if (className) n.className = className; if (text != null) n.textContent = text; return n; };
@@ -155,6 +155,8 @@ function drawProfiles(list) {
     row(t('set.search'), profileSelect(p, 'searchEngine', engines, engineName));
     row(t('set.suggestionsShort'), profileSelect(p, 'suggestions', [[true, t('set.on')], [false, t('set.off')]], t(S.suggestions ? 'set.on' : 'set.off')));
     row(t('set.archiveAfter'), profileSelect(p, 'archiveAfterHours', DATA.archiveHours.filter((h) => h).concat(0).map((h) => [h, t(ARCHIVE_LABEL[h])]), t(ARCHIVE_LABEL[S.archiveAfterHours] || 'set.never')));
+    const apps = [...el('noteApp').options].map((o) => [o.value, o.textContent]);
+    row(t('set.noteApp'), profileSelect(p, 'noteApp', apps, (apps.find(([v]) => v === S.noteApp) || apps[0])[1]));
 
     const dl = make('div', 'line');
     const dlBody = make('div', 'grow');

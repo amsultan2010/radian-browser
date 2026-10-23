@@ -101,4 +101,9 @@ assert.deepEqual(old.routes, [{ match: 'github.com/x', to: 'sp1', kind: 'contain
 assert.equal(prefs.routeFor('https://x.tld/chemin', old.routes), null, 'an old free-text rule is not turned into "contains" on its own');
 assert.equal(prefs.migrateRoutes(old), false, 'migration is stable');
 
+// --- Default Document App (New Note): known apps only, never an inherited key ---------
+for (const v of ['notes', 'notion', 'googleDocs', 'word', 'confluence']) assert.equal(prefs.SETTABLE.noteApp(v), true, v);
+for (const v of ['constructor', 'toString', '', 'docs', null]) assert.equal(prefs.SETTABLE.noteApp(v), false, String(v));
+assert.equal(prefs.PROFILE_KEYS.noteApp, prefs.SETTABLE.noteApp);
+
 console.log('liens.test.js: ok');

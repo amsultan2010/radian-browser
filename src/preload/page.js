@@ -307,5 +307,25 @@ function start() {
   });
 }
 
+// Share Quote: tells Radian whether the page has selected text, so the sidebar can offer to copy it
+// as a quote. Only when that changes, once the selection has settled: no message per keystroke.
+function watchSelection() {
+  let had = false;
+  let timer = null;
+  document.addEventListener('selectionchange', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const has = !!String(getSelection()).trim();
+      if (has === had) return;
+      had = has;
+      try { ipcRenderer.send('orbe-quote', has); } catch {}
+    }, 200);
+  });
+}
+
 // Pages web seulement : ni l'interface d'Orbe, ni les extensions, ni about:blank.
-if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol)) start();
+if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol)) {
+  start();
+  // Main frame only: the quote is copied from it (window.js `copyQuote`).
+  if (process.isMainFrame) watchSelection();
+}
