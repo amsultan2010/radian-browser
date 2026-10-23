@@ -221,6 +221,14 @@ module.exports = async function commandeTests(ctx) {
   check('adresses propres à la langue (Wikipédia)', palette.siteUrl(palette.siteFor('wiki'), 'orbe') === 'https://fr.wikipedia.org/w/index.php?search=orbe');
   check('chaque site a une adresse https avec la requête, et des clés sans doublon',
     palette.SITES.every((s) => /^https:\/\/[^%]+%s/.test(s.url) && s.keys.length) && new Set(palette.SITES.flatMap((s) => s.keys)).size === palette.SITES.flatMap((s) => s.keys).length);
+  // Site Search entries from the settings: their keyword wins over a built-in key, the scope goes through `handle`.
+  store.state.settings.siteSearch = [{ name: 'Invidious', keyword: 'yt', url: 'https://yewtu.be/search?q=%s' }];
+  const mine = w.suggestLocal('yt').find((i) => i.kind === 'site');
+  const inMine = await w.handle('suggest', { q: 'chats & chiens', scope: { site: 'kw:yt' } });
+  check('site ajouté dans les réglages : son raccourci remplace celui du site intégré, la requête va dans son adresse',
+    !!mine && mine.site === 'kw:yt' && mine.name === 'Invidious' && w.suggestLocal('youtube').find((i) => i.kind === 'site').site === 'youtube'
+    && inMine.length === 1 && inMine[0].url === 'https://yewtu.be/search?q=chats%20%26%20chiens');
+  store.state.settings.siteSearch = [];
 
   // --- Suppression d'une suggestion, dédoublonnage ------------------------------------
   const h = {};

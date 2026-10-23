@@ -283,8 +283,9 @@ async function globalAction(action, a, sender) {
       return s.settings;
     // Aiguillage : écriture normale d'une règle tapée ('' si elle ne nomme pas un site),
     // et, pour une liste de règles, lesquelles nomment un site.
-    case 'settings:routeText': return prefs.routeText(typeof a === 'string' ? a : '');
-    case 'settings:routeCheck': return (Array.isArray(a) ? a.slice(0, 100) : []).map((m) => !!prefs.routeRule(m));
+    // `a` is the typed text, or { text, kind } for a "contains" / "equals" rule; routeCheck takes { match, kind } rules.
+    case 'settings:routeText': return prefs.routeText(typeof a === 'string' ? a : String((a && a.text) || ''), a && a.kind);
+    case 'settings:routeCheck': return (Array.isArray(a) ? a.slice(0, 100) : []).map((r) => !!(typeof r === 'string' ? prefs.routeRule(r) : r && prefs.routeText(r.match, r.kind)));
     case 'settings:renameProfile': {
       const p = s.profiles.find((x) => x.id === (a && a.id));
       const name = String((a && a.name) || '').trim().slice(0, 40);

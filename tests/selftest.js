@@ -695,6 +695,11 @@ module.exports = async function selftest(ctx) {
   openUrl(base + '/b');
   check('aiguillage : le lien s’ouvre dans l’Espace de la règle', w.space === s2 && tabs()[w.activeId].url === base + '/b');
   w.close(w.activeId);
+  // "URL contains" and "URL is equal to" rules route the same way; a longer URL is not equal.
+  const routedTo = (url) => { w.spaceAt(1); openUrl(url); const sp = w.space; w.close(w.activeId); return sp; };
+  store.state.settings.routes = [{ match: base.replace(/^http:\/\//, '') + '/egal', to: s2.id, kind: 'equals' }, { match: '/contient', to: s2.id, kind: 'contains' }];
+  check('aiguillage : règles « l’adresse contient » et « l’adresse est égale à »',
+    routedTo(base + '/contient/page') === s2 && routedTo(base + '/egal/') === s2 && routedTo(base + '/egal/plus') !== s2 && routedTo(base + '/?/contient') !== s2);
   store.state.settings.routes = [];
   w.spaceAt(1);
 

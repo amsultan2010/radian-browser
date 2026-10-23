@@ -57,6 +57,14 @@
     <div class="line"><span class="grow sub" data-t="set.perProfile"></span><button class="btn" id="toProfiles" data-t="set.perProfileBtn"></button></div>
   </div>
 
+  <h2 data-t="siteSearch.title"></h2>
+  <div class="card">
+    <div id="site-list"></div>
+    <div class="line site-row"><input class="search s-name" id="site-name" maxlength="40" spellcheck="false" data-t-ph="siteSearch.name"><input class="search s-keyword" id="site-keyword" maxlength="30" spellcheck="false" data-t-ph="siteSearch.keyword"><input class="search s-url" id="site-url" maxlength="500" spellcheck="false" data-t-ph="siteSearch.url"><button class="btn primary" id="site-add" data-t="route.add"></button></div>
+  </div>
+  <p class="muted note" id="site-msg" style="color:#e11d48" data-t="siteSearch.bad" hidden></p>
+  <p class="muted note" data-t="siteSearch.hint"></p>
+
   <h2 data-t="set.downloads"></h2>
   <div class="card">
     <div class="line"><div class="grow"><div data-t="set.downloadDir"></div><div class="sub path" id="downloadDirPath"></div></div>
@@ -113,7 +121,7 @@
   <h2 data-t="route.title"></h2>
   <div class="card">
     <div id="routes"></div>
-    <div class="line"><input class="search" id="route-match" style="margin:0" spellcheck="false" data-t-ph="route.placeholder"><select id="route-to"></select><button class="btn primary" id="route-add" data-t="route.add"></button></div>
+    <div class="line"><select id="route-kind" data-t-title="route.kind"><option value="" data-t="route.kindSite"></option><option value="contains" data-t="route.kindContains"></option><option value="equals" data-t="route.kindEquals"></option></select><input class="search" id="route-match" style="margin:0" spellcheck="false" data-t-ph="route.placeholder"><select id="route-to"></select><button class="btn primary" id="route-add" data-t="route.add"></button></div>
   </div>
   <p class="muted note" id="route-msg" style="color:#e11d48" data-t="route.bad" hidden></p>
   <p class="muted note" data-t="route.hint"></p>

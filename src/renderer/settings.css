@@ -84,6 +84,12 @@ html.win #bar { padding-top: 34px; }
 .imp-controls select { max-width: 190px; }
 .imp-name { font-weight: 500; }
 
+/* --- Site Search: one row of inputs per site ------------------------------------- */
+.site-row { gap: 8px; }
+.site-row input.search { margin: 0; height: 30px; }
+.site-row input.s-name { flex: 0 0 130px; }
+.site-row input.s-keyword { flex: 0 0 90px; }
+
 /* --- Profils -------------------------------------------------------------------- */
 .profile .head .pname { font-size: 14px; font-weight: 600; }
 

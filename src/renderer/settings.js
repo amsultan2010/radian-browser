@@ -26,6 +26,7 @@ function fill(s) {
   drawDev();
   drawSleep();
   drawAppIcons();
+  drawSites();
 }
 
 // --- Volets -------------------------------------------------------------------
@@ -185,16 +186,90 @@ function drawProfiles(list) {
   dest.value = list.some((p) => p.id === chosen) ? chosen : 'default';
 }
 
+// --- Site Search ------------------------------------------------------------------
+// The user's own sites for the Command Bar: one row of inputs each, saved on change.
+// The rows on screen are the list; prefs.js validates it, and a refused list is drawn back as stored.
+const SITE_FIELDS = ['name', 'keyword', 'url'];
+const siteSig = (list) => lang + JSON.stringify(list);
+let sitesShown = '';
+const siteEntry = (row) => {
+  const [name, keyword, url] = SITE_FIELDS.map((f) => row.querySelector('.s-' + f).value.trim());
+  return { name, keyword: keyword.toLowerCase(), url };
+};
+const siteRows = () => [...el('site-list').children].map(siteEntry);
+async function saveSites(list, redraw) {
+  sitesShown = siteSig(list); // the broadcast that follows must not redraw the rows (and steal the focus)
+  const s = await O.send('settings:set', { siteSearch: list });
+  const ok = JSON.stringify(s.siteSearch || []) === JSON.stringify(list);
+  el('site-msg').hidden = ok;
+  if (!ok || redraw) { S = s; sitesShown = ''; drawSites(); }
+  return ok;
+}
+function drawSites() {
+  const list = S.siteSearch || [];
+  if (siteSig(list) === sitesShown) return;
+  sitesShown = siteSig(list);
+  const box = el('site-list');
+  box.textContent = '';
+  for (const entry of list) {
+    const line = make('div', 'line site-row');
+    for (const f of SITE_FIELDS) {
+      const input = make('input', 'search s-' + f);
+      input.value = entry[f];
+      input.maxLength = el('site-' + f).maxLength;
+      input.spellcheck = false;
+      input.placeholder = t('siteSearch.' + f);
+      input.setAttribute('aria-label', t('siteSearch.' + f));
+      input.addEventListener('change', () => saveSites(siteRows()));
+      line.appendChild(input);
+    }
+    const del = make('button', 'btn', t('set.remove'));
+    del.onclick = () => { line.remove(); saveSites(siteRows()); };
+    line.appendChild(del);
+    box.appendChild(line);
+  }
+}
+el('site-add').onclick = async () => {
+  const entry = siteEntry(el('site-add').parentElement);
+  if (!entry.name && !entry.keyword && !entry.url) return;
+  if (await saveSites([...siteRows(), entry], true)) for (const f of SITE_FIELDS) el('site-' + f).value = '';
+};
+for (const f of SITE_FIELDS) el('site-' + f).addEventListener('keydown', (e) => { if (e.key === 'Enter') el('site-add').click(); });
+
 // --- Liens ------------------------------------------------------------------------
 // Aiguillage des liens venus d'autres applications
 let routes = [];
 let spaceNames = [];
+// Rule kinds, as in Arc: '' names a site (stored without `kind`), 'contains' and 'equals' read the URL (prefs.js).
+const ROUTE_KINDS = { '': 'route.kindSite', contains: 'route.kindContains', equals: 'route.kindEquals' };
+const ROUTE_BAD = { '': 'route.bad', contains: 'route.badContains', equals: 'route.badEquals' };
+const ROUTE_PH = { '': 'route.placeholder', contains: 'route.placeholderContains', equals: 'route.placeholderEquals' };
+const withKind = (match, to, kind) => (kind ? { match, to, kind } : { match, to });
+function routeBad(kind, bad) {
+  const msg = el('route-msg');
+  msg.dataset.t = ROUTE_BAD[kind];
+  msg.textContent = t(msg.dataset.t);
+  msg.hidden = !bad;
+}
 function drawRoutes() {
   const box = el('routes');
   box.textContent = '';
   routes.forEach((r, i) => {
     const line = document.createElement('div');
     line.className = 'line';
+    // The kind of each rule can be changed in place: the text is put in the new kind's normal form, or the change is refused.
+    const kind = document.createElement('select');
+    for (const [k, label] of Object.entries(ROUTE_KINDS)) kind.append(new Option(t(label), k));
+    kind.value = r.kind || '';
+    kind.title = t('route.kind');
+    kind.onchange = async () => {
+      const match = await O.send('settings:routeText', { text: r.match, kind: kind.value });
+      routeBad(kind.value, !match);
+      if (!match) { kind.value = r.kind || ''; return; }
+      routes[i] = withKind(match, r.to, kind.value);
+      O.send('settings:set', { routes });
+      drawRoutes();
+    };
     const body = document.createElement('div');
     body.className = 'grow name';
     const dest = r.to === 'little' ? t('set.externalLittle') : ((spaceNames.find((x) => x.id === r.to) || {}).name || '?');
@@ -203,32 +278,40 @@ function drawRoutes() {
     del.className = 'btn';
     del.textContent = t('set.profileDelete');
     del.onclick = () => { routes.splice(i, 1); O.send('settings:set', { routes }); drawRoutes(); };
-    line.append(body, del);
+    line.append(kind, body, del);
     box.appendChild(line);
   });
   el('route-to').innerHTML = spaceNames.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('') + `<option value="little">${esc(t('set.externalLittle'))}</option>`;
   // Règle d'avant qui ne nomme pas un site (un mot, un bout de chemin) : elle n'aiguille plus rien, la ligne le dit.
-  const shown = routes.map((r) => r.match);
-  O.send('settings:routeCheck', shown).then((ok) => {
-    if (!Array.isArray(ok) || shown.join('\n') !== routes.map((r) => r.match).join('\n')) return;
+  const shown = JSON.stringify(routes);
+  O.send('settings:routeCheck', routes.map((r) => ({ match: r.match, kind: r.kind }))).then((ok) => {
+    if (!Array.isArray(ok) || shown !== JSON.stringify(routes)) return;
     [...box.children].forEach((line, i) => {
       if (ok[i] !== false || line.querySelector('.sub')) return;
       line.classList.add('bad-route');
       const note = document.createElement('div');
       note.className = 'sub danger';
       note.textContent = t('route.invalid');
-      line.firstChild.appendChild(note);
+      line.querySelector('.grow').appendChild(note);
     });
   });
 }
+el('route-kind').onchange = () => {
+  const input = el('route-match');
+  input.dataset.tPh = ROUTE_PH[el('route-kind').value];
+  input.placeholder = t(input.dataset.tPh);
+  el('route-msg').hidden = true;
+};
 el('route-add').onclick = async () => {
   const raw = el('route-match').value.trim();
   if (!raw) return;
   // La règle nomme un site (« figma.com », « github.com/orbe ») : mise sous sa forme normale, ou refusée.
-  const match = await O.send('settings:routeText', raw);
-  el('route-msg').hidden = !!match;
+  // Same for "URL contains" / "URL is equal to", in the normal form of that kind.
+  const kind = el('route-kind').value;
+  const match = await O.send('settings:routeText', { text: raw, kind });
+  routeBad(kind, !match);
   if (!match) return;
-  if (!routes.some((r) => r.match === match)) routes.push({ match, to: el('route-to').value });
+  if (!routes.some((r) => r.match === match && (r.kind || '') === kind)) routes.push(withKind(match, el('route-to').value, kind));
   O.send('settings:set', { routes });
   el('route-match').value = '';
   drawRoutes();
