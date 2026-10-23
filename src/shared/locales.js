@@ -1971,7 +1971,7 @@ const en = {
   'boost.imported': '{n} Boost(s) imported, disabled: review them before turning them on.',
   'boost.importSkipped': '{n} already present, not replaced.',
   'boost.importRejected': '{n} rejected.',
-  'boost.importBad': 'This file is not an Radian Boosts export.',
+  'boost.importBad': 'This file is not a Radian Boosts export.',
   'boost.toReview': 'To review',
   'boost.toReviewHint': 'Imported Boost: review what it contains before turning it on.',
   'boost.reviewBtn': 'Review…',
