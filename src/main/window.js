@@ -3399,6 +3399,8 @@ class OrbeWindow {
     on('page-title-updated', (e, title) => { state.title = title; });
     on('page-favicon-updated', (e, icons) => { state.favicon = icons[0] || ''; });
     on('did-navigate', (e, u) => { state.url = u; this.peekAddress(); });
+    const pane = { view, wc, peek: state };
+    on('update-target-url', (e, u) => this.linkStatus(pane, String(u || '').slice(0, STATUS_MAX)));
     on('did-navigate-in-page', (e, u, main) => { if (main) { state.url = u; this.peekAddress(); } });
     on('will-prevent-unload', (e) => { if (hooks.leave(this, wc)) e.preventDefault(); });
     on('destroyed', () => { if (this.peekState === state) this.closePeek(); });
@@ -4121,8 +4123,10 @@ class OrbeWindow {
   }
 
   // Adresse du lien survolé, en bas à gauche de la page.
+  // `rt` can also be the open Peek (`{ view, wc, peek }`): the pill then sits at the card's bottom left.
   linkStatus(rt, url) {
-    if (this.win.isDestroyed() || !this.visibleIds().includes(rt.id)) return;
+    const gone = (x) => (x.peek ? this.peekState !== x.peek : !this.visibleIds().includes(x.id));
+    if (this.win.isDestroyed() || gone(rt)) return;
     clearTimeout(this.statusTimer);
     clearTimeout(this.statusGrow);
     const hide = () => {
@@ -4143,7 +4147,7 @@ class OrbeWindow {
     };
     const dodge = () => {
       const st = this.status;
-      if (!st || this.win.isDestroyed() || st.rt.wc.isDestroyed()) return hide();
+      if (!st || this.win.isDestroyed() || st.rt.wc.isDestroyed() || (st.rt.peek && gone(st.rt))) return hide();
       const p = this.statusPointer();
       const r = rect(st);
       if (!p || p.x < r.x - STATUS.margin || p.x > r.x + r.width + STATUS.margin || p.y < r.y - STATUS.margin || p.y > r.y + r.height + STATUS.margin) return;
