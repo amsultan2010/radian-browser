@@ -4893,7 +4893,7 @@ class OrbeWindow {
       case 'ready': return this.sendState();
       case 'hoverTab': return this.prewake(a);
       case 'battery': return OrbeWindow.setBattery(a, this);
-      case 'haptic': return store.state.settings.haptics === false ? undefined : require('./haptics').perform(a);
+      case 'haptic': return require('./haptics').perform(a);
       // Clic sur l'onglet déjà affiché : rien à faire, et surtout ne pas
       // reprendre le clavier (second clic d'un double-clic pour renommer).
       case 'activate': return a === this.activeId && live.has(a) && !this.peekState ? undefined : this.activate(a);
