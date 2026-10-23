@@ -854,7 +854,8 @@ module.exports = async function fenetresTests(ctx) {
     w.activate(Pn);
     const plain = w.peekRect();
     const zone = w.contentRect();
-    check('aperçu sans barre d’outils : la carte commence à 16 px du haut de la zone des pages', plain.y === zone.y + 16);
+    check('Peek without the toolbar: a card of at most 1024 × 776, centred in the page area, 12 pt from the window top (Arc 1.170)',
+      plain.y === 12 && plain.width <= 1024 && plain.height <= 776 && Math.abs(plain.x - zone.x - (zone.width - plain.width) / 2) <= 1, JSON.stringify([plain, zone]));
     commands.setSetting('showToolbar', true);
     await until(() => w.toolbarShown && w.contentRect().y > zone.y, 'barre d’outils affichée');
     // The address as the toolbar shows it: whole, or without the scheme by default (`showFullUrl`, as in Arc).
@@ -870,7 +871,7 @@ module.exports = async function fenetresTests(ctx) {
     check('l’adresse de l’aperçu suit sa navigation', true);
     commands.setSetting('showToolbar', false);
     await until(() => !w.toolbarShown && w.peekChrome.webContents.executeJavaScript(`document.getElementById('peek-url').hidden`), 'barre d’outils masquée');
-    check('barre d’outils masquée : plus d’adresse, la carte remonte', w.peekRect().y === w.contentRect().y + 16);
+    check('barre d’outils masquée : plus d’adresse, la carte remonte', w.peekRect().y === 12);
     w.closePeek({ animate: false });
     w.togglePin(Pn);
     d.spaces.splice(d.spaces.indexOf(other), 1);

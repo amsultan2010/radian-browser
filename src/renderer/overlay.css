@@ -340,12 +340,14 @@ body.peek-pull #backdrop { animation: none; opacity: var(--pull-o, 1); transitio
 body.peek-out #backdrop, body.peek-out #peek { animation: fade-out var(--peek-ms, 180ms) var(--ease-out) both; pointer-events: none; }
 @keyframes fade { from { opacity: 0; } }
 @keyframes fade-out { to { opacity: 0; } }
-#peek { position: fixed; top: 22px; right: 8px; display: flex; flex-direction: column; gap: 8px; }
+/* Arc 1.170: round navy buttons 13 pt right of the centred card (PEEK in window.js), from 8 pt below its top, 10 pt apart. */
+#peek { position: fixed; top: 10px; left: calc(50% + min(512px, 50% - 56px) + 13px); display: flex; flex-direction: column; gap: 10px; }
+#peek:has(#peek-url:not([hidden])) { top: 48px; } /* the card sits lower, under its address */
 /* Adresse de l'aperçu, au-dessus de la carte (barre d'outils affichée). */
 #peek-url { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); max-width: 62%; height: 24px; line-height: 24px; padding: 0 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.16); color: #fff; font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 #peek-url.addr { display: flex; }
-.pk { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, 0.16); color: #fff; transition: background 120ms, transform var(--spring-bouncy); }
-.pk:hover { background: rgba(255, 255, 255, 0.3); }
+.pk { width: 34px; height: 33px; border-radius: 50%; display: grid; place-items: center; background: #050625; color: #fff; transition: background 120ms, transform var(--spring-bouncy); }
+.pk:hover { background: color-mix(in srgb, #050625 82%, #fff); }
 .pk:active { transform: scale(0.9); transition: transform var(--press); }
 
 /* ⌘L : la barre de commande s'ouvre sous la pastille d'adresse (sans mouvement, comme au centre). */
