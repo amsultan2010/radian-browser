@@ -768,6 +768,8 @@ module.exports = async function fenetresTests(ctx) {
     await until(() => count() === 0, 'fenêtre fermée');
     const l3 = new LittleWindow('');
     check('petite fenêtre : la taille choisie est reprise par la suivante', l3.win.getSize().join('x') === '702x505' && store.state.window.littleSize.width === 702, l3.win.getSize().join('x'));
+    check('Little Radian: on every desktop until it takes the focus, then pinned to the one it opened on (PET-8)',
+      l3.win.isVisibleOnAllWorkspaces() && (l3.win.emit('focus'), !l3.win.isVisibleOnAllWorkspaces()));
     store.state.window.littleSize = { width: 'x', height: -5 };
     check('taille enregistrée illisible ou hors bornes : taille par défaut, puis bornée', JSON.stringify(little.savedSize()) === JSON.stringify({ width: 860, height: 640 }) && (store.state.window.littleSize = { width: 10, height: 99999 }) && JSON.stringify(little.savedSize()) === JSON.stringify({ width: 380, height: 3000 }));
     if (before.size) store.state.window.littleSize = before.size; else delete store.state.window.littleSize;

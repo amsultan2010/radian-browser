@@ -72,6 +72,19 @@ function savedSize() {
     height: ok ? Math.max(MIN.height, Math.min(3000, Math.round(s.height))) : SIZE.height,
   };
 }
+// Shown on the desktop the user is on and above Radian's own full-screen window, without
+// macOS first switching to the desktop of Radian's other windows (Arc 2023 notes: "Little
+// Arc will now always appear above your full screen window", "opens in the correct macOS
+// space"). The window joins every desktop only until it takes the focus, then stays where
+// it opened. skipTransformProcessType: otherwise Electron hides Radian's Dock icon.
+function showHere(win, show) {
+  if (win.isFocused()) return show();
+  const all = (on) => win.setVisibleOnAllWorkspaces(on, { visibleOnFullScreen: true, skipTransformProcessType: true });
+  win.once('focus', () => { if (!win.isDestroyed()) all(false); });
+  all(true);
+  return show();
+}
+
 const littles = new Map(); // id webContents de la barre -> LittleWindow
 const hooks = { openInOrbe: () => {}, profileId: () => 'default', spaces: () => [], profiles: () => ['default'], profileOfSpace: () => null };
 
@@ -86,8 +99,7 @@ class LittleWindow {
     if (!same) return new LittleWindow(url);
     same.usedAt = Date.now();
     if (same.win.isMinimized()) same.win.restore();
-    same.win.show();
-    same.win.focus();
+    showHere(same.win, () => { same.win.show(); same.win.focus(); });
     return same;
   }
 
@@ -122,7 +134,7 @@ class LittleWindow {
     const ms = motion(OPEN.ms);
     this.win = new BaseWindow({
       ...savedSize(),
-      show: !ms,
+      show: false,
       minWidth: MIN.width,
       minHeight: MIN.height,
       ...platform.windowChrome({ traffic: { x: 14, y: 13 } }),
@@ -148,7 +160,7 @@ class LittleWindow {
     });
     if (this.url) this.load(this.url);
     this.layout();
-    if (ms) this.animateIn(ms);
+    showHere(this.win, () => (ms ? this.animateIn(ms) : this.win.show()));
     if (this.hint) { this.hintTimer = setTimeout(() => this.closeHint(), HINT_MS); if (this.hintTimer.unref) this.hintTimer.unref(); }
   }
 
