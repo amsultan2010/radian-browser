@@ -104,6 +104,21 @@ module.exports = async function reglagesTests(ctx) {
   await set({ externalLinks: 'space:' + s2.id });
   check('liens des autres applications : Espace existant accepté, valeur inconnue refusée', badExt && s().externalLinks === 'space:' + s2.id);
 
+  // Air Traffic Control rule kinds: "URL contains" / "URL is equal to", stored in their normal form.
+  const routes0 = JSON.stringify(s().routes);
+  await set({ routes: [{ match: 'github.com/radian', to: s2.id, kind: 'regex' }] });
+  await set({ routes: [{ match: 'GitHub.com/Radian', to: s2.id, kind: 'contains' }] });
+  await set({ routes: [{ match: 'https://github.com/radian', to: s2.id, kind: 'equals' }] });
+  const badKinds = JSON.stringify(s().routes) === routes0;
+  await set({ routes: [{ match: 'github.com/radian', to: 'little', kind: 'equals' }, { match: 'github.com/radian', to: s2.id, kind: 'contains' }] });
+  const typed = [await globalAction('settings:routeText', { text: 'HTTPS://GitHub.com/Radian#x', kind: 'contains' }, null), await globalAction('settings:routeText', { text: 'https://GitHub.com/radian/', kind: 'equals' }, null),
+    await globalAction('settings:routeText', 'https://www.GitHub.com/Orbe/', null), await globalAction('settings:routeText', { text: 'a b', kind: 'contains' }, null), await globalAction('settings:routeText', { text: 'x.fr', kind: 'regex' }, null)];
+  const checked = await globalAction('settings:routeCheck', [{ match: '/chemin' }, { match: '/chemin', kind: 'contains' }, 'figma.com'], null);
+  check('aiguillage : règles « l’adresse contient » et « l’adresse est égale à » acceptées sous leur forme normale, type inconnu refusé ; la première qui correspond décide',
+    badKinds && s().routes.length === 2 && prefs.routeFor('https://github.com/radian/') === 'little' && prefs.routeFor('https://github.com/radian/issues') === s2.id
+    && typed.join('|') === 'github.com/radian|github.com/radian|github.com/orbe||' && checked.join() === 'false,true,true', JSON.stringify({ typed, checked }));
+  await set({ routes: JSON.parse(routes0) });
+
   // Profil d'essai
   const pid = 'p-reglages';
   store.state.profiles.push({ id: pid, name: 'Essai réglages' });
