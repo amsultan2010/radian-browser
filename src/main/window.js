@@ -436,6 +436,7 @@ class OrbeWindow {
     for (const ev of ['focus', 'blur']) {
       this.win.on(ev, () => {
         if (this.closing) return;
+        this.syncPeekTimer(true);
         clearTimeout(this.focusTimer);
         this.focusTimer = setTimeout(() => { if (!this.closing && !this.win.isDestroyed()) this.sendState(); }, 60);
       });
@@ -965,13 +966,15 @@ class OrbeWindow {
     OrbeWindow.pushAll();
   }
 
-  // La surveillance du bord gauche ne tourne que barre latérale masquée.
-  syncPeekTimer() {
-    const needed = !this.sidebarVisible && !this.win.isDestroyed();
-    // Une image (16 ms) : comme dans Arc, la barre paraît dès que le pointeur touche le bord.
+  // The left edge is watched only while the sidebar is hidden and this window has
+  // focus (the only time pollPeek acts), so a background window never wakes 60 times a second.
+  syncPeekTimer(focusOnly) {
+    const hidden = !this.sidebarVisible && !this.win.isDestroyed();
+    const needed = hidden && this.win.isFocused();
+    // One frame (16 ms): as in Arc, the sidebar appears as soon as the pointer touches the edge.
     if (needed && !this.peekTimer) this.peekTimer = setInterval(() => this.pollPeek(), 16);
     else if (!needed && this.peekTimer) { clearInterval(this.peekTimer); this.peekTimer = null; }
-    if (needed) this.fillSpares(); // la barre flottante se prépare dès que la barre latérale est masquée
+    if (hidden && !focusOnly) this.fillSpares(); // the floating sidebar gets ready as soon as the sidebar hides
   }
 
   setPeek(on) {
