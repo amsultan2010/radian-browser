@@ -86,8 +86,9 @@ function budget(totalBytes, percent) {
 }
 
 // CPU rule (Arc: "background tabs using a lot of CPU are frozen automatically"): a hidden tab whose
-// renderer stays above `pct` % of one core for `samples` samples in a row sleeps like an idle tab
-// (the page is consulted, so it can refuse). Each sample is the mean over the whole interval, so
+// renderer stays above `pct` % of one core for `samples` samples in a row is frozen, not unloaded
+// (window.js, `freezeView`); one still burning once frozen sleeps like an idle tab (the page is
+// consulted, so it can refuse). Each sample is the mean over the whole interval, so
 // a short burst never counts. Sampling runs only while some tab could sleep (window.js, `watchCpu`).
 // 50 % of a core is Chrome's heavy-ad CPU line; two minutes lets a page finish a real job.
 const CPU = { everyMs: 30e3, pct: 50, samples: 4 };
@@ -97,7 +98,7 @@ const CPU_SAVER = { everyMs: 15e3, pct: 25, samples: 4 };
 // `tabs`: [{ id, pids, kept, typed }], the same `kept` / `typed` as `pick`, `pids` every renderer
 // process of the tab's frames. `readings`: Map pid -> cumulative CPU seconds of that process.
 // `state`: what the previous call returned (an empty Map the first time).
-// Returns { ids, state }: the tabs to put to sleep, and the state for the next call.
+// Returns { ids, state }: the tabs to freeze, and the state for the next call.
 function burning(tabs, readings, state, { now = Date.now(), saver = false } = {}) {
   const { pct, samples } = saver ? CPU_SAVER : CPU;
   const users = new Map(); // pid -> the tabs that use it

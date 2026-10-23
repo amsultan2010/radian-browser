@@ -946,6 +946,7 @@ class OrbeWindow {
     const paneW = n ? panes[Math.max(0, ids.indexOf(this.activeId))].width : 0;
     ids.forEach((id, i) => {
       const rt = this.ensureView(id);
+      if (rt.frozen) OrbeWindow.thaw(rt);
       shown.add(rt.view);
       // Aperçu qui devient un onglet : la carte grandit jusqu'à sa place, par-dessus le reste.
       const grow = this.growing && this.growing.view === rt.view ? this.growing : null;
@@ -1379,9 +1380,42 @@ class OrbeWindow {
     OrbeWindow.consult(rt, 'veille');
   }
 
+  // CPU rule (veille.burning): the page is paused, not unloaded, as Arc does. Chromium's lifecycle
+  // freeze stops its timers, scripts and rendering but keeps the page, its scroll and media position;
+  // `thaw` resumes it once shown. A page that still burns CPU while frozen (a worker the freeze does
+  // not reach) goes to sleep instead.
+  static freezeView(id) {
+    const rt = live.get(id);
+    if (!rt || rt.wc.isDestroyed()) return;
+    if (rt.frozen) { OrbeWindow.sleepView(id); return; }
+    const dbg = rt.wc.debugger;
+    // Held by an extension, a full-page capture or the unload shield: left alone this round.
+    if (dbg.isAttached()) return;
+    try { dbg.attach(); } catch { return; }
+    rt.frozen = true;
+    note(rt, 'frozen (CPU)');
+    dbg.sendCommand('Page.setWebLifecycleState', { state: 'frozen' })
+      .catch(() => { rt.frozen = false; })
+      .finally(() => { try { dbg.detach(); } catch {} });
+  }
+
+  static thaw(rt) {
+    rt.frozen = false;
+    if (rt.wc.isDestroyed()) return Promise.resolve();
+    note(rt, 'thawed');
+    const dbg = rt.wc.debugger;
+    const mine = !dbg.isAttached();
+    try { if (mine) dbg.attach(); } catch { return Promise.resolve(); }
+    return dbg.sendCommand('Page.setWebLifecycleState', { state: 'active' })
+      .catch(() => {})
+      .finally(() => { if (mine) try { dbg.detach(); } catch {} });
+  }
+
   // Consulte la page (beforeunload) avant de la fermer. Le bouclier écarte le délai d'une
   // seconde de Chromium (unload.js) : seul Orbe décide du sort d'une page qui tarde.
   static consult(rt, why) {
+    // A frozen page cannot answer beforeunload: it is resumed first.
+    if (rt.frozen) { OrbeWindow.thaw(rt).then(() => { if (!rt.wc.isDestroyed()) OrbeWindow.consult(rt, why); }); return; }
     note(rt, 'consultée (' + why + ')');
     hooks.shield(rt.wc);
     rt.wc.close({ waitForBeforeUnload: true });
@@ -1534,7 +1568,7 @@ class OrbeWindow {
     return picked;
   }
 
-  // CPU rule (veille.burning): hidden tabs that keep burning CPU sleep like idle ones. Sampled only
+  // CPU rule (veille.burning): hidden tabs that keep burning CPU are frozen (`freezeView`). Sampled only
   // while a live tab could sleep, so nothing runs at rest; `trimLive` (each sweep) arms it again.
   static watchCpu(tabs) {
     if (cpuWatch.timer || !tabs.some((t) => !t.kept && !t.typed)) return;
@@ -1560,7 +1594,7 @@ class OrbeWindow {
     tabs.push({ id: '', pids: webContents.getAllWebContents().filter((wc) => !ours.has(wc) && !wc.isDestroyed()).flatMap(pidsOf), kept: true, typed: false });
     const { ids, state } = veille.burning(tabs, readings, cpuWatch.state, { now, saver: veille.saving(OrbeWindow.battery, s.batterySaver !== false) });
     cpuWatch.state = state;
-    for (const id of ids) OrbeWindow.sleepView(id);
+    for (const id of ids) OrbeWindow.freezeView(id);
     if (ids.length) OrbeWindow.pushAll();
     OrbeWindow.watchCpu(tabs);
   }
