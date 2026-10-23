@@ -3400,6 +3400,7 @@ class OrbeWindow {
     if (mode === 'edit' && !this.activeId) mode = 'new';
     if (this.modalMode === 'command' && this.commandMode === mode) return this.hideModal();
     this.commandMode = mode;
+    this.commandQuery = ''; // what was typed, for learning picks (see `runItem`)
     const tab = mode === 'edit' ? this.data.tabs[this.activeId] : null;
     const rect = this.contentRect();
     const [W] = this.win.getContentSize();
@@ -3456,6 +3457,7 @@ class OrbeWindow {
   async suggest(q, scope) {
     if (this.suggestAbort) this.suggestAbort.abort();
     const ctrl = (this.suggestAbort = new AbortController());
+    this.commandQuery = scope ? '' : q;
     const items = this.suggestLocal(q, scope);
     if (!this.incognito && !scope) {
       suggest.remote(q, ctrl.signal).then((more) => {
@@ -3476,6 +3478,9 @@ class OrbeWindow {
     this.hideModal();
     this.pinEdit = null;
     if (!item) return;
+    // The bar learns which page was picked for what was typed (never in a private window).
+    if (!this.incognito && this.commandQuery) suggest.learn(this.commandQuery, item.url);
+    this.commandQuery = '';
     if (item.kind === 'command') return this.run(String(item.command), item.arg);
     if (item.kind === 'tab' && this.locate(item.tabId)) {
       if (mode === 'split' && this.activeId) { this.splitWith(this.activeId, item.tabId); return this.placeSplit(anchor, item.tabId, side); }
