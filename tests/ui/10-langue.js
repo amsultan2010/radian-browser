@@ -48,7 +48,7 @@ module.exports = {
       assert.deepEqual(await libelles(), {
         nouvel: 'New Tab',
         effacer: 'Clear',
-        adresse: 'Search or enter URL…',
+        adresse: 'Search or Enter URL…',
         accueil: 'Press ⌘T to open a tab',
         bouton: 'Sidebar',
         retour: 'Go back',
