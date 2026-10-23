@@ -47,9 +47,12 @@ function siteFor(text) {
   return customSites().find((s) => s.keys[0] === key) || SITE_BY_KEY.get(key) || null;
 }
 
+// Store domains per interface language (Amazon and eBay both run these); others use .com.
+const TLD = { fr: 'fr', de: 'de', es: 'es', it: 'it', nl: 'nl' };
+
 function siteUrl(site, q) {
-  const fr = store.state.settings.lang === 'fr';
-  return site.url.replace('{lang}', fr ? 'fr' : 'en').replace('{tld}', fr ? 'fr' : 'com').replaceAll('%s', encodeURIComponent(q));
+  const lang = store.state.settings.lang;
+  return site.url.replace('{lang}', lang).replace('{tld}', TLD[lang] || 'com').replaceAll('%s', encodeURIComponent(q));
 }
 
 // Ce que la vue doit savoir pour entrer dans la recherche d'un site sans attendre : clé tapée -> [identifiant, nom].

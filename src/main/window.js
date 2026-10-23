@@ -4728,8 +4728,7 @@ class OrbeWindow {
   // un nouvel onglet. Rien ne part sans ce clic ; seule l'adresse est transmise.
   translate(url, after) {
     if (!webUrl(url)) return undefined;
-    const to = store.state.settings.lang === 'en' ? 'en' : 'fr';
-    return this.newTab(`https://translate.google.com/translate?sl=auto&tl=${to}&u=${encodeURIComponent(url)}`, { after });
+    return this.newTab(`https://translate.google.com/translate?sl=auto&tl=${store.state.settings.lang}&u=${encodeURIComponent(url)}`, { after });
   }
 
   // --- État envoyé à la coque -----------------------------------------------
