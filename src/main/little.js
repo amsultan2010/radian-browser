@@ -185,8 +185,10 @@ class LittleWindow {
 
   placeFloat(size = this.floatSize) {
     if (!this.float || this.win.isDestroyed()) return;
-    const width = Math.max(0, Math.min(400, Math.round(Number(size && size.width) || 0)));
-    const height = Math.max(0, Math.min(400, Math.round(Number(size && size.height) || 0)));
+    // Nothing to show: hidden at once, whatever size the page last reported (a late report must not bring it back).
+    const shown = this.hint || this.edge;
+    const width = shown ? Math.max(0, Math.min(400, Math.round(Number(size && size.width) || 0))) : 0;
+    const height = shown ? Math.max(0, Math.min(400, Math.round(Number(size && size.height) || 0))) : 0;
     this.floatSize = { width, height };
     const [W] = this.win.getContentSize();
     this.float.setBounds({ x: W - width, y: BAR, width, height });
@@ -198,6 +200,7 @@ class LittleWindow {
     if (this.edge === on || this.win.isDestroyed()) return;
     this.edge = on;
     if (on) this.ensureFloat();
+    else if (!this.hint) this.placeFloat({ width: 0, height: 0 });
     this.send();
   }
 
@@ -236,6 +239,7 @@ class LittleWindow {
     clearTimeout(this.hintTimer);
     if (!this.hint || this.win.isDestroyed()) return;
     this.hint = false;
+    if (!this.edge) this.placeFloat({ width: 0, height: 0 });
     this.send();
   }
 
