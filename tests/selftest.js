@@ -227,6 +227,9 @@ module.exports = async function selftest(ctx) {
   const hiddenX = win.live.get(w.activeId).view.getBounds();
   clearInterval(w.peekTimer); // le test remplace la souris
   w.peekTimer = null;
+  // Wait for the floating sidebar the shell prepares: Arc's sidebar timing is quick enough that hovering
+  // at once would build it in a process of its own, and it would stay so (tests/performances.js checks it).
+  await until(() => w.floatView || w.spares.some((s) => s.ready && s.page === 'shell.html#flottant'), 'barre flottante préparée');
   w.setPeek(true);
   // (si la fenêtre de test perd le premier plan, le survol est annulé : on le redemande)
   await until(() => { w.setPeek(true); return w.floatView && w.floatView.webContents.executeJavaScript('document.body.classList.contains("open") && document.querySelectorAll(".row.tab").length > 0'); }, 'barre flottante affichée');
