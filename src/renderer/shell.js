@@ -59,7 +59,7 @@ function tabRow(el, it) {
   }
   el.className = 'row tab' + (it.active ? ' active' : '') + (it.shown ? ' shown' : '') + (it.live ? ' live' : '')
     + (it.audible ? ' audible' : '') + (it.muted ? ' muted' : '') + (it.changed ? ' changed' : '') + (it.partners ? ' split' : '') + (it.grouped ? ' grouped' : '')
-    + (it.capture && it.capture.length ? ' capturing' : '') + (it.capture && it.capture.includes('screen') ? ' sharing' : '')
+    + (it.capture && it.capture.length ? ' capturing' : '') + (it.shared ? ' sharing' : '')
     + (sel.has(it.id) ? ' sel' : '') + (flashId === it.id ? ' flash' : '');
   // Témoin de capture : écran, caméra ou micro (le premier de la liste).
   const cap = (it.capture && it.capture[0]) || '';
@@ -88,7 +88,7 @@ function tabRow(el, it) {
 // que rien d'autre n'a touché la ligne depuis (classes posées par un geste, une
 // animation, la sélection), elle est laissée telle quelle. Comparaison champ par
 // champ, sans rien allouer : à 1 000 onglets, c'est ce passage qui coûtait.
-const ROW_FIELDS = ['title', 'url', 'favicon', 'icon', 'loading', 'audible', 'muted', 'live', 'changed', 'grouped', 'active', 'shown', 'split', 'noBadge'];
+const ROW_FIELDS = ['title', 'url', 'favicon', 'icon', 'loading', 'audible', 'muted', 'live', 'changed', 'grouped', 'active', 'shown', 'split', 'noBadge', 'shared'];
 const rowStats = { drawn: 0, kept: 0 };
 function keepRow(el, it) {
   el._vm = it;

@@ -84,7 +84,7 @@ async function handle(request, callback) {
     let main = null;
     try { main = wc.mainFrame; } catch {}
     if (!main) return deny();
-    capture.mark(wc, 'screen', { self: true });
+    capture.mark(wc, 'screen', { tab: wc });
     return reply(wantAudio ? { video: main, audio: main } : { video: main });
   }
   capture.mark(wc, 'screen');

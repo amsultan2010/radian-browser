@@ -214,6 +214,7 @@ function setup({ win, sessions, test = false }) {
   hooks.navigated = (rt) => popups.reset(rt);
   hooks.busy = (rt) => capture.of(rt.wc).length > 0;
   hooks.tabState = (rt) => capture.of(rt.wc);
+  hooks.shared = (rt) => capture.shared(rt.wc);
   hooks.navState = (w, rt, tab) => ({
     // Chargement refusé pour un certificat : « non sécurisé », que l'avertissement soit déjà affiché ou non.
     security: rt && tab && !rt.internal ? (rt.failed ? 'broken' : certs.state(rt.wc, rt.wc.getURL() || tab.url)) : '',

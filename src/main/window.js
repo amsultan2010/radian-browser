@@ -93,7 +93,7 @@ const hooks = {
   changed: () => {}, openLittle: () => {}, route: () => null, openRouted: () => {}, openSettings: () => {}, extensionMenu: () => [], rightInset: () => 0, layout: () => {},
   // Raccords posés par essentials.js (feuilles d'onglet, certificats, « quitter la page ? », fenêtres surgissantes…).
   sheetFocus: () => null, leave: () => true, closeAll: async () => true, quitState: { quitting: false }, shield: () => false, unshield: () => {}, stayed: () => Infinity, input: () => {}, popup: () => true, navigated: () => {},
-  busy: () => false, tabState: () => [], navState: () => ({}), failed: () => false, gone: () => {}, hung: () => {}, action: () => undefined, siteMenu: () => [],
+  busy: () => false, tabState: () => [], shared: () => false, navState: () => ({}), failed: () => false, gone: () => {}, hung: () => {}, action: () => undefined, siteMenu: () => [],
   // Note « mise à jour disponible » de la barre latérale ({ version } ou null) : posée par main.js.
   updateNote: () => null,
   // Position du pointeur à l'écran (onglet glissé hors de la fenêtre) ; remplacée dans les essais.
@@ -4761,6 +4761,7 @@ class OrbeWindow {
         audible: !!(alive && rt.wc.isCurrentlyAudible()),
         muted: !!tab.muted,
         capture: alive ? hooks.tabState(rt) : [],
+        shared: !!(alive && hooks.shared(rt)),
         live: !!alive,
         changed: !!tab.homeUrl && !samePage(tab.homeUrl, tab.url),
         split: g ? this.splits.indexOf(g) + 1 : 0,

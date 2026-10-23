@@ -494,7 +494,7 @@ module.exports = async function finitions2Tests(ctx) {
       const reduced = reducedMotion.matches;
       const first = s0.today[0];
       const css = (sel) => { const el = document.querySelector(sel); if (!el) return null; const cs = getComputedStyle(el); return { anim: cs.animationName, shadow: getComputedStyle(el.closest('.row, .tile')).boxShadow, cls: el.closest('.row, .tile').className }; };
-      render({ ...s0, today: [{ ...first, capture: ['screen', 'microphone'] }, ...s0.today.slice(1)] });
+      render({ ...s0, today: [{ ...first, capture: ['screen', 'microphone'], shared: true }, ...s0.today.slice(1)] });
       const share = css('#today .row.tab .act.cap');
       render({ ...s0, today: [{ ...first, capture: ['camera'] }, ...s0.today.slice(1)] });
       const cam = css('#today .row.tab .act.cap');
