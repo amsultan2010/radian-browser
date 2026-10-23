@@ -558,7 +558,7 @@ body.fullscreen #page-drag, .floating #page-drag { display: none; }
 .lp-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .lp-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12.5px; font-weight: 550; line-height: 16px; color: var(--fg); }
 .lp-sub { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; line-height: 14px; color: var(--dim); }
-#b-library.peeking { background: var(--hover); color: var(--fg); }
+#b-library.peeking, #b-library.on { background: var(--hover); color: var(--fg); }
 /* Survol d'un dossier replié : ses onglets, avec un champ pour y chercher (src/renderer/folderpeek.js).
    Même surface que le panneau de la Bibliothèque. */
 #folder-peek { position: absolute; left: 8px; right: 8px; z-index: 5; display: flex; flex-direction: column; gap: 3px; padding: 5px; border-radius: 13px; background: linear-gradient(var(--hover), var(--hover)), var(--bg); box-shadow: 0 0 0 0.5px var(--line), 0 10px 30px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.1); transform-origin: 24px 0; animation: fp-in var(--spring-bouncy) both; contain: layout; -webkit-app-region: no-drag; }

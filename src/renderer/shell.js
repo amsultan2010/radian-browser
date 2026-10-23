@@ -480,6 +480,7 @@ function render(s) {
   drawPanes(s.panes || []);
 
   const lib = $('b-library');
+  lib.classList.toggle('on', !!s.library);
   lib.classList.toggle('downloading', !!s.downloads);
   fxDownloads(s.downloadsStarted);
   if (s.downloads) lib.querySelector('circle').style.strokeDashoffset = String(75.4 * (1 - s.downloads.progress));
@@ -850,7 +851,8 @@ $('tb-dev').onclick = (e) => { const b = e.target.closest('[data-cmd]'); if (b) 
 $('toolbar').addEventListener('contextmenu', (e) => { e.preventDefault(); send('toolbarMenu'); });
 $('b-newtab').onclick = () => send('openCommand', 'new');
 $('b-clear').onclick = () => send('command', 'clearToday');
-$('b-library').onclick = () => send('command', S && S.downloads ? 'downloads' : 'library');
+// Library open: its icon closes it, as in Arc.
+$('b-library').onclick = () => send('command', S && S.downloads && !S.library ? 'downloads' : 'library');
 $('b-plus').onclick = () => send('sidebarMenu', 'plus');
 $('url-copy').onclick = () => send('command', 'copyUrl');
 $('quote-note').onclick = () => send('command', 'copyUrlQuote');

@@ -137,6 +137,9 @@ class Store {
     // A first launch speaks the Mac's language when Radian has it (tests keep their fixed language).
     if (fresh && s.settings.lang === 'en') s.settings.lang = systemLang();
     s.tabs = s.tabs || {};
+    // The Library is a panel now, never a tab: one left by an older version is dropped
+    // (the lists below then forget it).
+    for (const [id, tab] of Object.entries(s.tabs)) if (/^orbe:\/\/app\/library\.html/.test((tab && tab.url) || '')) delete s.tabs[id];
     // Profils : chacun a ses cookies, ses connexions et ses favoris.
     if (!Array.isArray(s.profiles) || !s.profiles.length) s.profiles = [{ id: 'default', name: this.t('profiles.default', s.settings.lang) }];
     if (!s.profiles.some((p) => p.id === 'default')) s.profiles.unshift({ id: 'default', name: this.t('profiles.default', s.settings.lang) });

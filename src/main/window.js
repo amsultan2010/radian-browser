@@ -145,7 +145,8 @@ function spaceLabel(sp, data = store.state, from = null, gap = ' ') {
 const isInternal = (url) => (url || '').startsWith(INTERNAL);
 const isErrorPage = (url) => (url || '').startsWith(INTERNAL + 'error.html');
 // Pages internes pouvant s'ouvrir dans un onglet, avec accès à l'interface.
-const INTERNAL_PAGES = new Set(['library.html', 'shortcuts.html', 'welcome.html', 'notes.html', 'easel.html', 'tasks.html']);
+// (Not the Library: as in Arc it has a panel of its own, see `openLibrary`.)
+const INTERNAL_PAGES = new Set(['shortcuts.html', 'welcome.html', 'notes.html', 'easel.html', 'tasks.html']);
 // Adresse fournie par une page web (lien, image, glisser-déposer) : seuls
 // http et https sont acceptés, jamais file:, orbe: ou chrome:.
 const webUrl = (u) => (/^https?:\/\//i.test(u || '') ? u : null);
@@ -416,6 +417,8 @@ class OrbeWindow {
     this.modalMode = null;
     this.findOpen = false;
     this.switcher = null;
+    this.libraryView = null; // the Library's panel, loaded at its first opening (`openLibrary`)
+    this.libraryShown = false;
 
     const b = onScreen((restore && saved.bounds) || {});
     const offset = restore ? 0 : 28 * (OrbeWindow.all.length % 6);
@@ -982,6 +985,10 @@ class OrbeWindow {
       this.peekChrome.setBorderRadius(this.htmlFullscreen ? 0 : RADIUS);
     }
     if (this.peekState) place(this.peekState.view, this.peekRect(rect));
+    if (this.libraryShown) {
+      place(this.libraryView, rect);
+      this.libraryView.setBorderRadius(this.htmlFullscreen ? 0 : RADIUS);
+    }
     if (this.floatView && this.peek) this.floatView.setBounds({ x: 0, y: 0, width: Math.min(W, this.sidebarWidth + 24), height: H });
     if (this.modalMode) this.modal.setBounds(full);
     if (this.findOpen && this.findView) {
@@ -1107,7 +1114,7 @@ class OrbeWindow {
     clearTimeout(this.floatTimer);
     clearTimeout(this.statusTimer);
     clearTimeout(this.uiRetry);
-    for (const v of [...AUX.map((k) => this[k]), ...this.spares.map((sp) => sp.view), this.ui]) {
+    for (const v of [...AUX.map((k) => this[k]), this.libraryView, ...this.spares.map((sp) => sp.view), this.ui]) {
       if (v && !v.webContents.isDestroyed()) { wcOwner.delete(v.webContents.id); v.webContents.close(); }
     }
     if (this.incognito) this.session.clearStorageData().catch(() => {});
@@ -1646,6 +1653,7 @@ class OrbeWindow {
     rt.lastUsed = Date.now();
     if (rt.crashed) { rt.crashed = false; rt.wc.reload(); }
     if (this.peekState && !this.peekAdopting) this.closePeek();
+    this.closeLibrary();
     if (this.findOpen) this.closeFind();
     this.layout();
     this.focusContent();
@@ -1683,6 +1691,7 @@ class OrbeWindow {
     if (this.gone) return undefined;
     if (this.modalMode) return this.modal.webContents.focus();
     if (this.peekState) return this.peekState.view.webContents.focus();
+    if (this.libraryShown) return this.libraryView.webContents.focus();
     // Une feuille posée sur l'onglet actif (question, avertissement) garde le clavier.
     const sheet = hooks.sheetFocus(this);
     if (sheet) return sheet.focus();
@@ -2662,6 +2671,7 @@ class OrbeWindow {
     const from = this.data.spaces.findIndex((s) => s.id === this.spaceId);
     this.spaceDir = i > from ? 1 : -1;
     this.closePeek();
+    this.closeLibrary();
     this.htmlFullscreen = false;
     this.spaceId = id;
     if (this.findOpen) this.closeFind();
@@ -3311,15 +3321,17 @@ class OrbeWindow {
     const wc = this.peekChrome && this.peekChrome.webContents;
     if (!st || !wc || wc.isDestroyed()) return;
     const full = store.state.settings.showFullUrl !== false;
-    wc.send('overlay', { mode: 'peek-url', text: this.toolbarShown ? (full ? st.url : suggest.strip(st.url)) : '' });
+    wc.send('overlay', { mode: 'peek-url', text: this.toolbarShown && !st.internal ? (full ? st.url : suggest.strip(st.url)) : '' });
   }
 
   // `point` : d'où part la carte (coordonnées de la fenêtre) ; à défaut, le
   // dernier clic dans la page d'origine s'il vient d'avoir lieu.
-  openPeek(url, fromId, options, point) {
+  // `internal`: one of Radian's own pages (Easel, Note), set by Radian code only, never
+  // from an address: the view then gets the interface bridge, like an internal tab.
+  openPeek(url, fromId, options, point, internal = false) {
     this.closePeek({ animate: false });
     const view = new WebContentsView(options || {
-      webPreferences: { session: this.sessionFor(fromId), sandbox: true, contextIsolation: true, nodeIntegrationInSubFrames: true },
+      webPreferences: { session: this.sessionFor(fromId), sandbox: true, contextIsolation: true, nodeIntegrationInSubFrames: true, preload: internal ? UI_PRELOAD : undefined },
     });
     // Pas d'éclair blanc en thème sombre : la carte prend la teinte du thème
     // jusqu'à ce que la page ait de quoi s'afficher, puis le blanc habituel des pages.
@@ -3332,7 +3344,7 @@ class OrbeWindow {
       const b = boundsOf(src.view);
       point = { x: b.x + src.click.x, y: b.y + src.click.y };
     }
-    const state = (this.peekState = { view, from: fromId, url, title: '', handlers: [], point: point || null });
+    const state = (this.peekState = { view, from: fromId, url, title: '', handlers: [], point: point || null, internal });
     const on = (event, fn) => { wc.on(event, fn); state.handlers.push([event, fn]); };
     if (dark) wc.once('dom-ready', () => { try { view.setBackgroundColor('#ffffff'); } catch {} });
     on('page-title-updated', (e, title) => { state.title = title; });
@@ -3341,7 +3353,17 @@ class OrbeWindow {
     on('did-navigate-in-page', (e, u, main) => { if (main) { state.url = u; this.peekAddress(); } });
     on('will-prevent-unload', (e) => { if (hooks.leave(this, wc)) e.preventDefault(); });
     on('destroyed', () => { if (this.peekState === state) this.closePeek(); });
-    const guard = (e, u) => { if (isInternal(u)) e.preventDefault(); };
+    // Same rules as an internal tab (see `wire`): it may only go to Radian's pages, a web link opens a tab.
+    const guard = internal
+      ? (e, u) => { if (isInternal(u)) return; e.preventDefault(); this.newTab(u); }
+      : (e, u) => { if (isInternal(u)) e.preventDefault(); };
+    // Its messages reach this window (`ownerOf`) until it closes or becomes a tab.
+    if (internal) {
+      const id = wc.id;
+      trusted.add(wc);
+      wcOwner.set(id, this);
+      wc.once('destroyed', () => wcOwner.delete(id));
+    }
     on('will-navigate', guard);
     on('will-redirect', guard);
     on('context-menu', (e, params) => this.pageMenu({ wc, id: fromId }, params));
@@ -3458,9 +3480,10 @@ class OrbeWindow {
     const tab = this.createTab(wc.getURL() || state.url, { after: from });
     tab.title = state.title;
     tab.favicon = state.favicon || '';
+    if (state.internal) { tab.internal = true; wcOwner.delete(wc.id); }
     state.view.setBorderRadius(RADIUS);
     this.ensureView(tab.id, null, state.view);
-    if (!this.incognito) store.visit(tab.url, tab.title, tab.favicon);
+    if (!this.incognito && !state.internal) store.visit(tab.url, tab.title, tab.favicon);
     if (ms) {
       this.growing = { view: state.view, ms, under: new Set(this.attached || []), started: false };
       this.peekOverlay({ leaving: true, ms });
@@ -4335,6 +4358,54 @@ class OrbeWindow {
     return tab;
   }
 
+  // --- Bibliothèque -----------------------------------------------------------
+  // As in Arc, the Library is not a tab: it takes the place of the pages, in a panel of
+  // its own, until the user goes back to a tab (click, new tab, Space), presses Esc, or
+  // clicks its icon again. The panel stays loaded once opened: it reopens at once.
+  openLibrary(section) {
+    const page = 'library.html#' + section;
+    let view = this.libraryView;
+    if (!view) {
+      view = this.libraryView = this.makeUiView(page);
+      const wc = view.webContents;
+      wc.on('before-input-event', (e, input) => {
+        if (input.type === 'keyDown' && input.key === 'Escape' && !input.isAutoRepeat) { e.preventDefault(); this.closeLibrary(); }
+      });
+      wc.on('render-process-gone', () => { this.closeLibrary(); wc.close(); });
+      wc.once('destroyed', () => { if (this.libraryView === view) { this.libraryView = null; this.libraryShown = false; } });
+    } else if (view.webContents.getURL() !== INTERNAL + page) view.webContents.loadURL(INTERNAL + page).catch(() => {});
+    if (!this.libraryShown) {
+      this.libraryShown = true;
+      this.closePeek({ animate: false });
+      if (this.findOpen) this.closeFind();
+      this.win.contentView.addChildView(view);
+      this.sendUi(view, 'overlay', { mode: 'library-in' }, () => this.libraryShown);
+      OrbeWindow.pushAll();
+    }
+    this.layout();
+    view.webContents.focus();
+  }
+
+  closeLibrary() {
+    if (!this.libraryShown) return;
+    this.libraryShown = false;
+    try { this.win.contentView.removeChildView(this.libraryView); } catch {}
+    this.focusContent();
+    OrbeWindow.pushAll();
+  }
+
+  toggleLibrary(section) {
+    if (this.libraryShown) this.closeLibrary(); else this.openLibrary(section);
+  }
+
+  // Easels and Notes opened from the Library show in Peek, as in Arc. `page`: built by
+  // library.js from known ids; `at`: the click, in the panel's coordinates.
+  peekPage(page, at) {
+    const b = this.libraryShown ? boundsOf(this.libraryView) : null;
+    const point = b && at && Number.isFinite(at.x) && Number.isFinite(at.y) ? { x: b.x + at.x, y: b.y + at.y } : undefined;
+    return this.openPeek(INTERNAL + page, this.activeId, undefined, point, true);
+  }
+
   // Active ou coupe le bloqueur pour le site affiché, puis recharge la page.
   toggleSiteBlocking() {
     const tab = this.activeId && this.data.tabs[this.activeId];
@@ -4850,6 +4921,7 @@ class OrbeWindow {
       blank: this.blank,
       tracing: require('./trace').state.on, // trace de Chromium en cours : la barre le montre
       sidebar: { visible: this.sidebarVisible, peek: this.peek, width: this.sidebarWidth },
+      library: !!this.libraryShown,
       toolbar,
       fullUrl: settings.showFullUrl !== false || (!!tab && prefs.devMode(tab.url)),
       devMode: !!tab && prefs.devMode(tab.url),
@@ -4943,7 +5015,7 @@ class OrbeWindow {
       case 'haptic': return require('./haptics').perform(a);
       // Clic sur l'onglet déjà affiché : rien à faire, et surtout ne pas
       // reprendre le clavier (second clic d'un double-clic pour renommer).
-      case 'activate': return a === this.activeId && live.has(a) && !this.peekState ? undefined : this.activate(a);
+      case 'activate': return a === this.activeId && live.has(a) && !this.peekState && !this.libraryShown ? undefined : this.activate(a);
       // Variante { ids } : l'action porte sur la sélection (liste vérifiée par checkIds).
       case 'close': return a && typeof a === 'object' ? this.closeMany(a.ids) : this.close(a);
       case 'select': this.selection = this.checkIds(a); return undefined;

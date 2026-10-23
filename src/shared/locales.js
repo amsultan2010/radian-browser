@@ -525,7 +525,7 @@ const fr = {
   'easel.alt': 'Texte alternatif',
   'easel.altHint': 'Décrit l’image pour qui ne la voit pas',
   'easel.zoomReset': 'Taille réelle (⌘0)',
-  'lib.easels': 'Tableaux',
+  'lib.easels': 'Tableaux et notes',
   'lib.search': 'Rechercher…',
   'lib.empty': 'Rien ici pour l’instant.',
   'lib.clearHistory': 'Effacer l’historique',
@@ -1324,6 +1324,8 @@ const fr = {
   'share.instead.again': 'Partage à nouveau depuis cette page pour passer à « {tab} »',
   // theme texture dial
   'theme.cycleTexture': 'Changer de texture',
+  // Library panel
+  'lib.exit': 'Quitter la Bibliothèque',
 };
 
 const en = {
@@ -1834,7 +1836,7 @@ const en = {
   'easel.alt': 'Alt text',
   'easel.altHint': 'Describes the image for those who cannot see it',
   'easel.zoomReset': 'Actual size (⌘0)',
-  'lib.easels': 'Easels',
+  'lib.easels': 'Easels & Notes',
   'lib.search': 'Search…',
   'lib.empty': 'Nothing here yet.',
   'lib.clearHistory': 'Clear History',
@@ -2628,6 +2630,8 @@ const en = {
   'share.instead.again': 'Share again from this page to switch to “{tab}”',
   // theme texture dial
   'theme.cycleTexture': 'Cycle noise texture',
+  // Library panel
+  'lib.exit': 'Exit the Library',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).

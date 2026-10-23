@@ -348,7 +348,7 @@ async function action(name, a, sender) {
       return recent();
     case 'lib:peekMenu':
       if (!w) return false;
-      env.popup(w, [...peekMenuTemplate(), { type: 'separator' }, { label: t('peek.open'), click: () => w.run('library') }]);
+      env.popup(w, [...peekMenuTemplate(), { type: 'separator' }, { label: t('peek.open'), click: () => w.openLibrary(require('./commands').librarySection()) }]);
       return true;
     case 'lib:space': {
       const o = a && typeof a === 'object' ? a : {};
@@ -363,6 +363,19 @@ async function action(name, a, sender) {
     case 'lib:newSpace':
       if (w) w.askNewSpace();
       return !!w;
+    case 'lib:close':
+      if (w) w.closeLibrary();
+      return !!w;
+    // An Easel or a Note opens in Peek, as in Arc. Only an id found in Radian's own data makes the page.
+    case 'lib:peek': {
+      const o = a && typeof a === 'object' ? a : {};
+      const board = typeof o.easel === 'string' ? require('./easels').list().find((b) => b.id === o.easel) : null;
+      const note = typeof o.note === 'string' ? s.notes.find((n) => n.id === o.note) : null;
+      const page = board ? 'easel.html?id=' + board.id : note ? 'notes.html#' + note.id : '';
+      if (!w || !page || !fromLibrary(sender)) return false;
+      w.peekPage(page, { x: Number(o.x), y: Number(o.y) });
+      return true;
+    }
     case 'lib:boost': {
       const o = a && typeof a === 'object' ? a : {};
       const host = String(o.host || '');

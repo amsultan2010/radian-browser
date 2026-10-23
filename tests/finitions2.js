@@ -605,11 +605,11 @@ module.exports = async function finitions2Tests(ctx) {
     const item = find(Menu.getApplicationMenu(), T('window.viewMedia'));
     const before = w.activeId;
     item.click();
-    const opened = await until(() => { const tab = w.activeId && d.tabs[w.activeId]; return tab && tab.internal && tab.url === 'orbe://app/library.html#media' ? tab : null; }, 'section Médias ouverte');
-    check('barre de menus : « Médias » ouvre la Bibliothèque sur sa section Médias, dans un onglet d’Orbe', !!item && item.enabled !== false && !!opened && opened.internal === true);
-    const rt = await until(() => { const x = win.live.get(opened.id); return x && !x.wc.isLoading() ? x : null; }, 'page chargée');
+    const opened = await until(() => (w.libraryShown && w.libraryView.webContents.getURL() === 'orbe://app/library.html#media' ? w.libraryView : null), 'section Médias ouverte');
+    check('barre de menus : « Médias » ouvre la Bibliothèque sur sa section Médias, dans son panneau, sans onglet', !!item && item.enabled !== false && !!opened && w.activeId === before);
+    const rt = await until(() => (!opened.webContents.isLoading() ? { wc: opened.webContents } : null), 'page chargée');
     check('… la section Médias y est affichée', await until(() => rt.wc.executeJavaScript(`(() => { const on = document.querySelector('[data-tab].on'); return !!on && on.dataset.tab === 'media'; })()`).catch(() => false), 'onglet Médias sélectionné').then(() => true, () => false));
-    w.close(opened.id, { silent: true, ask: false });
+    w.closeLibrary();
     if (before && d.tabs[before]) w.activate(before);
   }
 

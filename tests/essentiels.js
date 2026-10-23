@@ -1286,13 +1286,13 @@ module.exports = async function essentielsTests(ctx) {
   check('réglages « demander où enregistrer » et « PDF dans un onglet » : validés comme les autres (prefs.SETTABLE)', prefs.SETTABLE.downloadAsk(true) && !prefs.SETTABLE.downloadAsk('oui') && prefs.SETTABLE.downloadOpenPdf(false) && !prefs.SETTABLE.downloadOpenPdf(1));
   // La Bibliothèque montre l'état et les boutons.
   store.state.downloads.unshift({ id: 'vue-1', name: 'calé.bin', path: path.join(dlDir, 'calé.bin'), url: A + '/gros.bin', total: 1000, received: 400, state: 'interrupted', canResume: true, at: Date.now() });
-  const libTab = w.openInternal('library.html#downloads');
-  const libWc = () => rtOf(libTab.id).wc;
+  w.openLibrary('downloads');
+  const libWc = () => w.libraryView.webContents;
   await until(() => libWc().executeJavaScript('document.querySelectorAll("#list .line").length > 0'), 'liste des téléchargements');
   const firstLine = await libWc().executeJavaScript('(() => { const l = document.querySelector("#list .line"); return { state: l.dataset.state, sub: l.querySelector(".sub").textContent, buttons: [...l.querySelectorAll("button")].map((b) => b.dataset.do) }; })()');
   check('Bibliothèque : un téléchargement interrompu affiche où il en est et propose « Reprendre » (et son menu « ··· »)', firstLine.state === 'interrupted' && firstLine.sub.includes(t('lib.failed')) && firstLine.sub.includes('40 %') && firstLine.buttons.join() === 'resume,menu', firstLine);
   store.state.downloads.shift();
-  w.close(libTab.id, { ask: false });
+  w.closeLibrary();
 
   // ---------------------------------------------------------------- Ménage
   for (const [owner, id] of opened) if (owner === w && w.data.tabs[id]) w.close(id, { silent: true, ask: false });
