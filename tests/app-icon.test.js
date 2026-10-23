@@ -26,6 +26,11 @@ test('every variant has its SVG source, a 1024 px PNG for the Dock and a 128 px 
   }
 });
 
+test('every SVG in assets/icons is offered in the picker', () => {
+  const svgs = fs.readdirSync(dir).filter((f) => f.endsWith('.svg')).map((f) => f.slice(0, -4));
+  assert.deepEqual(svgs.sort(), [...appIcon.NAMES].sort());
+});
+
 test('every variant is named in French and in English', () => {
   for (const key of ['set.appIcon', 'set.appIconHint', ...appIcon.NAMES.map((n) => 'appIcon.' + n)]) {
     assert.ok(fr[key] && en[key], key);
