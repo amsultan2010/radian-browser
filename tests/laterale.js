@@ -330,10 +330,14 @@ module.exports = async function lateraleTests(ctx) {
   await until(() => ui('document.getElementById("space-head").hidden === false'), 'en-tête revenu');
   check('… et « Afficher l’en-tête de l’Espace » le ramène', !space.hideHeader);
 
-  tpl = w.sidebarMenuTemplate(true);
-  check('bouton « + » : onglet, dossier, Espace, vue scindée, tableau, note, Boost',
-    labels(tpl).join('|') === ['tabs.newTab', 'tabs.newFolder', 'spaces.new', 'view.addSplit', 'easel.new', 'notes.new', 'boost.edit'].map((k) => T(k)).join('|'), labels(tpl).join('|'));
-  tpl = w.sidebarMenuTemplate(false);
+  await ui('document.getElementById("b-plus").click()');
+  const plus = await ui(`(() => { const m = document.getElementById('plus-menu'); return { open: !m.hidden, items: [...m.children].map((x) => (x.tagName === 'HR' ? '-' : x.querySelector('span').textContent)).join('|'), cmds: [...m.querySelectorAll('[data-cmd]')].map((x) => x.dataset.cmd).join('|'), focus: document.activeElement && document.activeElement.dataset.cmd, x: document.querySelector('#b-plus use').getAttribute('href'), keys: m.querySelector('[data-cmd=newTab] kbd').textContent === KEYS.newTab }; })()`);
+  check('bouton « + » : le menu d’Arc dans la barre — New Space, New Folder | New Easel, New Boost | New Split, New Tab (en surbrillance), le « + » devient « ✕ »',
+    plus.open && plus.items === ['side.plusSpace', 'side.plusFolder', '-', 'easel.new', 'side.plusBoost', '-', 'side.plusSplit', 'tabs.newTab'].map((k) => (k === '-' ? k : T(k))).join('|')
+    && plus.cmds === 'newSpace|newFolder|newEasel|boost|addSplit|newTab' && plus.focus === 'newTab' && plus.x === '#i-close' && plus.keys, JSON.stringify(plus));
+  await ui(`document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
+  check('… un clic ailleurs le referme et rend le « + »', await ui(`document.getElementById('plus-menu').hidden && document.querySelector('#b-plus use').getAttribute('href') === '#i-plus'`));
+  tpl = w.sidebarMenuTemplate();
   check('clic droit dans le vide de la barre : thème et profil de l’Espace, dossiers à déplier ou replier',
     labels(tpl).join('|') === ['tabs.newTab', 'tabs.newFolder', 'spaces.new', 'spaces.editTheme', 'spaces.profile', 'tabs.expandFolders', 'tabs.collapseFolders'].map((k) => T(k)).join('|')
     && pick(tpl, 'spaces.profile').submenu.some((x) => x.type === 'radio' && x.checked), labels(tpl).join('|'));
@@ -665,6 +669,17 @@ module.exports = async function lateraleTests(ctx) {
   await w.run('copyUrlQuote');
   await until(async () => (await clipboard.readText()) === `> une phrase à citer\n>\n> — [P1](${base}/p1)`, 'citation copiée');
   check('Édition → « Copier l’URL en citation » : la sélection en citation Markdown, avec sa source', true);
+  // Share Quote (Arc): with text selected, the pill reads the host over "Share Quote" and the link button becomes the quote button.
+  await until(() => ui('document.getElementById("url").classList.contains("quote") && getComputedStyle(document.getElementById("url-quote")).display !== "none"'), 'pastille « Share Quote »');
+  check('« Share Quote » : l’hôte au-dessus de « Share Quote », bouton citation avec « Copy Quote as URL » et son raccourci, plus de bouton séparé',
+    await ui(`document.getElementById('url-quote').textContent === t('side.shareQuote') && document.getElementById('url-copy-icon').getAttribute('href') === '#i-quote'
+      && document.getElementById('url-copy').dataset.tip === 'side.copyQuote' && document.getElementById('url-copy').dataset.tipKey === 'copyUrlQuote' && !document.getElementById('quote-note')`));
+  for (const id of ['url-quote', 'url-copy']) {
+    clipboard.writeText('');
+    await ui(`document.getElementById('${id}').click()`);
+    await until(async () => (await clipboard.readText()) === `> une phrase à citer\n>\n> — [P1](${base}/p1)`, 'citation copiée par ' + id);
+  }
+  check('… « Share Quote » et le bouton citation copient la citation avec son lien', true);
 
   // « Utiliser la sélection pour rechercher ».
   await w.run('useSelectionFind');
@@ -675,6 +690,8 @@ module.exports = async function lateraleTests(ctx) {
   await w.run('useSelectionFind');
   await sleep(120);
   check('… sans sélection, elle ne s’ouvre pas', !w.findOpen);
+  await until(() => ui('!document.getElementById("url").classList.contains("quote") && document.getElementById("url-copy-icon").getAttribute("href") === "#i-link"'), 'pastille d’adresse revenue');
+  check('… et « Share Quote » s’en va avec la sélection : l’hôte seul, le bouton lien revient', true);
 
   // Enregistrer la page.
   const saveAs = dialog.showSaveDialog;
@@ -727,8 +744,9 @@ module.exports = async function lateraleTests(ctx) {
   check('… et les referme', true);
   w.run('console');
   await until(() => mwc.isDevToolsOpened(), 'console ouverte');
-  mwc.closeDevTools();
-  await until(() => !mwc.isDevToolsOpened(), 'console refermée');
+  // Arc's Toggle Console: a second press closes DevTools.
+  w.run('console');
+  await until(() => !mwc.isDevToolsOpened(), 'console refermée par un second appui');
   w.run('inspect');
   await until(() => mwc.isDevToolsOpened(), 'inspecteur ouvert');
   mwc.closeDevTools();

@@ -1,17 +1,17 @@
 // Petite fenêtre (⌥⌘N) : une page seule, sans barre latérale, pour un coup
 // d'œil rapide. Un bouton l'envoie dans la fenêtre principale.
-const { BaseWindow, WebContentsView, clipboard, nativeTheme } = require('electron');
+const { BaseWindow, Menu, WebContentsView, clipboard, nativeTheme, screen } = require('electron');
 const platform = require('./platform');
 const { store } = require('./store');
 const sessions = require('./sessions');
 const suggest = require('./suggest');
-const { trusted, UI_PRELOAD, INTERNAL, isInternal, cleanUrl, motion, place, OrbeWindow } = require('./window');
+const palette = require('./palette');
+const { trusted, UI_PRELOAD, INTERNAL, isInternal, cleanUrl, motion, OrbeWindow } = require('./window');
 
-const BAR = 42;
-const PAD = 6;
+// Arc 1.170 (live capture): a 47 pt toolbar, the page flush with the window's edges below it.
+const BAR = 47;
 const SIZE = { width: 860, height: 640 };
 const MIN = { width: 380, height: 260 };
-const HINT = 34; // bandeau d'explication de la première petite fenêtre
 // Ouverture : la fenêtre monte de quelques points en se dévoilant. Dans Arc, elle est
 // entière en moins de 140 ms (deux images de 70 ms de la vidéo de l'aide).
 const OPEN = { ms: 120, rise: 14, step: 8 };
@@ -72,11 +72,27 @@ function savedSize() {
     height: ok ? Math.max(MIN.height, Math.min(3000, Math.round(s.height))) : SIZE.height,
   };
 }
+// Shown on the desktop the user is on and above Radian's own full-screen window, without
+// macOS first switching to the desktop of Radian's other windows (Arc 2023 notes: "Little
+// Arc will now always appear above your full screen window", "opens in the correct macOS
+// space"). The window joins every desktop only until it takes the focus, then stays where
+// it opened. skipTransformProcessType: otherwise Electron hides Radian's Dock icon.
+function showHere(win, show) {
+  if (win.isFocused()) return show();
+  const all = (on) => win.setVisibleOnAllWorkspaces(on, { visibleOnFullScreen: true, skipTransformProcessType: true });
+  win.once('focus', () => { if (!win.isDestroyed()) all(false); });
+  all(true);
+  return show();
+}
+
 const littles = new Map(); // id webContents de la barre -> LittleWindow
+const floats = new Map(); // id webContents of the view over the page -> LittleWindow
+const EDGE = 60; // pointer this close to the page's right edge: the round buttons float in
+const extHost = () => require('./ext-host'); // loaded on use: ext-host.js reads LittleWindow back
 const hooks = { openInOrbe: () => {}, profileId: () => 'default', spaces: () => [], profiles: () => ['default'], profileOfSpace: () => null };
 
 class LittleWindow {
-  static ownerOf(wc) { return littles.get(wc.id) || null; }
+  static ownerOf(wc) { return littles.get(wc.id) || floats.get(wc.id) || null; }
   static get all() { return [...littles.values()]; }
 
   // Lien venu d'une autre application : s'il est déjà affiché dans une petite
@@ -86,8 +102,7 @@ class LittleWindow {
     if (!same) return new LittleWindow(url);
     same.usedAt = Date.now();
     if (same.win.isMinimized()) same.win.restore();
-    same.win.show();
-    same.win.focus();
+    showHere(same.win, () => { same.win.show(); same.win.focus(); });
     return same;
   }
 
@@ -122,10 +137,10 @@ class LittleWindow {
     const ms = motion(OPEN.ms);
     this.win = new BaseWindow({
       ...savedSize(),
-      show: !ms,
+      show: false,
       minWidth: MIN.width,
       minHeight: MIN.height,
-      ...platform.windowChrome({ traffic: { x: 14, y: 13 } }),
+      ...platform.windowChrome({ traffic: { x: 10, y: 16 } }),
     });
     this.win.orbeLittle = this;
     this.ui = new WebContentsView({ webPreferences: { preload: UI_PRELOAD, sandbox: true, contextIsolation: true } });
@@ -141,15 +156,52 @@ class LittleWindow {
     this.win.on('resized', () => this.rememberSize());
     // Revenue au premier plan : l'Espace visé a pu changer dans la fenêtre principale.
     this.win.on('focus', () => { this.usedAt = Date.now(); this.send(); });
-    this.win.on('blur', () => { this.usedAt = Date.now(); });
+    this.win.on('blur', () => { this.usedAt = Date.now(); extHost().sync(); });
     this.win.on('closed', () => {
       littles.delete(this.uiId);
-      for (const v of [this.ui, this.view]) if (v && !v.webContents.isDestroyed()) v.webContents.close();
+      if (this.float) floats.delete(this.floatId);
+      for (const v of [this.ui, this.view, this.float]) if (v && !v.webContents.isDestroyed()) v.webContents.close();
+      extHost().sync(); // its page is no longer a tab for extensions
     });
     if (this.url) this.load(this.url);
     this.layout();
-    if (ms) this.animateIn(ms);
-    if (this.hint) { this.hintTimer = setTimeout(() => this.closeHint(), HINT_MS); if (this.hintTimer.unref) this.hintTimer.unref(); }
+    showHere(this.win, () => (ms ? this.animateIn(ms) : this.win.show()));
+    if (this.hint) { this.ensureFloat(); this.hintTimer = setTimeout(() => this.closeHint(), HINT_MS); if (this.hintTimer.unref) this.hintTimer.unref(); }
+  }
+
+  // The view over the page's top right (little.html#float): Arc's coach mark, and the round Close /
+  // Enter Full Screen buttons. Made the first time one of them shows; it reports its size (`placeFloat`).
+  ensureFloat() {
+    if (this.float) return;
+    this.float = new WebContentsView({ webPreferences: { preload: UI_PRELOAD, sandbox: true, contextIsolation: true } });
+    this.float.setBackgroundColor('#00000000');
+    this.float.setVisible(false);
+    trusted.add(this.float.webContents);
+    this.floatId = this.float.webContents.id;
+    floats.set(this.floatId, this);
+    this.win.contentView.addChildView(this.float);
+    this.float.webContents.loadURL(INTERNAL + 'little.html#float');
+  }
+
+  placeFloat(size = this.floatSize) {
+    if (!this.float || this.win.isDestroyed()) return;
+    // Nothing to show: hidden at once, whatever size the page last reported (a late report must not bring it back).
+    const shown = this.hint || this.edge;
+    const width = shown ? Math.max(0, Math.min(400, Math.round(Number(size && size.width) || 0))) : 0;
+    const height = shown ? Math.max(0, Math.min(400, Math.round(Number(size && size.height) || 0))) : 0;
+    this.floatSize = { width, height };
+    const [W] = this.win.getContentSize();
+    this.float.setBounds({ x: W - width, y: BAR, width, height });
+    this.float.setVisible(width > 0 && height > 0);
+  }
+
+  // Pointer at the page's right edge (or not): the round buttons float in (or out).
+  setEdge(on) {
+    if (this.edge === on || this.win.isDestroyed()) return;
+    this.edge = on;
+    if (on) this.ensureFloat();
+    else if (!this.hint) this.placeFloat({ width: 0, height: 0 });
+    this.send();
   }
 
   // Ouverture : opacité de 0 à 1 et montée de quelques points, en `ms`. Seules la
@@ -187,7 +239,7 @@ class LittleWindow {
     clearTimeout(this.hintTimer);
     if (!this.hint || this.win.isDestroyed()) return;
     this.hint = false;
-    this.layout(motion(160));
+    if (!this.edge) this.placeFloat({ width: 0, height: 0 });
     this.send();
   }
 
@@ -198,12 +250,16 @@ class LittleWindow {
     store.save();
   }
 
-  // `ms` : la page glisse à sa place (bandeau refermé), animée par le système.
-  layout(ms = 0) {
+  layout() {
     const [W, H] = this.win.getContentSize();
     this.ui.setBounds({ x: 0, y: 0, width: W, height: H });
-    const top = BAR + (this.hint ? HINT : 0);
-    if (this.view) place(this.view, { x: PAD, y: top, width: W - 2 * PAD, height: H - top - PAD }, ms);
+    if (this.view) this.view.setBounds({ x: 0, y: BAR, width: W, height: H - BAR });
+    this.placeFloat();
+  }
+
+  // The page above the bar, the float view above the page.
+  raise() {
+    for (const v of [this.view, this.float]) if (v) this.win.contentView.addChildView(v);
   }
 
   load(input) {
@@ -214,9 +270,9 @@ class LittleWindow {
     if (!this.view) {
       this.view = new WebContentsView({ webPreferences: { session: sessions.profileSession(this.profileId), sandbox: true, contextIsolation: true } });
       this.view.setBackgroundColor('#ffffff');
-      this.view.setBorderRadius(9);
-      this.win.contentView.addChildView(this.view);
+      this.raise();
       const wc = this.view.webContents;
+      wc.on('before-mouse-event', (e, m) => { if (m.type === 'mouseMove') this.setEdge(m.x >= this.view.getBounds().width - EDGE); });
       wc.on('did-start-loading', () => { this.loading = true; this.send(); });
       wc.on('did-stop-loading', () => { this.loading = false; this.send(); });
       wc.on('page-title-updated', (e, title) => { this.title = title; this.send(); });
@@ -240,9 +296,28 @@ class LittleWindow {
 
   send() {
     if (this.ui.webContents.isDestroyed()) return;
+    // The page is a tab for extensions: tell them it opened, loaded, changed or got focus.
+    extHost().sync();
     const s = store.state.settings;
     // `spaces` : liste du menu « Ouvrir dans… », tant qu'il est ouvert.
-    this.ui.webContents.send('state', { lang: s.lang, appearance: s.appearance, url: this.url, title: this.title, loading: this.loading, hint: !!this.hint, spaces: this.menu ? hooks.spaces() : null, target: this.target() });
+    // `extensions`: whether the bar shows its extensions button.
+    // `edge`: the round buttons of the page's right edge, shown by the float view.
+    const state = { lang: s.lang, appearance: s.appearance, url: this.url, title: this.title, loading: this.loading, hint: !!this.hint, edge: !!this.edge, spaces: this.menu ? hooks.spaces() : null, target: this.target(), extensions: extHost().actionsFor(this).length > 0 };
+    for (const v of [this.ui, this.float]) if (v && !v.webContents.isDestroyed()) v.webContents.send('state', state);
+  }
+
+  // Like Little Arc's puzzle button: a menu of the extensions, each opening its popup against this page,
+  // right-aligned under the button (`a`: its left, right and bottom edges in the window).
+  extMenu(a) {
+    const at = { x: Number(a && a.x), y: Number(a && a.y), right: Number(a && a.right) };
+    const items = extHost().actionsFor(this).map((x) => ({
+      label: x.badgeText ? `${x.title}  (${x.badgeText})` : x.title,
+      enabled: x.enabled !== false,
+      click: () => extHost().openPopup(this, x.id, at),
+    }));
+    if (!items.length || this.win.isDestroyed()) return;
+    const pos = Number.isFinite(at.x) && Number.isFinite(at.y) ? { x: Math.round(at.x), y: Math.round(at.y) } : {};
+    Menu.buildFromTemplate(items).popup({ window: this.win, ...pos });
   }
 
   // Espace où ⌘O enverra la page (celui de la fenêtre principale) : son nom et son thème.
@@ -270,7 +345,7 @@ class LittleWindow {
   closeMenu() {
     if (!this.menu || this.win.isDestroyed()) return;
     this.menu = false;
-    if (this.view) { this.win.contentView.addChildView(this.view); this.view.webContents.focus(); }
+    if (this.view) { this.raise(); this.view.webContents.focus(); }
     this.send();
   }
 
@@ -301,6 +376,9 @@ class LittleWindow {
     if (action === 'openInSpace') return this.openInSpace(String(a));
     if (action === 'copyUrl') return this.copyUrl();
     if (action === 'closeHint') return this.closeHint();
+    if (action === 'extMenu') return this.extMenu(a);
+    if (action === 'floatSize') return this.placeFloat(a);
+    if (action === 'closeWindow') return this.win.close();
     return undefined;
   }
 
@@ -322,9 +400,106 @@ class LittleWindow {
       // Comme dans Arc : ⌘O envoie la page dans la fenêtre principale.
       case 'expandPeek': case 'togglePin': this.openInOrbe(); return true;
       case 'openInSpace': this.openInMenu(); return true;
+      // ⌘E: the extensions take turns on this page, as in the main window.
+      case 'cycleExtensions': extHost().cycle(this); return true;
       default: return false;
     }
   }
 }
 
-module.exports = { LittleWindow, hooks, savedSize, OPEN, HINT, rememberedProfile, rememberProfile, siteOf, profileMap };
+// ⌥⌘N, as in Arc 1.170 (live capture, docs/parity/captures/live/chrome.md): a borderless 490 × 329 pt Command
+// Bar 20 pt from the right and 50 pt from the top of the display the pointer is on. It opens at once (no
+// motion); a result opens a full Little Radian window. Escape or ✕: the contents go blank, then after an
+// 80 ms hold the window fades out in 100 ms (motion.md). Same suggestions as the Command Bar (suggest.js).
+const COMMAND = { width: 490, height: 329, right: 20, top: 50, rows: 5, hold: 80, fade: 100 };
+let command = null; // the open command window
+
+// Empty bar: the last pages visited.
+const recent = () => Object.values(store.state.history).sort((a, b) => b.last - a.last).slice(0, COMMAND.rows)
+  .map((h) => ({ kind: 'history', url: h.url, title: h.title || suggest.strip(h.url), subtitle: suggest.strip(h.url), favicon: h.favicon, deletable: true }));
+
+class LittleCommand {
+  static ownerOf(wc) { return command && command.view.webContents === wc ? command : null; }
+  static open() {
+    if (command) { command.win.focus(); return command; }
+    return (command = new LittleCommand());
+  }
+
+  constructor() {
+    const { bounds } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    this.query = '';
+    this.win = new BaseWindow({
+      x: bounds.x + bounds.width - COMMAND.right - COMMAND.width, y: bounds.y + COMMAND.top, width: COMMAND.width, height: COMMAND.height,
+      frame: false, show: false, resizable: false, minimizable: false, maximizable: false, fullscreenable: false,
+      backgroundColor: nativeTheme.shouldUseDarkColors ? '#262227' : '#ffffff', // what shows once it goes blank (Arc's turns white)
+    });
+    this.view = new WebContentsView({ webPreferences: { preload: UI_PRELOAD, sandbox: true, contextIsolation: true } });
+    this.view.setBackgroundColor('#00000000');
+    const wc = this.view.webContents;
+    trusted.add(wc);
+    this.view.setBounds({ x: 0, y: 0, width: COMMAND.width, height: COMMAND.height });
+    this.win.contentView.addChildView(this.view);
+    this.win.on('closed', () => { if (command === this) command = null; if (!wc.isDestroyed()) wc.close(); });
+    // Shown once its suggestions are in: one cut, like Arc's.
+    wc.once('did-finish-load', () => {
+      if (this.win.isDestroyed()) return;
+      wc.send('overlay', { mode: 'command', value: '', items: recent(), sites: palette.siteKeys() });
+      showHere(this.win, () => this.win.show());
+      wc.focus();
+    });
+    wc.loadURL(INTERNAL + 'overlay.html#little');
+  }
+
+  suggest(a) {
+    const q = String((a && typeof a === 'object' ? a.q : a) || '');
+    const scope = a && typeof a === 'object' ? a.scope : null;
+    if (scope) return scope.site ? palette.siteItems(String(scope.site), q) : [];
+    this.query = q;
+    if (this.abort) this.abort.abort();
+    if (!q.trim()) return recent();
+    const items = suggest.local(q, { tabs: [], commands: [], activeId: null });
+    const ctrl = (this.abort = new AbortController());
+    suggest.remote(q, ctrl.signal).then((more) => {
+      const wc = this.view.webContents;
+      if (ctrl.signal.aborted || !more.length || wc.isDestroyed()) return;
+      const seen = new Set(items.map((i) => i.title.toLowerCase()));
+      wc.send('suggest-more', { q, items: more.filter((m) => !seen.has(m.title.toLowerCase())) });
+    });
+    return items;
+  }
+
+  run(item) {
+    const target = item && String(item.url || item.title || '');
+    if (!target || this.win.isDestroyed()) return;
+    if (this.query && item.url) suggest.learn(this.query, item.url);
+    LittleWindow.openOrFocus(target);
+    this.win.close();
+  }
+
+  close() {
+    if (this.closing || this.win.isDestroyed()) return;
+    this.closing = true;
+    this.view.setVisible(false);
+    const ms = motion(COMMAND.fade);
+    if (!ms) return void this.win.close();
+    setTimeout(() => {
+      const t0 = Date.now();
+      const timer = setInterval(() => {
+        const k = (Date.now() - t0) / ms;
+        if (this.win.isDestroyed() || k >= 1) { clearInterval(timer); if (!this.win.isDestroyed()) this.win.close(); return; }
+        this.win.setOpacity(1 - k);
+      }, OPEN.step);
+    }, COMMAND.hold);
+  }
+
+  handle(action, a) {
+    if (action === 'suggest') return this.suggest(a);
+    if (action === 'suggestDelete') return palette.forget(a);
+    if (action === 'run') return this.run(a && a.item);
+    if (action === 'closeOverlay') return this.close();
+    if (action === 'themeGet') return OrbeWindow.primary ? OrbeWindow.primary.themeNow() : null;
+    return undefined;
+  }
+}
+
+module.exports = { LittleWindow, LittleCommand, hooks, savedSize, OPEN, BAR, rememberedProfile, rememberProfile, siteOf, profileMap };

@@ -5,6 +5,7 @@ const { app, clipboard, dialog, shell } = require('electron');
 const { store } = require('./store');
 const platform = require('./platform');
 const easels = require('./easels');
+const prefs = require('./prefs');
 
 // Page de soutien de l'auteur d'Orbe.
 const SUPPORT_URL = 'https://buymeacoffee.com/amadouba';
@@ -30,7 +31,7 @@ const COMMANDS = [
   { name: 'redo', label: 'edit.redo', accel: 'Shift+Cmd+Z', keys: '⇧⌘Z', palette: false, run: (w) => undo(w, 'redo') },
   { name: 'reopen', label: 'file.reopen', accel: 'Shift+Cmd+T', keys: '⇧⌘T', run: (w) => w.reopenClosed() },
   { name: 'commandBar', label: 'file.commandBar', accel: 'Cmd+L', keys: '⌘L', palette: false, run: (w) => w.openCommand('edit') },
-  { name: 'closeTab', label: 'file.closeTab', accel: 'Cmd+W', keys: '⌘W', run: (w) => (w.peekState ? w.dismissPeek() : (w.selected().length ? w.closeMany(w.selected()) : (w.activeId ? w.close() : w.win.close()))) },
+  { name: 'closeTab', label: 'file.closeTab', accel: 'Cmd+W', keys: '⌘W', run: (w) => (w.peekState ? w.dismissPeek() : w.libraryShown ? w.closeLibrary() : (w.selected().length ? w.closeMany(w.selected()) : (w.activeId ? w.close() : w.win.close()))) },
   { name: 'closeWindow', label: 'file.closeWindow', accel: 'Shift+Cmd+W', keys: '⇧⌘W', run: (w) => w.win.close() },
   { name: 'capture', label: 'file.capture', accel: 'Shift+Cmd+2', keys: '⇧⌘2', run: (w) => w.capture() },
   { name: 'captureFull', label: 'file.captureFull', run: (w) => w.captureFull() },
@@ -89,10 +90,11 @@ const COMMANDS = [
   { name: 'zoomOut', label: 'view.zoomOut', accel: 'Cmd+-', keys: '⌘-', run: (w) => w.zoom(-0.5) },
   { name: 'source', label: 'view.source', accel: 'Alt+Cmd+U', keys: '⌥⌘U', run: (w) => wc(w) && w.newTab('view-source:' + wc(w).getURL()) },
   { name: 'devtools', label: 'view.devtools', accel: 'Alt+Cmd+I', keys: '⌥⌘I', run: (w) => wc(w) && wc(w).toggleDevTools() },
-  { name: 'inspect', label: 'view.inspect', accel: 'Alt+Cmd+C', keys: '⌥⌘C', palette: false, run: (w) => wc(w) && wc(w).openDevTools({ mode: 'right', activate: true }) },
+  { name: 'inspect', label: 'view.inspect', accel: 'Alt+Cmd+C', keys: '⌥⌘C', palette: false, run: (w) => devTools(wc(w), 'enterInspectElementMode()') },
   // « Network Inspector » d'Arc : les outils de développement, sur l'onglet Réseau.
-  { name: 'network', label: 'view.network', palette: false, run: (w) => showNetwork(wc(w)) },
-  { name: 'console', label: 'view.console', accel: 'Alt+Cmd+J', keys: '⌥⌘J', palette: false, run: (w) => wc(w) && wc(w).openDevTools({ mode: 'bottom', activate: true }) },
+  // Like Arc's Toggle Network Panel / Toggle Console: pressed again on the same panel, DevTools close.
+  { name: 'network', label: 'view.network', palette: false, run: (w) => devTools(wc(w), 'showPanel("network")', true) },
+  { name: 'console', label: 'view.console', accel: 'Alt+Cmd+J', keys: '⌥⌘J', palette: false, run: (w) => devTools(wc(w), 'showPanel("console")', true) },
   // Mode développeur du site affiché (⌃D dans Arc) : barre d'outils et adresse entière.
   { name: 'toggleDevMode', label: 'view.devMode', accel: 'Ctrl+D', keys: '⌃D', run: (w) => w.toggleDevMode() },
   { name: 'fullscreen', label: 'view.fullscreen', accel: 'Ctrl+Cmd+F', keys: '⌃⌘F', run: (w) => w.win.setFullScreen(!w.win.isFullScreen()) },
@@ -102,7 +104,7 @@ const COMMANDS = [
   { name: 'renameSpace', label: 'spaces.rename', run: (w) => w.askRename(w.spaceId) },
   { name: 'deleteSpace', label: 'spaces.delete', palette: false, run: (w) => w.deleteSpace() },
   // « Manage Spaces… » d'Arc : la section Espaces de la Bibliothèque.
-  { name: 'manageSpaces', label: 'spaces.manage', run: (w) => w.openInternal('library.html#spaces') },
+  { name: 'manageSpaces', label: 'spaces.manage', run: (w) => w.openLibrary('spaces') },
   { name: 'nextSpace', label: 'spaces.next', accel: 'Alt+Cmd+Right', keys: '⌥⌘→', run: (w) => w.stepSpace(1) },
   { name: 'prevSpace', label: 'spaces.prev', accel: 'Alt+Cmd+Left', keys: '⌥⌘←', run: (w) => w.stepSpace(-1) },
   // Onglets
@@ -136,22 +138,22 @@ const COMMANDS = [
   { name: 'back', label: 'archive.back', accel: 'Cmd+[', keys: '⌘[', palette: false, run: (w) => wc(w) && wc(w).navigationHistory.goBack() },
   { name: 'forward', label: 'archive.forward', accel: 'Cmd+]', keys: '⌘]', palette: false, run: (w) => wc(w) && wc(w).navigationHistory.goForward() },
   // ⌃⇧N et ⌃⌥N, comme dans Arc (⌃⌘N y ouvre une fenêtre vierge).
-  { name: 'newNote', label: 'notes.new', accel: 'Ctrl+Shift+N', keys: '⌃⇧N', run: (w) => w.openInternal('notes.html#new') },
+  { name: 'newNote', label: 'notes.new', accel: 'Ctrl+Shift+N', keys: '⌃⇧N', run: (w) => newNote(w) },
   // « New Note (in Split) » d'Arc : la note s'ouvre à côté de la page affichée.
-  { name: 'newNoteSplit', label: 'notes.newSplit', accel: 'Ctrl+Alt+N', keys: '⌃⌥N', run: (w) => noteBeside(w) },
+  { name: 'newNoteSplit', label: 'notes.newSplit', accel: 'Ctrl+Alt+N', keys: '⌃⌥N', run: (w) => newNote(w, true) },
   { name: 'exportNotes', label: 'notes.export', run: (w) => require('./notes').exportNotes(w) },
   { name: 'newEasel', label: 'easel.new', accel: 'Ctrl+Shift+E', keys: '⌃⇧E', run: (w) => easels.open(w) },
   { name: 'exportEasel', label: 'easel.export', run: (w) => easels.exportActive(w) },
-  { name: 'easels', label: 'easel.title', run: (w) => w.openInternal('library.html#easels') },
+  { name: 'easels', label: 'easel.title', run: (w) => w.openLibrary('easels') },
   { name: 'notes', label: 'notes.title', run: (w) => w.openInternal('notes.html') },
-  { name: 'media', label: 'lib.media', run: (w) => w.openInternal('library.html#media') },
-  { name: 'history', label: 'archive.history', accel: 'Cmd+Y', keys: '⌘Y', run: (w) => w.openInternal('library.html#history') },
-  { name: 'viewArchive', label: 'archive.view', run: (w) => w.openInternal('library.html#archive') },
+  { name: 'media', label: 'lib.media', run: (w) => w.openLibrary('media') },
+  { name: 'history', label: 'archive.history', accel: 'Cmd+Y', keys: '⌘Y', run: (w) => w.openLibrary('history') },
+  { name: 'viewArchive', label: 'archive.view', run: (w) => w.openLibrary('archive') },
   { name: 'clearArchive', label: 'archive.clear', run: (w) => clearArchive(w) },
   // Fenêtre
-  { name: 'library', label: 'window.library', accel: 'Shift+Cmd+L', keys: '⇧⌘L', run: (w) => w.openInternal('library.html#' + librarySection()) },
-  { name: 'librarySpaces', label: 'lib.viewSpaces', run: (w) => w.openInternal('library.html#spaces') },
-  { name: 'downloads', label: 'window.downloads', accel: 'Shift+Cmd+J', keys: '⇧⌘J', run: (w) => w.openInternal('library.html#downloads') },
+  { name: 'library', label: 'window.library', accel: 'Shift+Cmd+L', keys: '⇧⌘L', run: (w) => w.toggleLibrary(librarySection()) },
+  { name: 'librarySpaces', label: 'lib.viewSpaces', run: (w) => w.openLibrary('spaces') },
+  { name: 'downloads', label: 'window.downloads', accel: 'Shift+Cmd+J', keys: '⇧⌘J', run: (w) => w.openLibrary('downloads') },
   { name: 'stayOnTop', label: 'window.onTop', palette: false, run: (w) => { w.win.setAlwaysOnTop(!w.win.isAlwaysOnTop()); hooks.menuChanged(); } },
   // Application
   { name: 'settings', label: 'app.settings', accel: 'Cmd+,', keys: '⌘,', global: true, run: () => hooks.openSettings() },
@@ -218,17 +220,21 @@ function replacePin(w) {
 }
 
 // Section de la Bibliothèque affichée en dernier (réglage de fenêtre, voir `lib:section`).
-const LIBRARY_SECTIONS = ['history', 'archive', 'downloads', 'media', 'easels', 'spaces', 'boosts'];
+// Arc's order; it opens on Media, its first section, the first time.
+const LIBRARY_SECTIONS = ['media', 'downloads', 'easels', 'spaces', 'boosts', 'archive', 'history'];
 function librarySection() {
   const last = store.state.window.librarySection;
-  return LIBRARY_SECTIONS.includes(last) ? last : 'history';
+  return LIBRARY_SECTIONS.includes(last) ? last : 'media';
 }
 
-// Nouvelle note à côté de la page affichée (vue scindée) ; sans page, une note seule.
-function noteBeside(w) {
-  const beside = w.activeId;
+// New Note, as in Arc: a new document in the Profile's "Default Document App" (a new tab), or a Radian note.
+// `beside`: next to the page shown (split view); with no page, on its own.
+function newNote(w, beside = false) {
+  const app = prefs.get('noteApp', w.space.profileId || 'default');
+  if (Object.hasOwn(prefs.NOTE_APPS, app)) return w.newTab(prefs.NOTE_APPS[app], { split: beside });
+  const prev = w.activeId;
   const tab = w.openInternal('notes.html#new');
-  if (tab && beside && beside !== tab.id && w.locate(beside)) w.splitWith(beside, tab.id);
+  if (beside && tab && prev && prev !== tab.id && w.locate(prev)) w.splitWith(prev, tab.id);
   return tab;
 }
 
@@ -287,13 +293,18 @@ function minimizeAll() {
   return n;
 }
 
-// Outils de développement ouverts sur l'onglet Réseau.
-function showNetwork(page) {
+// DevTools on a given panel or in element-picking mode, even when they last showed
+// another panel: `call` is a method of the DevTools front end's DevToolsAPI. Docked
+// right, as in Arc. `toggle`: open on that same panel already, they close instead.
+const devCall = new WeakMap();
+function devTools(page, call, toggle = false) {
   if (!page) return;
-  const show = () => { const d = page.devToolsWebContents; if (d && !d.isDestroyed()) d.executeJavaScript('DevToolsAPI.showPanel("network")').catch(() => {}); };
+  if (toggle && page.isDevToolsOpened() && devCall.get(page) === call) return page.closeDevTools();
+  devCall.set(page, call);
+  const show = () => { const d = page.devToolsWebContents; if (d && !d.isDestroyed()) d.executeJavaScript('DevToolsAPI.' + call).catch(() => {}); };
   if (page.isDevToolsOpened()) return show();
   page.once('devtools-opened', () => setTimeout(show, 300));
-  page.openDevTools({ mode: 'bottom', activate: true });
+  page.openDevTools({ mode: 'right', activate: true });
 }
 
 // Trace de Chromium (src/main/trace.js) : premier appel, la question est posée puis

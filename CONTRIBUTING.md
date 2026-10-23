@@ -173,7 +173,7 @@ passing. Several small commits are better than one big one.
 | Settings and their defaults | `src/renderer/settings.*`, `src/main/store.js`, `src/main/prefs.js` |
 | Theme colours and contrast | `src/renderer/theme.js` |
 | Animation timings | `src/main/motion.js`, `src/renderer/base.css` |
-| Any text shown to users | `src/shared/locales.js` (English and French) |
+| Any text shown to users | `src/shared/locales.js` (English and French); other languages in `src/shared/locales-<code>.js`, falling back to English |
 | Search suggestions | `src/main/suggest.js`, `src/main/palette.js` |
 | The Mac build and DMG | `scripts/build-mac.js` |
 | What Arc does, measured | `docs/parity/` |

@@ -1,21 +1,27 @@
-// Bibliothèque : historique, archive des onglets fermés, téléchargements, médias,
-// tableaux, Espaces, Boosts.
+// Bibliothèque : médias, téléchargements, tableaux et notes, Espaces, Boosts, archive
+// des onglets fermés, historique — dans l'ordre et la disposition de la Library d'Arc.
 // Titres, adresses et noms de fichiers viennent des pages web : ils ne sont
 // jamais insérés comme HTML (textContent, ou `esc` pour les rares gabarits).
-const KINDS = ['history', 'archive', 'downloads', 'media', 'easels', 'spaces', 'boosts'];
-const CLEAR = { history: 'lib.clearHistory', archive: 'lib.clearArchive', downloads: 'lib.clearDownloads', media: 'lib.clearDownloads', easels: 'easel.new', spaces: 'spaces.new', boosts: '' };
-const EMPTY = { archive: ['lib.emptyArchive', 'lib.emptyArchiveHint'], easels: ['easel.empty'], boosts: ['lib.emptyBoosts', 'lib.emptyBoostsHint'] };
+const KINDS = ['media', 'downloads', 'easels', 'spaces', 'boosts', 'archive', 'history'];
+const SEARCH = { media: 'lib.searchMedia', downloads: 'lib.searchDownloads', easels: 'lib.searchEasels', boosts: 'lib.searchBoosts', archive: 'lib.searchArchive', history: 'lib.searchHistory' };
+// Behind the Filter button (Arc: Downloads and Archived Tabs; Radian adds its media folders and History).
+const FILTERED = ['media', 'downloads', 'archive', 'history'];
+const CLEAR = { history: 'lib.clearHistory', archive: 'lib.clearArchive', downloads: 'lib.clearDownloads', media: 'lib.clearDownloads' };
+const EMPTY = { downloads: ['lib.emptyDownloads', 'lib.emptyDownloadsHint'], easels: ['lib.emptyEasels', 'lib.emptyEaselsHint'], boosts: ['lib.emptyBoosts', 'lib.emptyBoostsHint'], archive: ['lib.emptyArchive', 'lib.emptyArchiveHint'] };
 const HOW = ['', 'manual', 'auto', 'little'];
 const list = document.getElementById('list');
 const q = document.getElementById('q');
 const fHow = document.getElementById('f-how');
 const fSpace = document.getElementById('f-space');
 const fFrom = document.getElementById('f-from');
+const filterBtn = document.getElementById('filter');
 const FROM = ['orbe', 'downloads', 'desktop', 'documents'];
-let kind = KINDS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'history';
+let kind = KINDS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'media';
 let rows = [];
 let data = null;
 let timer = null;
+let filtersOpen = false;
+let dark = matchMedia('(prefers-color-scheme: dark)').matches;
 
 const DAY = 864e5;
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -59,9 +65,28 @@ function el(tag, cls, text) {
   return n;
 }
 
+// An icon of the page's sprite (library.html).
+function icon(id, cls = 'i') {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', cls);
+  svg.setAttribute('aria-hidden', 'true');
+  const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+  use.setAttribute('href', '#i-' + id);
+  svg.appendChild(use);
+  return svg;
+}
+
 function button(act, label, cls = '') {
   const b = el('button', 'btn' + (cls ? ' ' + cls : ''), label);
   b.dataset.do = act;
+  return b;
+}
+
+// A row button drawn as an icon, named by its tooltip.
+function iconButton(act, id, title) {
+  const b = button(act, null, 'icon');
+  b.title = title;
+  b.appendChild(icon(id));
   return b;
 }
 
@@ -71,20 +96,23 @@ function option(value, label) {
   return o;
 }
 
-// Filtres de l'archive : façon dont l'onglet a été fermé, Espace où il était.
+// Sous « Filtrer » : filtres de l'archive (façon de fermer, Espace), dossier des médias, vider la liste.
 function drawFilters() {
-  document.getElementById('filters').hidden = kind !== 'archive' && kind !== 'media';
+  filterBtn.hidden = !FILTERED.includes(kind);
+  filterBtn.classList.toggle('on', filtersOpen);
+  document.getElementById('filters').hidden = !filtersOpen || !FILTERED.includes(kind);
   fHow.hidden = fSpace.hidden = kind !== 'archive';
   fFrom.hidden = document.getElementById('from-label').hidden = kind !== 'media';
-  if (kind === 'media') {
-    // Médias : d'où ils viennent. Le choix n'est pas retenu : un dossier de l'utilisateur
-    // n'est lu que lorsqu'il vient d'être choisi ici.
-    const from = fFrom.value;
-    fFrom.textContent = '';
-    for (const f of FROM) fFrom.appendChild(option(f, t('lib.from.' + f)));
-    fFrom.value = FROM.includes(from) ? from : 'orbe';
-    return;
-  }
+  // Médias : d'où ils viennent. Le choix n'est pas retenu : un dossier de l'utilisateur
+  // n'est lu que lorsqu'il vient d'être choisi ici.
+  const from = fFrom.value;
+  fFrom.textContent = '';
+  for (const f of FROM) fFrom.appendChild(option(f, t('lib.from.' + f)));
+  fFrom.value = FROM.includes(from) ? from : 'orbe';
+  const clear = document.getElementById('clear');
+  // (Médias d'un dossier de l'utilisateur : rien à vider, la liste n'est pas celle d'Orbe.)
+  clear.hidden = !CLEAR[kind] || (kind === 'media' && fFrom.value !== 'orbe');
+  clear.textContent = CLEAR[kind] ? t(CLEAR[kind]) : '';
   if (kind !== 'archive') return;
   const how = fHow.value;
   fHow.textContent = '';
@@ -99,10 +127,24 @@ function drawFilters() {
 }
 
 function drawEmpty() {
-  const [title, hint] = EMPTY[kind] || ['lib.empty'];
   const box = el('div', 'empty');
   // Archive filtrée ou recherche sans résultat : le message ordinaire.
   const narrowed = q.value.trim() || (kind === 'archive' && (fHow.value || fSpace.value));
+  if (kind === 'media' && !narrowed && fFrom.value === 'orbe') {
+    // Arc's tip: "Show Media" lists the user's Downloads folder (read only when asked, as the filter does).
+    const tip = el('div', 'tip');
+    tip.append(document.querySelector('[data-tab="media"] svg').cloneNode(true), el('b', '', t('lib.mediaTipTitle')), el('p', '', t('lib.mediaTip')));
+    const go = el('button', 'go', t('lib.showMedia'));
+    go.dataset.do = 'show-media';
+    const note = el('small');
+    note.append(icon('lock'), el('span', '', t('lib.mediaPrivate')));
+    tip.append(go, note);
+    box.appendChild(tip);
+    list.appendChild(box);
+    return;
+  }
+  const [title, hint] = EMPTY[kind] || ['lib.empty'];
+  if (!narrowed) box.appendChild(document.querySelector(`[data-tab="${kind}"] svg`).cloneNode(true));
   box.appendChild(el('div', '', t(narrowed ? 'lib.empty' : title)));
   if (hint && !narrowed) box.appendChild(el('div', 'hint', t(hint)));
   list.appendChild(box);
@@ -110,16 +152,15 @@ function drawEmpty() {
 
 function draw() {
   document.title = t('lib.title') + ' — ' + t('lib.' + kind);
+  document.body.dataset.kind = kind;
   for (const b of document.querySelectorAll('[data-tab]')) b.classList.toggle('on', b.dataset.tab === kind);
-  const clear = document.getElementById('clear');
-  // (Médias d'un dossier de l'utilisateur : rien à vider, la liste n'est pas celle d'Orbe.)
-  clear.hidden = !CLEAR[kind] || (kind === 'media' && FROM.includes(fFrom.value) && fFrom.value !== 'orbe');
-  clear.textContent = CLEAR[kind] ? t(CLEAR[kind]) : '';
+  q.placeholder = t(SEARCH[kind] || 'lib.search');
   drawFilters();
   list.textContent = '';
+  list.className = '';
+  if (kind === 'spaces') return drawSpaces();
   if (!rows.length) return drawEmpty();
   if (kind === 'easels') return drawBoards();
-  if (kind === 'spaces') return drawSpaces();
   if (kind === 'boosts') return drawBoosts();
   let card = null;
   let group = '';
@@ -136,20 +177,12 @@ function draw() {
     line.dataset.i = i;
     if (files) drawFile(line, r, now);
     else {
+      // As Arc's Archived Tabs: favicon, title over address.
       const body = el('div', 'grow');
       body.append(el('div', 'name', r.title), el('div', 'sub', r.url));
       line.append(faviconEl(r.favicon, r.title), body);
-      if (kind === 'archive') {
-        // D'où vient l'entrée : son Espace, et « archivé d'office » ou « petite fenêtre » le cas échéant.
-        if (r.space) line.appendChild(el('span', 'tag', r.space));
-        if (r.by !== 'manual') line.appendChild(el('span', 'tag', t('lib.by.' + r.by)));
-      }
-      line.appendChild(el('span', 'muted', when(r.at, now)));
-      if (kind === 'archive') {
-        const x = button('delete', '✕', 'x');
-        x.title = t('lib.archiveDelete');
-        line.appendChild(x);
-      }
+      if (kind === 'history') line.appendChild(el('span', 'muted when', when(r.at, now)));
+      if (kind === 'archive') line.appendChild(iconButton('delete', 'x', t('lib.archiveDelete')));
     }
     card.appendChild(line);
   });
@@ -166,7 +199,8 @@ function drawFile(line, r, now) {
   else if (r.state === 'completed') status = r.exists ? size(r.total || r.received) : t('dl.missing');
   else if (r.state === 'cancelled') status = t('dl.cancelled');
   else if (r.received) status = `${t('lib.failed')} — ${progress}`;
-  body.append(el('div', 'name', r.name), el('div', 'sub', r.folder ? `${status} · ${t('lib.from.' + r.folder)}` : `${status} · ${host(r.url)}`));
+  const at = running ? '' : ' · ' + when(r.at, now);
+  body.append(el('div', 'name', r.name), el('div', 'sub', (r.folder ? `${status} · ${t('lib.from.' + r.folder)}` : `${status} · ${host(r.url)}`) + at));
   if (r.danger) body.appendChild(el('div', 'sub danger', t('dl.dangerNote')));
   // Marque « venu d'Internet » impossible à poser : le système n'avertira pas à l'ouverture.
   if (r.marked === false) body.appendChild(el('div', 'sub danger unmarked', t('dl.unmarkedNote')));
@@ -179,22 +213,19 @@ function drawFile(line, r, now) {
   }
   line.dataset.state = r.state;
   line.append(letterIcon(r.name), body);
-  if (!running) line.appendChild(el('span', 'muted', when(r.at, now)));
   // En cours : pause ou reprise, et annulation. Interrompu ou annulé : reprise (ou nouveau départ).
   if (running && kind === 'downloads') line.append(r.paused || r.stalled ? button('resume', t('dl.resume')) : button('pause', t('dl.pause')), button('cancel', t('dl.cancel')));
   else if ((r.state === 'interrupted' || r.state === 'cancelled') && kind === 'downloads') line.appendChild(button('resume', t(r.state === 'interrupted' && r.canResume ? 'dl.resume' : 'dl.retry')));
   if (r.exists) {
-    line.append(button('open', t('lib.open')), button('reveal', t('lib.reveal')));
+    line.append(iconButton('open', 'open', t('lib.open')), iconButton('reveal', 'search', t('lib.reveal')));
     line.draggable = true;
   }
   // (Fichier d'un dossier de l'utilisateur : Orbe n'en tient pas de fiche, donc pas de menu.)
   if (r.folder) return;
-  const more = button('menu', '···', 'more');
-  more.title = t('dl.more');
-  line.appendChild(more);
+  line.appendChild(iconButton('menu', 'more', t('dl.more')));
 }
 
-// Tableaux : vignette, titre, date ; un clic ouvre le tableau dans un onglet.
+// Tableaux et notes : vignette (ou début du texte), titre, date ; un clic ouvre en aperçu (Peek), comme dans Arc.
 function drawBoards() {
   const grid = document.createElement('div');
   grid.className = 'boards';
@@ -203,16 +234,17 @@ function drawBoards() {
     card.className = 'card board';
     card.dataset.i = i;
     const thumb = document.createElement('div');
-    thumb.className = 'thumb';
+    thumb.className = r.note ? 'thumb text' : 'thumb';
+    if (r.note) thumb.textContent = r.text;
     if (r.thumb) { const img = document.createElement('img'); img.src = r.thumb; img.alt = ''; img.draggable = false; thumb.appendChild(img); }
     const meta = document.createElement('div');
     meta.className = 'meta';
     const name = document.createElement('div');
     name.className = 'name';
-    name.textContent = r.title || t('easel.untitled');
+    name.textContent = r.title || t(r.note ? 'notes.untitled' : 'easel.untitled');
     const sub = document.createElement('div');
     sub.className = 'sub muted';
-    sub.textContent = `${period(r.updated)} · ${t('easel.items', { n: r.count })}`;
+    sub.textContent = r.note ? period(r.updated) : `${period(r.updated)} · ${t('easel.items', { n: r.count })}`;
     meta.append(name, sub);
     const del = document.createElement('button');
     del.className = 'btn del';
@@ -224,24 +256,62 @@ function drawBoards() {
   list.appendChild(grid);
 }
 
-// Espaces : un clic affiche l'Espace ; renommer, thème, supprimer.
+// A tab or folder in a Space column.
+function spaceItem(it) {
+  const b = el('button', 'item' + (it.folder ? ' folder' : ''));
+  b.dataset.tab = it.id;
+  const body = el('div', 'grow');
+  body.appendChild(el('div', 'name', it.title));
+  if (it.folder) b.appendChild(icon('folder', 'folder-i'));
+  else { b.appendChild(faviconEl(it.favicon, it.title)); body.appendChild(el('div', 'sub', host(it.url))); }
+  b.appendChild(body);
+  return b;
+}
+
+// Espaces : le gestionnaire d'Arc. Une colonne par Espace, à ses couleurs : en-tête (icône, nom,
+// thème), épinglés, « ↓ Clear », onglets du jour, poignée et menu « … » ; un + rond pour un nouvel Espace.
 function drawSpaces() {
-  const card = el('div', 'card');
+  list.className = 'cols';
   rows.forEach((r, i) => {
-    const line = el('div', 'line click');
-    line.dataset.i = i;
-    const dot = el('span', 'dot', r.icon);
-    const body = el('div', 'grow');
-    body.append(el('div', 'name', r.name), el('div', 'sub', `${t('lib.spaceCount', { pinned: r.pinned, today: r.today })} · ${r.profile}`));
-    line.append(dot, body);
-    if (r.current) line.appendChild(el('span', 'tag', t('lib.spaceCurrent')));
-    line.append(button('rename', t('lib.spaceRename')), button('theme', t('lib.spaceTheme')));
-    const del = button('delete', t('lib.spaceDelete'));
-    del.disabled = r.only;
-    line.appendChild(del);
-    card.appendChild(line);
+    const col = el('div', 'col');
+    col.dataset.i = i;
+    col.style.setProperty('--col-paint', OrbeTheme.paint(OrbeTheme.palette(r.theme, dark), 0.6));
+    const head = el('div', 'col-head');
+    const name = el('button', 'col-name');
+    name.dataset.do = 'focus';
+    name.title = r.profile;
+    name.append(el('span', '', r.icon), el('span', '', r.name));
+    const theme = el('button', 'ib');
+    theme.dataset.do = 'theme';
+    theme.title = t('spaces.editTheme');
+    theme.appendChild(icon('pencil'));
+    head.append(name, theme);
+    const items = el('div', 'col-list');
+    for (const it of r.items.pinned) items.appendChild(spaceItem(it));
+    const clear = el('div', 'col-clear');
+    const clearBtn = el('button');
+    clearBtn.dataset.do = 'clear';
+    clearBtn.append(icon('down'), el('span', '', t('side.clear')));
+    clear.appendChild(clearBtn);
+    items.appendChild(clear);
+    for (const it of r.items.today) items.appendChild(spaceItem(it));
+    const foot = el('div', 'col-foot');
+    const move = el('div', 'ib col-move');
+    move.draggable = true;
+    move.appendChild(icon('move'));
+    const more = el('button', 'ib');
+    more.dataset.do = 'menu';
+    more.title = t('side.spaceMore');
+    more.appendChild(icon('more'));
+    foot.append(move, more);
+    col.append(head, items, foot);
+    list.appendChild(col);
   });
-  list.appendChild(card);
+  const add = el('button', 'add-space');
+  add.dataset.do = 'new';
+  add.title = t('spaces.new');
+  add.appendChild(icon('plus'));
+  list.appendChild(add);
 }
 
 // Boosts : un par site ; activer, couper, supprimer.
@@ -266,11 +336,19 @@ async function load() {
   O.send('lib:section', kind);
   if (kind === 'easels') {
     const needle = q.value.trim().toLowerCase();
-    rows = ((await O.send('easel:list')) || []).filter((b) => !needle || (b.title || t('easel.untitled')).toLowerCase().includes(needle));
+    const [boards, notes] = await Promise.all([O.send('easel:list'), O.send('notes:list')]);
+    // A Note: its first line as title, the start of its text as thumbnail (plain text, never HTML).
+    const noteRows = (notes || []).map((n) => {
+      const lines = String(n.text || '').split('\n').filter((l) => l.trim());
+      return { note: true, id: n.id, title: (lines[0] || '').replace(/^(- |\d+\. |\[[ x]\] )/, '').slice(0, 80), text: lines.slice(1).join('\n').slice(0, 300), updated: n.at };
+    });
+    rows = [...(boards || []), ...noteRows].filter((b) => !needle || (b.title || t(b.note ? 'notes.untitled' : 'easel.untitled')).toLowerCase().includes(needle))
+      .sort((a, b) => b.updated - a.updated);
     draw();
     return;
   }
-  data = await O.send('lib:get', { q: q.value, how: fHow.value, space: fSpace.value, from: kind === 'media' && FROM.includes(fFrom.value) ? fFrom.value : 'orbe' });
+  // (Spaces: no search field, as in Arc: every Space.)
+  data = await O.send('lib:get', { q: kind === 'spaces' ? '' : q.value, how: fHow.value, space: fSpace.value, from: kind === 'media' && FROM.includes(fFrom.value) ? fFrom.value : 'orbe' });
   rows = (data && data[kind]) || [];
   draw();
   clearTimeout(timer);
@@ -282,13 +360,12 @@ document.querySelector('.tabs').addEventListener('click', (e) => {
   const b = e.target.closest('[data-tab]');
   if (!b) return;
   kind = b.dataset.tab;
+  filtersOpen = false;
   history.replaceState(null, '', '#' + kind);
   load();
 });
+filterBtn.onclick = () => { filtersOpen = !filtersOpen; drawFilters(); };
 document.getElementById('clear').onclick = async () => {
-  // Onglet Tableaux : le bouton crée un tableau et l'ouvre. Onglet Espaces : un nouvel Espace.
-  if (kind === 'easels') { await O.send('easel:open'); return; }
-  if (kind === 'spaces') { await O.send('lib:newSpace'); load(); return; }
   await O.send('lib:clear', kind === 'media' ? 'downloads' : kind);
   load();
 };
@@ -298,10 +375,24 @@ fSpace.addEventListener('change', load);
 fFrom.addEventListener('change', load);
 
 list.addEventListener('click', async (e) => {
+  if (e.target.closest('[data-do=show-media]')) { fFrom.value = 'downloads'; load(); return; }
+  if (kind === 'spaces') {
+    // Space manager: the column's tab, its header, theme, "↓ Clear", "…" menu; the round + makes a Space.
+    if (e.target.closest('[data-do=new]')) { await O.send('lib:newSpace'); load(); return; }
+    const col = e.target.closest('.col');
+    const act = e.target.closest('[data-do], .item');
+    if (!col || !act) return;
+    const r = rows[Number(col.dataset.i)];
+    const item = act.classList.contains('item') && !act.classList.contains('folder');
+    await O.send('lib:space', item ? { id: r.id, do: 'tab', tab: act.dataset.tab } : { id: r.id, do: act.dataset.do || 'focus' });
+    load();
+    return;
+  }
   const board = e.target.closest('.board');
   if (board && kind === 'easels') {
     const b = rows[Number(board.dataset.i)];
-    if (e.target.closest('[data-do=delete]')) { await O.send('easel:delete', b.id); load(); } else O.send('easel:open', b.id);
+    if (e.target.closest('[data-do=delete]')) { await O.send(b.note ? 'notes:delete' : 'easel:delete', b.id); load(); }
+    else O.send('lib:peek', { [b.note ? 'note' : 'easel']: b.id, x: e.clientX, y: e.clientY });
     return;
   }
   const line = e.target.closest('.line');
@@ -316,9 +407,6 @@ list.addEventListener('click', async (e) => {
   } else if (kind === 'archive') {
     // Un clic rouvre l'onglet dans son Espace d'origine ; la croix retire l'entrée.
     await O.send(what === 'delete' ? 'lib:archiveDelete' : 'lib:restore', r.id);
-    load();
-  } else if (kind === 'spaces') {
-    await O.send('lib:space', { id: r.id, do: what || 'focus' });
     load();
   } else if (kind === 'boosts') {
     await O.send('lib:boost', { host: r.host, do: what || 'open' });
@@ -337,17 +425,70 @@ list.addEventListener('contextmenu', async (e) => {
 });
 
 // Glisser un fichier hors de la Bibliothèque : le système prend le relais avec le vrai fichier.
+// Space manager: a column's move handle drags it before or after another column.
+let movingSpace = null;
 list.addEventListener('dragstart', (e) => {
+  const handle = kind === 'spaces' && e.target.closest('.col-move');
+  if (handle) {
+    movingSpace = rows[Number(handle.closest('.col').dataset.i)].id;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setDragImage(handle.closest('.col'), 20, 20);
+    return;
+  }
   const line = e.target.closest('.line[draggable=true]');
   if (!line || (kind !== 'downloads' && kind !== 'media')) return;
   e.preventDefault();
   O.send('lib:drag', rows[Number(line.dataset.i)].id);
 });
+const dropCol = (e) => (movingSpace && e.target.closest ? e.target.closest('.col') : null);
+list.addEventListener('dragover', (e) => {
+  const col = dropCol(e);
+  for (const c of list.querySelectorAll('.col.drop')) if (c !== col) c.classList.remove('drop');
+  if (!col) return;
+  e.preventDefault();
+  col.classList.add('drop');
+});
+list.addEventListener('drop', async (e) => {
+  const col = dropCol(e);
+  if (!col) return;
+  e.preventDefault();
+  const box = col.getBoundingClientRect();
+  const index = Number(col.dataset.i) + (e.clientX > box.left + box.width / 2 ? 1 : 0);
+  await O.send('lib:space', { id: movingSpace, do: 'move', index });
+  load();
+});
+list.addEventListener('dragend', () => {
+  movingSpace = null;
+  for (const c of list.querySelectorAll('.col.drop')) c.classList.remove('drop');
+});
 
 window.addEventListener('hashchange', () => {
   const h = location.hash.slice(1);
-  if (KINDS.includes(h) && h !== kind) { kind = h; load(); }
+  if (KINDS.includes(h) && h !== kind) { kind = h; filtersOpen = false; load(); }
 });
 window.addEventListener('focus', load);
+document.getElementById('exit').onclick = () => O.send('lib:close');
+
+// The Space's colours (window.js `themeNow`): text over the shell's paint, and the Space columns.
+function applyLook(look) {
+  if (!look || !look.space) return;
+  const p = OrbeTheme.palette(look.space, look.dark);
+  const vars = OrbeTheme.cssVars(p);
+  const root = document.documentElement;
+  for (const k of OrbeTheme.TEXT_VARS) root.style.setProperty(k, vars[k]);
+  root.dataset.scheme = p.dark ? 'dark' : 'light';
+  if (dark !== !!look.dark) { dark = !!look.dark; if (kind === 'spaces') draw(); }
+}
+O.on('theme', applyLook);
+// Each time the panel is shown: it slides in from the left, in the colours of the Space shown.
+const panel = document.getElementById('panel');
+O.on('overlay', (p) => {
+  if (!p || p.mode !== 'library-in') return;
+  O.send('themeGet').then(applyLook).catch(() => {});
+  panel.classList.remove('in');
+  void panel.offsetWidth;
+  panel.classList.add('in');
+});
 O.on('settings', (s) => { if (setLang(s.lang)) draw(); });
+O.send('themeGet').then(applyLook).catch(() => {});
 load();

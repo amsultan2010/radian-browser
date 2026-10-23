@@ -1,12 +1,14 @@
-// App icon chosen in Settings > Appearance, like Arc's Icon pane: the Dock icon changes at once
+// App icon chosen in Settings > Icon, like Arc's Icon pane: the Dock icon changes at once
 // and the choice (setting `appIcon`) is applied again at every launch. Artwork: assets/icons.
 // shortcut: only the Dock icon changes; Finder, and the Dock tile while Radian is not running, keep the
-// bundle's original icon, because rewriting Radian.app's icon would break its code signature. Upgrade if
-// macOS offers a signed way to swap a bundle's icon (Arc's own variants have the same limit).
+// bundle's original icon. Arc also covers those with a Dock tile plug-in (NSDockTilePlugIn) and NSWorkspace;
+// writing an icon into Radian.app would break its signature. Upgrade with a Dock tile plug-in built next to
+// native/haptics.swift.
 const fs = require('fs');
 const path = require('path');
 
-const NAMES = ['original', 'midnight', 'ink', 'neon', 'sorbet', 'candy', 'glass'];
+// Order of the Icon pane's list, the original first (it was laid out for a two-row grid: ink and schoolbook, glass and fluted, were paired).
+const NAMES = ['original', 'midnight', 'ink', 'neon', 'sorbet', 'candy', 'glass', 'hologram', 'metal', 'schoolbook', 'arcade', 'sunset', 'graphite', 'fluted'];
 const DIR = path.join(__dirname, '..', '..', 'assets', 'icons');
 let shown = '';
 let thumbs = null;
@@ -21,8 +23,8 @@ function apply(name) {
   shown = name;
 }
 
-// Thumbnails for the settings grid, as data: URLs (orbe://app only serves src/renderer).
-// None outside macOS (the page then hides the section); a missing file drops its variant instead of breaking "settings:get".
+// Thumbnails for the Icon pane, as data: URLs (orbe://app only serves src/renderer).
+// None outside macOS (the page then hides the pane); a missing file drops its variant instead of breaking "settings:get".
 function list() {
   if (process.platform !== 'darwin') return [];
   if (!thumbs) thumbs = NAMES.map((name) => path.join(DIR, name + '-128.png')).filter((f) => fs.existsSync(f))

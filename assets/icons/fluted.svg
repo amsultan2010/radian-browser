@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <filter id="tile-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.3"/></filter>
+    <filter id="sticker-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.24"/></filter>
+    <clipPath id="tile"><path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z"/></clipPath>
+    <mask id="band" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><path d="M284.3 493A275 275 0 0 0 755.7 394" fill="none" stroke="#fff" stroke-width="128" stroke-linecap="round" stroke-linejoin="round"/></mask>
+    <clipPath id="left"><path d="M56.1 -523.3L1129.5 1623.3L56.1 2160L-1017.2 13.3Z"/></clipPath>
+    <clipPath id="right"><path d="M56.1 -523.3L1129.5 1623.3L2202.8 1086.6L1129.5 -1060Z"/></clipPath>
+    <clipPath id="stem"><rect x="306.3" y="0" width="128" height="1024"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="100" x2="0" y2="924" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F4F7FB"/><stop offset="1" stop-color="#D9E1EC"/></linearGradient>
+    <!-- The original mark, as it sits behind the glass. -->
+    <g id="mark" fill="none" stroke-width="128" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M370.3 697V326" stroke="#FF6378"/>
+      <path d="M370.3 559.8V697" stroke="#1A007F"/>
+      <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#1942CD" clip-path="url(#left)"/>
+      <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#FF9396" clip-path="url(#right)"/>
+      <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#0229C0" clip-path="url(#stem)"/>
+      <path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#FF6378"/>
+      <path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#ED4A5F" mask="url(#band)"/>
+    </g>
+    <!-- Fluted glass: each of the 12 vertical ribs is a lens that shows its own narrowed copy of what lies behind it. -->
+    <clipPath id="rib0"><rect x="100.00" y="100" width="68.67" height="824"/></clipPath>
+    <clipPath id="rib1"><rect x="168.67" y="100" width="68.67" height="824"/></clipPath>
+    <clipPath id="rib2"><rect x="237.33" y="100" width="68.67" height="824"/></clipPath>
+    <clipPath id="rib3"><rect x="306.00" y="100" width="68.67" height="824"/></clipPath>
+    <clipPath id="rib4"><rect x="374.67" y="100" width="68.67" height="824"/></clipPath>
+    <clipPath id="rib5"><rect x="443.33" y="100" width="68.67" height="824"/></clipPath>
+    <clipPath id="rib6"><rect x="512.00" y="100" width="68.67" height="824"/></clipPath>
+    <clipPath id="rib7"><rect x="580.67" y="100" width="68.67" height="824"/></clipPath>
+    <clipPath id="rib8"><rect x="649.33" y="100" width="68.67" height="824"/></clipPath>
+    <clipPath id="rib9"><rect x="718.00" y="100" width="68.67" height="824"/></clipPath>
+    <clipPath id="rib10"><rect x="786.67" y="100" width="68.67" height="824"/></clipPath>
+    <clipPath id="rib11"><rect x="855.33" y="100" width="68.67" height="824"/></clipPath>
+    <linearGradient id="rib-shade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0.9"/><stop offset="0.07" stop-color="#fff" stop-opacity="0.25"/><stop offset="0.2" stop-color="#fff" stop-opacity="0"/><stop offset="0.75" stop-color="#0B1E3D" stop-opacity="0"/><stop offset="0.95" stop-color="#0B1E3D" stop-opacity="0.16"/><stop offset="1" stop-color="#0B1E3D" stop-opacity="0.3"/></linearGradient>
+    <pattern id="ribs" patternUnits="userSpaceOnUse" x="100" y="0" width="68.6667" height="1024"><rect width="68.6667" height="1024" fill="url(#rib-shade)"/></pattern>
+    <filter id="soften" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="2"/></filter>
+  </defs>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="#E6EBF2" filter="url(#tile-shadow)"/>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="url(#bg)"/>
+  <g clip-path="url(#tile)">
+    <g filter="url(#soften)">
+      <g clip-path="url(#rib0)"><use xlink:href="#mark" transform="translate(51.05 0) scale(0.62 1)"/></g>
+      <g clip-path="url(#rib1)"><use xlink:href="#mark" transform="translate(77.14 0) scale(0.62 1)"/></g>
+      <g clip-path="url(#rib2)"><use xlink:href="#mark" transform="translate(103.23 0) scale(0.62 1)"/></g>
+      <g clip-path="url(#rib3)"><use xlink:href="#mark" transform="translate(129.33 0) scale(0.62 1)"/></g>
+      <g clip-path="url(#rib4)"><use xlink:href="#mark" transform="translate(155.42 0) scale(0.62 1)"/></g>
+      <g clip-path="url(#rib5)"><use xlink:href="#mark" transform="translate(181.51 0) scale(0.62 1)"/></g>
+      <g clip-path="url(#rib6)"><use xlink:href="#mark" transform="translate(207.61 0) scale(0.62 1)"/></g>
+      <g clip-path="url(#rib7)"><use xlink:href="#mark" transform="translate(233.70 0) scale(0.62 1)"/></g>
+      <g clip-path="url(#rib8)"><use xlink:href="#mark" transform="translate(259.79 0) scale(0.62 1)"/></g>
+      <g clip-path="url(#rib9)"><use xlink:href="#mark" transform="translate(285.89 0) scale(0.62 1)"/></g>
+      <g clip-path="url(#rib10)"><use xlink:href="#mark" transform="translate(311.98 0) scale(0.62 1)"/></g>
+      <g clip-path="url(#rib11)"><use xlink:href="#mark" transform="translate(338.07 0) scale(0.62 1)"/></g>
+    </g>
+    <rect x="100" y="100" width="824" height="824" fill="url(#ribs)"/>
+  </g>
+</svg>

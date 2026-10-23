@@ -15,6 +15,7 @@ function serve() {
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
     if (url.pathname === '/f.txt') { res.setHeader('content-disposition', 'attachment; filename="reglages-essai.txt"'); return res.end('bonjour'); }
+    if (url.pathname === '/data.json') { res.setHeader('content-type', 'application/json'); return res.end(JSON.stringify({ name: '<b>Radian</b>', list: [1, 2], site: 'https://example.com/' })); }
     res.setHeader('content-type', 'text/html; charset=utf-8');
     return res.end(`<!doctype html><meta charset="utf-8"><title>Page réglages${url.search}</title><body style="font:16px sans-serif">
       <div id="onetrust-banner-sdk" style="height:60px;background:#fc0">Nous utilisons des cookies</div><p>contenu</p></body>`);
@@ -139,7 +140,7 @@ module.exports = async function reglagesTests(ctx) {
   const info = await globalAction('settings:get', null, null);
   check('« settings:get » garde ses champs et décrit les volets',
     info.settings === s() && Array.isArray(info.spaces) && Array.isArray(info.profiles) && Array.isArray(info.engines) && typeof info.version === 'string'
-    && info.panes.length === 10 && info.panes.includes('shortcuts') && info.panes.includes('tabs') && info.memoryGb > 0 && typeof info.isDefault === 'boolean' && typeof info.downloads === 'string', JSON.stringify(Object.keys(info)));
+    && info.panes.join() === 'general,profiles,links,shortcuts,icon,advanced' && info.memoryGb > 0 && typeof info.isDefault === 'boolean' && typeof info.downloads === 'string', JSON.stringify(Object.keys(info)));
 
   // Profils : renommer, supprimer
   store.state.profiles.push({ id: 'p-tmp', name: 'Temporaire' });
@@ -218,7 +219,8 @@ module.exports = async function reglagesTests(ctx) {
   const saved = { spaceId: s2.id, activeBySpace: { [s2.id]: ext } };
   const on = win.resumed(saved, w.data.spaces, true);
   const off = win.resumed(saved, w.data.spaces, false);
-  check('reprise à l’ouverture : Espace et onglet actif repris, ou rien si le réglage est coupé',
+  // (The first window always resumes, as in Arc; `restoreSession` only decides whether the others come back: tests/fenetres.js.)
+  check('reprise à l’ouverture : Espace et onglet actif repris par la première fenêtre ; une autre fenêtre part du premier Espace',
     on.spaceId === s2.id && on.activeBySpace[s2.id] === ext && off.spaceId === w.data.spaces[0].id && Object.keys(off.activeBySpace).length === 0
     && win.resumed({ spaceId: 'disparu' }, w.data.spaces, true).spaceId === w.data.spaces[0].id);
 
@@ -280,9 +282,13 @@ module.exports = async function reglagesTests(ctx) {
   const devOn = s().devSites.includes(hostDev) && w.toolbarShown && !s().showToolbar && w.contentRect().y > yBefore;
   await set({ showFullUrl: false });
   await until(async () => (await ui('document.getElementById("tb-url-text").textContent')) === base + '/?externe' && (await ui('document.body.classList.contains("toolbar")')), 'barre d’outils du mode développeur');
+  // Shown buttons, in order; "+tip" marks a tooltip and "-label" a missing accessibility label (Arc has labels, no tooltips).
+  const devBar = await ui('[...document.querySelectorAll("#toolbar .ib")].filter((b) => b.offsetWidth).map((b) => (b.dataset.cmd || b.dataset.menu || b.id) + (b.title ? "+tip" : "") + (b.getAttribute("aria-label") ? "" : "-label")).join() + "|" + document.getElementById("toolbar").getBoundingClientRect().height + "|" + !!document.getElementById("b-reload-more").offsetWidth');
   commands.run(w, 'toggleDevMode');
   await sleep(60);
   check('mode développeur d’un site : barre d’outils et adresse entière pour lui seul', devOn && !s().devSites.length && !w.toolbarShown && w.contentRect().y === yBefore);
+  check('Developer Mode bar: Arc’s controls in Arc’s order (Site Settings, copy | capture window, capture | console, network, inspect | extensions, split), 40 pt tall; reload gets its chevron',
+    devBar === 'tb-site,copyUrl,capturePortrait,capture,console,network,inspect,extensions,split|40|true', devBar);
   // Automatique sur les sites locaux (localhost, 127.0.0.1), avec son liseré jaune et noir.
   {
     const prefs2 = require('../src/main/prefs');
@@ -290,7 +296,7 @@ module.exports = async function reglagesTests(ctx) {
       prefs2.isLocal('http://localhost:3000/') && prefs2.isLocal('https://app.localhost/x') && prefs2.isLocal('http://127.0.0.1:8080/') && prefs2.isLocal('http://[::1]:5173/')
       && !prefs2.isLocal('https://localhost.pirate.invalid/') && !prefs2.isLocal('https://exemple.fr/?localhost') && !prefs2.isLocal('file:///localhost') && !prefs2.isLocal('http://127.0.0.2/'));
     check('pendant les essais, le mode développeur automatique est coupé au départ (les pages d’essai sont locales)', s().devLocalhost === false && !w.toolbarShown);
-    const stripe = () => ui('(() => { const b = document.body.classList.contains("dev-site"); const r = document.querySelector(".row.tab.active"); const g = r ? getComputedStyle(r, "::after") : { content: "none", backgroundImage: "" }; return b + "|" + (g.content !== "none" && g.backgroundImage.includes("repeating-linear-gradient")); })()');
+    const stripe = () => ui(`(() => { const b = document.body.classList.contains("dev-site"); const r = document.querySelector(".row.tab.active"); const g = r ? getComputedStyle(r, "::after") : { content: "none", borderTopStyle: "" }; const h = r && r.querySelector(".host"); return b + "|" + (g.content !== "none" && g.borderTopStyle === "dashed" && !!h.offsetWidth && h.textContent === ${JSON.stringify(hostDev)}); })()`);
     const noStripe = await stripe();
     await set({ devLocalhost: true });
     await until(async () => (await stripe()) === 'true|true', 'liseré du mode développeur');
@@ -312,6 +318,28 @@ module.exports = async function reglagesTests(ctx) {
   await set({ showFullUrl: before.showFullUrl });
   check('mode développeur : ⌃D, à côté du raccourci d’épinglage (⌘D)',
     commands.byName.get('toggleDevMode').accel === 'Ctrl+D' && commands.byName.get('togglePin').accel === 'Cmd+D');
+
+  // JSON view: a collapsible tree behind Chromium's "Pretty-print" strip (as Arc shows it), nothing new for the page.
+  {
+    const tab = w.newTab(base + '/data.json');
+    await until(() => win.live.get(tab.id) && !win.live.get(tab.id).loading, 'page JSON');
+    const page = win.live.get(tab.id).wc;
+    await until(() => page.executeJavaScript('!!document.querySelector(".jv .en")'), 'arbre JSON');
+    const seen = await page.executeJavaScript(`(() => {
+      const q = (sel) => document.querySelector(sel);
+      const box = q('.jv-bar input[type=checkbox]');
+      const out = { labels: q('.jv-bar').textContent + '|' + box.checked, markup: !!q('.jv b'), key: q('.jv .k').textContent, link: q('.jv a').href, globals: typeof parse + typeof render };
+      box.click();
+      out.raw = q('.jv').hidden && !q('body > pre').hidden;
+      box.click();
+      q('.jv .ex').click();
+      out.shut = !q('.jv').hidden && q('.jv .en').classList.contains('shut') && q('.jv .ex').getAttribute('aria-expanded') === 'false';
+      return out;
+    })()`);
+    check('JSON page: a collapsible tree behind a checked “Pretty-print” box (unchecked: the raw text); its text never becomes markup, and the page sees no new globals',
+      seen.labels === store.t('json.pretty') + '|true' && !seen.markup && seen.key === '"name"' && seen.link === 'https://example.com/' && seen.globals === 'undefinedundefined' && seen.raw && seen.shut, JSON.stringify(seen));
+    w.close(tab.id, { silent: true });
+  }
 
   // CSS ajouté aux pages : bandeaux de cookies, couleurs du thème, Boosts
   const css = (code) => wc.executeJavaScript(code, true);
@@ -577,43 +605,65 @@ module.exports = async function reglagesTests(ctx) {
   w.data.spaces.splice(w.data.spaces.indexOf(made), 1);
 
   // --- Fenêtre des réglages -----------------------------------------------------------
+  // Arc's window (docs/parity/settings-spec.md): six panes in its order, 684 × 650, 701 wide when the pane scrolls.
   store.state.window.settingsPane = 'general';
   const sw = openSettings();
   const js = (code) => sw.webContents.executeJavaScript(code);
   await until(() => sw.isVisible(), 'fenêtre des réglages affichée');
-  await until(async () => (await js('document.querySelectorAll("#profiles .profile").length')) === w.data.profiles.length, 'profils listés');
+  await until(async () => (await js('document.querySelectorAll("#profiles .prow").length')) === w.data.profiles.length, 'profils listés');
   const struct = await js(`JSON.stringify({
-    tabs: [...document.querySelectorAll('#tabs [role=tab]')].map((b) => b.dataset.pane + ':' + b.textContent.trim()),
+    tabs: [...document.querySelectorAll('#tabs [role=tab]')].filter((b) => !b.hidden).map((b) => b.dataset.pane + ':' + b.textContent.trim()),
     shown: [...document.querySelectorAll('.pane')].filter((p) => !p.hidden).map((p) => p.id),
     selected: document.querySelector('#tabs [aria-selected=true]').dataset.pane,
+    title: [document.title, document.getElementById('title').textContent],
     missing: FIELDS.filter((f) => !document.getElementById(f)),
     ghosts: [...document.querySelectorAll('[hidden]')].filter((e) => e.getClientRects().length).map((e) => e.id),
     overflow: document.documentElement.scrollWidth > innerWidth,
-    defaut: [document.getElementById('defaultState').textContent, document.getElementById('makeDefault').hidden],
-    scroll: document.getElementById('panes').scrollHeight - document.getElementById('panes').clientHeight,
+    banner: document.getElementById('default-banner').hidden,
+    scroll: document.getElementById('panes').scrollHeight > document.getElementById('panes').clientHeight + 1,
+    icons: document.querySelectorAll('#appIcons input[type=radio]').length,
   })`).then(JSON.parse);
-  check('fenêtre des réglages : dix volets, un seul affiché, tous les réglages présents',
-    struct.tabs.length === 10 && struct.tabs[0] === 'general:Général' && struct.tabs[2] === 'tabs:Onglets' && struct.tabs[4] === 'shortcuts:Raccourcis' && struct.shown.join() === 'pane-general' && struct.selected === 'general'
-    && !struct.missing.length && !struct.ghosts.length && !struct.overflow, JSON.stringify(struct));
+  check('fenêtre des réglages : six volets dans l’ordre d’Arc, un seul affiché, la fenêtre porte son nom, tous les réglages présents',
+    struct.tabs.join() === 'general:Général,profiles:Profils,links:Liens,shortcuts:Raccourcis,icon:Icône,advanced:Avancé' && struct.shown.join() === 'pane-general' && struct.selected === 'general'
+    && struct.title.join() === 'Général,Général' && !struct.missing.length && !struct.ghosts.length && !struct.overflow && struct.icons === require('../src/main/app-icon').list().length, JSON.stringify(struct));
   const isDefault = panes.isDefaultBrowser();
-  check('navigateur par défaut : l’état est affiché, le bouton n’apparaît que s’il reste à faire',
-    struct.defaut[0] === store.t(isDefault ? 'set.defaultYes' : 'set.defaultNo') && struct.defaut[1] === isDefault, JSON.stringify(struct.defaut));
-  const hGeneral = sw.getContentSize();
-  // Petit écran (machines d'intégration) : la fenêtre s'arrête au bord de l'écran, le volet défile.
-  const roomy = require('electron').screen.getDisplayMatching(sw.getBounds()).workAreaSize.height - 60 > hGeneral[1];
-  check('la fenêtre a la hauteur de son volet : rien à faire défiler', hGeneral[0] === panes.WIDTH && (roomy ? struct.scroll <= 0 : struct.scroll > 0), JSON.stringify([hGeneral, struct.scroll, roomy]));
-  await js('document.querySelector(\'#tabs [data-pane="extensions"]\').click()');
-  await until(() => sw.getContentSize()[1] < hGeneral[1] - 100, 'fenêtre réduite au volet Extensions');
-  await until(async () => (await js('document.getElementById("panes").scrollHeight - document.getElementById("panes").clientHeight')) <= 0, 'hauteur ajustée');
-  check('changer de volet : la hauteur de la fenêtre suit, le volet est mémorisé', store.state.window.settingsPane === 'extensions' && (await js('[...document.querySelectorAll(".pane")].filter((p) => !p.hidden).map((p) => p.id).join()')) === 'pane-extensions');
+  check('navigateur par défaut : le bandeau n’apparaît que s’il reste à faire', struct.banner === isDefault, JSON.stringify(struct.banner));
+  const width = (scroll) => (scroll ? panes.SCROLL_WIDTH : panes.WIDTH);
+  check('taille d’Arc : 684 × 650, 701 de large quand le volet défile', sw.getContentSize().join() === `${width(struct.scroll)},${panes.HEIGHT}`, JSON.stringify([sw.getContentSize(), struct.scroll]));
+  await js('document.querySelector(\'#tabs [data-pane="advanced"]\').click()');
+  await until(() => sw.getContentSize()[0] === panes.SCROLL_WIDTH, 'fenêtre élargie pour la barre de défilement');
+  check('changer de volet : titre du volet, largeur suivant le défilement, volet mémorisé', store.state.window.settingsPane === 'advanced' && sw.getContentSize()[1] === panes.HEIGHT
+    && (await js('[...document.querySelectorAll(".pane")].filter((p) => !p.hidden).map((p) => p.id).join() + "|" + document.title')) === 'pane-advanced|Avancé');
   if (process.env.ORBE_SHOTS) {
     for (const pane of panes.PANES) {
       await js(`document.querySelector('#tabs [data-pane="${pane}"]').click()`);
       await sleep(700);
       fs.writeFileSync(path.join(process.env.ORBE_SHOTS, `reglages-${pane}.png`), (await sw.webContents.capturePage()).toPNG());
     }
-    await js('document.querySelector(\'#tabs [data-pane="extensions"]\').click()');
+    await js('document.querySelector(\'#tabs [data-pane="advanced"]\').click()');
   }
+  // Profile settings: the selected profile's own values (prefs.get), written for that profile only.
+  await js(`document.querySelector('#profiles .prow[data-id="${pid}"]').click()`);
+  await js(`(() => { const e = document.getElementById('p-searchEngine'); e.value = 'duckduckgo'; e.dispatchEvent(new Event('change')); })()`);
+  await until(() => (s().profileSettings[pid] || {}).searchEngine === 'duckduckgo', 'moteur du profil choisi');
+  await js(`(() => { const e = document.getElementById('p-download'); e.value = 'ask'; e.dispatchEvent(new Event('change')); })()`);
+  await until(() => (s().profileSettings[pid] || {}).downloadAsk === true, '« Toujours demander »');
+  const seenProfile = JSON.parse(await js(`JSON.stringify({ engine: document.getElementById('p-searchEngine').value, dl: document.getElementById('p-download').value,
+    remove: document.getElementById('profile-remove').disabled, name: document.getElementById('profile-name').value })`));
+  check('Profils : réglages du profil choisi, enregistrés pour lui seul ; « − » grisé pour un profil qu’un Espace utilise',
+    seenProfile.engine === 'duckduckgo' && seenProfile.dl === 'ask' && seenProfile.remove && seenProfile.name === 'Essai réglages' && s().searchEngine === before.searchEngine
+    && prefs.get('downloadAsk', pid) === true && prefs.get('downloadAsk', 'default') === before.downloadAsk, JSON.stringify(seenProfile));
+  await globalAction('settings:setProfile', { id: pid, key: 'searchEngine', value: null }, null);
+  await globalAction('settings:setProfile', { id: pid, key: 'downloadAsk', value: null }, null);
+  const added = await globalAction('settings:addProfile', null, null);
+  const fresh = added[added.length - 1];
+  check('Profils : « + » ajoute un profil sans Espace, que « − » peut retirer', added.length === w.data.profiles.length && !fresh.spaces.length
+    && !(await globalAction('settings:deleteProfile', fresh.id, null)).some((x) => x.id === fresh.id));
+  // A pane Radian had before (here, Extensions): its pane now, with the sheet that holds the control.
+  openSettings('extensions');
+  await until(async () => (await js('document.getElementById("sheet-extensions").open && document.querySelector("#tabs [aria-selected=true]").dataset.pane').catch(() => '')) === 'advanced', 'feuille des extensions');
+  check('ancien volet demandé (menu Extensions) : Avancé, feuille « Gérer les extensions… » ouverte', store.state.window.settingsPane === 'advanced');
+  await js('document.getElementById("sheet-extensions").close()');
   // Enregistrement d'une touche : traduction d'un événement clavier en accélérateur.
   const ev = (o) => js(`(() => { const r = accelOf(${JSON.stringify(o)}); return r ? r.accel : null; })()`);
   const combos = [
@@ -631,7 +681,7 @@ module.exports = async function reglagesTests(ctx) {
   sw.close();
   await until(() => sw.isDestroyed(), 'fenêtre fermée');
   const sw3 = openSettings();
-  await until(async () => sw3.isVisible() && (await sw3.webContents.executeJavaScript('(document.querySelector("#tabs [aria-selected=true]") || {dataset:{}}).dataset.pane')) === 'extensions', 'dernier volet rouvert');
+  await until(async () => sw3.isVisible() && (await sw3.webContents.executeJavaScript('(document.querySelector("#tabs [aria-selected=true]") || {dataset:{}}).dataset.pane')) === 'advanced', 'dernier volet rouvert');
   // Sans attendre la réponse : Échap ferme la fenêtre, qui peut être détruite avant
   // d'avoir répondu — la promesse n'était alors jamais réglée (essai bloqué).
   sw3.webContents.executeJavaScript('window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); 1').catch(() => {});

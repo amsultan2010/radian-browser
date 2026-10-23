@@ -255,10 +255,10 @@ module.exports = async function finitionsTests(ctx) {
   await until(() => !!menuItem('spaces.manage'), 'article « Gérer les Espaces »');
   check('menu Espaces et menu de l’Espace : « Gérer les Espaces… »', labels(w.spaceMenuTemplate()).includes(T('spaces.manage')) && commands.byName.get('manageSpaces').palette !== false);
   menuItem('spaces.manage').click();
-  await until(() => w.activeId && /library\.html#spaces$/.test(d.tabs[w.activeId].url), 'Bibliothèque, section Espaces');
+  // The Library is a panel in the sidebar's place now, not a tab.
+  await until(() => w.libraryShown && w.libraryView && w.libraryView.webContents.getURL().endsWith('library.html#spaces'), 'Bibliothèque, section Espaces');
   check('« Gérer les Espaces… » ouvre la section Espaces de la Bibliothèque', true);
-  const libId = w.activeId;
-  w.close(libId);
+  w.closeLibrary();
 
   // --- ⌘S sans onglet --------------------------------------------------------------------
   for (const id of [...space.today]) w.close(id, { silent: true });
@@ -416,6 +416,39 @@ module.exports = async function finitionsTests(ctx) {
   check('… jamais une adresse javascript: ou file:, ni une ligne venue d’une autre fenêtre', opened.length === 2, opened.join(' | '));
   w.newTab = newTab0;
 
+  // --- Finder files dropped on the sidebar ---------------------------------------------------------
+  {
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+    const { pathToFileURL } = require('url');
+    const count = Object.keys(d.tabs).length;
+    await ui(`(() => {
+      const dt = new DataTransfer();
+      dt.items.add(new File(['<p>x</p>'], 'page.html', { type: 'text/html' }));
+      const box = document.getElementById('sidebar').getBoundingClientRect();
+      document.getElementById('sidebar').dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt, clientX: box.left + 40, clientY: box.bottom - 80 }));
+      return true;
+    })()`);
+    await sleep(200);
+    check('a file a page built itself (no path on disk) dropped on the sidebar opens nothing', Object.keys(d.tabs).length === count);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'radian-drop-'));
+    const file = path.join(dir, 'note #1.txt');
+    fs.writeFileSync(file, 'bonjour');
+    w.handle('dropFiles', { paths: [file, dir, 'relative.txt', path.join(dir, 'missing.txt'), 42], to: 'pinned', index: 0 });
+    const [fa, fb] = w.space.pinned.slice(0, 2).map((n) => d.tabs[n.id]);
+    check('Finder files and folders: a tab each at the drop place, named after the file, the first one shown; bad paths skipped',
+      !!fa && !!fb && fa.url === pathToFileURL(file).href && fb.url === pathToFileURL(dir).href && fa.title === 'note #1.txt' && w.activeId === fa.id && Object.keys(d.tabs).length === count + 2,
+      JSON.stringify([fa && fa.url, fb && fb.url, w.activeId === (fa && fa.id)]));
+    await until(() => { const rt = w.activeRt; return !!rt && rt.wc.getURL().endsWith('/note%20%231.txt') && !rt.wc.isLoading(); }, 'dropped file loaded');
+    check('… and the file loads in its tab', true);
+    w.handle('dropFiles', { paths: [file], to: 'folder', folderId: 'missing', index: 0 });
+    check('drop place refused: the file opens at the top of Today', d.tabs[w.space.today[0]].url === pathToFileURL(file).href && w.activeId === w.space.today[0]);
+    check('dropFiles ignores anything but a list of real paths', w.handle('dropFiles', { paths: 'x' }) === undefined && w.handle('dropFiles', null) === undefined && Object.keys(d.tabs).length === count + 3);
+    for (const id of [fa.id, fb.id, w.space.today[0]]) { OrbeWindow.destroyView(id); OrbeWindow.forget(id, d); const loc = w.locate(id); if (loc) loc.arr.splice(loc.index, 1); delete d.tabs[id]; }
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
   // --- Deux fenêtres, mêmes Espaces : les mêmes onglets --------------------------------------------------
   const before2 = OrbeWindow.all.length;
   commands.run(w, 'newWindow');
@@ -523,7 +556,7 @@ module.exports = async function finitionsTests(ctx) {
   w.activate(G3);
   toasts.length = 0;
   w.moveToSpace(G1, away.id);
-  check('onglet déplacé vers un autre Espace : un message le dit, avec le nom de l’Espace', toasts.length === 1 && toasts[0] === T('toast.tabMoved', { space: 'Ailleurs' }) && away.today.includes(G1) && w.spaceId === space.id);
+  check('onglet déplacé vers un autre Espace : un message le dit', toasts.length === 1 && toasts[0] === T('toast.tabMoved', { space: 'Ailleurs' }) && away.today.includes(G1) && w.spaceId === space.id);
   w.toastClick();
   check('… un clic sur le message mène à l’onglet, dans son nouvel Espace', w.spaceId === away.id && w.activeId === G1);
   w.switchSpace(space.id);

@@ -4,9 +4,13 @@ const $ = (id) => document.getElementById(id);
 const send = O.send;
 const panels = ['command', 'switcher', 'theme', 'space', 'icons', 'find', 'toast', 'peek', 'status', 'drop', 'swipe'];
 let mode = null;
+const tipHide = tooltips();
+// Little Radian's command window (⌥⌘N, little.js): the Command Bar alone, filling its window.
+if (location.hash === '#little') document.body.classList.add('little');
 
 function show(name) {
   mode = name;
+  tipHide();
   $('icons').classList.remove('beside');
   for (const p of panels) $(p).hidden = p !== name;
 }
@@ -275,7 +279,7 @@ function openSwitcher(p) {
 const SMAX = 0.8; // saturation au bord du champ
 const V_FIELD = 0.93; // clarté des couleurs du champ : des pastels vifs, comme les fonds clairs d'Arc
 const wheel = $('theme-wheel');
-let theme = null; // { dots: [{h, s, v}], sel, intensity, grain, mode, page }
+let theme = null; // { dots: [{h, s, v}], sel, intensity, grain, texture, mode, page }
 let themeFrame = 0;
 let themePatch = {};
 
@@ -293,7 +297,8 @@ function pushTheme(patch) {
 }
 const pushColors = () => pushTheme({ colors: theme.dots.map(dotHex) });
 
-// Grille du champ : chaque point a la couleur de sa place (plus gros vers le bord).
+// Grille du champ : chaque point a la couleur de sa place (plus gros vers le bord), sur
+// les points gris d'Arc (même pas de 4,25 pt, overlay.css), qu'ils recouvrent.
 function drawGrid() {
   const c = $('theme-grid');
   const w = c.clientWidth;
@@ -302,7 +307,7 @@ function drawGrid() {
   c.width = c.height = Math.round(w * k);
   const g = c.getContext('2d');
   g.scale(k, k);
-  const n = 15;
+  const n = 80;
   const step = w / n;
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
     const dx = (x + 0.5) * step - w / 2;
@@ -310,15 +315,32 @@ function drawGrid() {
     const s = Math.min(1, Math.hypot(dx, dy) / (w / 2));
     g.fillStyle = OrbeTheme.hsvToHex(((Math.atan2(dx, -dy) * 180) / Math.PI + 360) % 360, s * SMAX, V_FIELD);
     g.beginPath();
-    g.arc(w / 2 + dx, w / 2 + dy, 1.4 + s * 1.2, 0, Math.PI * 2);
+    g.arc(w / 2 + dx, w / 2 + dy, 0.75 + s * 0.75, 0, Math.PI * 2);
     g.fill();
   }
 }
 
 const pageOf = (colors) => Math.max(0, OrbeTheme.SWATCHES.findIndex((page) => page.some((c) => c.join() === colors.join())));
+// All five pages in one strip, slid a page (9 × 29.5 pt, Arc's pitch) at a time.
+const PAGE_W = 265.5;
 function drawSwatches() {
-  const plain = OrbeTheme.hex(OrbeTheme.NEUTRAL.light);
-  $('theme-presets').innerHTML = OrbeTheme.SWATCHES[theme.page].map((c, i) => `<button class="swatch" data-i="${i}" style="background:${c.length > 1 ? `linear-gradient(131deg, ${c.join(', ')})` : c[0] || plain}"></button>`).join('');
+  $('theme-presets').innerHTML = OrbeTheme.SWATCHES.map((page, p) => page.map((c, i) => `<button class="swatch" data-p="${p}" data-i="${i}" style="background:${c.length > 1 ? `linear-gradient(131deg, ${c.join(', ')})` : c[0]}"></button>`).join('')).join('');
+}
+function placeStrip(slide) {
+  const strip = $('theme-presets');
+  strip.classList.toggle('still', !slide);
+  strip.style.transform = `translateX(${-theme.page * PAGE_W}px)`;
+}
+
+// Molette : vingt points autour du cercle, comme dans Arc (angle compté du haut, sens horaire).
+for (let i = 0; i < 20; i++) {
+  const a = (i * 18 * Math.PI) / 180;
+  const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  c.setAttribute('cx', (42 + 32 * Math.sin(a)).toFixed(2));
+  c.setAttribute('cy', (42 - 32 * Math.cos(a)).toFixed(2));
+  c.setAttribute('r', '2.25');
+  c.dataset.a = i * 18 > 180 ? i * 18 - 360 : i * 18;
+  $('theme-ring').appendChild(c);
 }
 
 function drawTheme() {
@@ -341,15 +363,20 @@ function drawTheme() {
     const a = (d.h * Math.PI) / 180;
     el.style.transform = `translate(${(R + r * Math.sin(a)).toFixed(1)}px, ${(R - r * Math.cos(a)).toFixed(1)}px)`;
   });
-  wheel.classList.toggle('plain', !theme.dots.length);
+  $('theme').classList.toggle('plain', !theme.dots.length);
   $('theme-less').disabled = !theme.dots.length;
   $('theme-more').disabled = theme.dots.length >= OrbeTheme.MAX_COLORS;
-  const page = OrbeTheme.SWATCHES[theme.page];
-  for (const b of $('theme-presets').children) b.classList.toggle('sel', page[b.dataset.i].join() === colors.join());
+  for (const b of $('theme-presets').children) {
+    b.classList.toggle('sel', OrbeTheme.SWATCHES[b.dataset.p][b.dataset.i].join() === colors.join());
+    b.tabIndex = Number(b.dataset.p) === theme.page ? 0 : -1; // the pages slid out of view take no focus
+  }
   $('theme-prev').disabled = theme.page === 0;
   $('theme-next').disabled = theme.page === OrbeTheme.SWATCHES.length - 1;
   for (const b of $('theme-modes').children) { b.classList.toggle('sel', b.dataset.mode === theme.mode); b.setAttribute('aria-checked', String(b.dataset.mode === theme.mode)); }
-  $('theme-dial').style.setProperty('--turn', `${-135 + 270 * theme.grain}deg`);
+  // The dial's dots light up from −135° (no grain) clockwise to the grain's angle.
+  for (const c of $('theme-ring').querySelectorAll('[data-a]')) c.classList.toggle('on', theme.grain > 0 && c.dataset.a >= -135 && c.dataset.a <= -135 + 270 * theme.grain);
+  $('theme-dial').style.setProperty('--knob', `url("textures/${theme.texture}.png")`);
+  $('theme-dial').style.setProperty('--amount', String(theme.grain));
   // Le panneau suit la couleur principale.
   document.documentElement.style.setProperty('--accent', colors[0] || OrbeTheme.DEFAULT_COLOR);
 }
@@ -357,12 +384,13 @@ function drawTheme() {
 function openTheme(p) {
   show('theme');
   const t0 = OrbeTheme.normalize(p.space);
-  theme = { dots: t0.colors.map(OrbeTheme.hexToHsv), sel: 0, intensity: t0.intensity, grain: t0.grain, mode: t0.mode, page: pageOf(t0.colors) };
+  theme = { dots: t0.colors.map(OrbeTheme.hexToHsv), sel: 0, intensity: t0.intensity, grain: t0.grain, texture: t0.texture, mode: t0.mode, page: pageOf(t0.colors) };
   $('theme').style.left = (p.x || 260) + 'px';
   $('theme-intensity').value = String(Math.round(t0.intensity * 100));
   $('theme-grain').value = String(Math.round(t0.grain * 100));
   drawGrid();
   drawSwatches();
+  placeStrip(false);
   drawTheme();
 }
 
@@ -431,7 +459,7 @@ $('theme-less').onclick = () => {
 $('theme-presets').addEventListener('click', (e) => {
   const b = e.target.closest('.swatch');
   if (!b) return;
-  const colors = OrbeTheme.SWATCHES[theme.page][b.dataset.i];
+  const colors = OrbeTheme.SWATCHES[b.dataset.p][b.dataset.i];
   theme.dots = colors.map(OrbeTheme.hexToHsv);
   theme.sel = 0;
   drawTheme();
@@ -440,13 +468,25 @@ $('theme-presets').addEventListener('click', (e) => {
 });
 function turnPage(d) {
   theme.page = Math.max(0, Math.min(OrbeTheme.SWATCHES.length - 1, theme.page + d));
-  drawSwatches();
+  placeStrip(true);
   drawTheme();
 }
 $('theme-prev').onclick = () => turnPage(-1);
 $('theme-next').onclick = () => turnPage(1);
 $('theme-intensity').addEventListener('input', (e) => { theme.intensity = Number(e.target.value) / 100; pushTheme({ intensity: theme.intensity }); });
 $('theme-grain').addEventListener('input', (e) => { theme.grain = Number(e.target.value) / 100; drawTheme(); pushTheme({ grain: theme.grain }); });
+// Arc's "Cycle noise texture": a click on the dial (or Enter / Space on it) moves to the next texture.
+function cycleTexture() {
+  const all = OrbeTheme.TEXTURES;
+  theme.texture = all[(all.indexOf(theme.texture) + 1) % all.length];
+  drawTheme();
+  pushTheme({ texture: theme.texture });
+}
+$('theme-grain').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  e.preventDefault();
+  cycleTexture();
+});
 // Molette : on la tourne en tirant autour de son centre, de −135° (sans grain) à +135°.
 $('theme-dial').addEventListener('pointerdown', (e) => {
   if (!theme || e.button !== 0) return;
@@ -454,7 +494,11 @@ $('theme-dial').addEventListener('pointerdown', (e) => {
   const dial = e.currentTarget;
   const input = $('theme-grain');
   input.focus();
+  let turned = false;
   const turn = (ev) => {
+    // Under 3 px of travel the gesture is still a click (texture), not a turn.
+    if (!turned && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) < 3) return;
+    turned = true;
     const r = dial.getBoundingClientRect();
     const a = (Math.atan2(ev.clientX - r.left - r.width / 2, r.top + r.height / 2 - ev.clientY) * 180) / Math.PI;
     const v = String(Math.round(Math.max(0, Math.min(1, (a + 135) / 270)) * 100));
@@ -466,9 +510,9 @@ $('theme-dial').addEventListener('pointerdown', (e) => {
     input.dispatchEvent(new Event('input'));
   };
   dial.setPointerCapture(e.pointerId);
-  turn(e);
   dial.onpointermove = turn;
-  dial.onpointerup = dial.onpointercancel = () => { dial.onpointermove = null; };
+  dial.onpointerup = () => { dial.onpointermove = null; if (!turned) cycleTexture(); };
+  dial.onpointercancel = () => { dial.onpointermove = null; };
 });
 $('theme-modes').addEventListener('click', (e) => {
   const b = e.target.closest('.mode');
@@ -881,6 +925,7 @@ dropBox.addEventListener('drop', (e) => {
 
 // Clic sur un message : son action (aller à l'onglet…), ou simple disparition.
 $('toast').onclick = () => send('toastClick');
+$('cmd-close').onclick = () => send('closeOverlay');
 $('peek-close').onclick = () => send('peekClose');
 $('peek-expand').onclick = () => send('peekExpand');
 $('peek-split').onclick = () => send('peekSplit');

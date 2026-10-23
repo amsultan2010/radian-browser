@@ -66,14 +66,29 @@ function tabs() {
     count.set(rt.owner, n + 1);
     out.push(describe(rt, n));
   }
+  for (const l of littles()) out.push(describeLittle(l));
   return out;
+}
+
+// Little Radian windows (little.js) that show a page: extensions see that page as the window's one active tab.
+const littles = () => require('./little').LittleWindow.all.filter((l) => !l.win.isDestroyed() && l.view && !l.view.webContents.isDestroyed());
+const isLittle = (w) => !!w.win.orbeLittle;
+
+function describeLittle(l) {
+  const wc = l.view.webContents;
+  const b = boundsOf(l.view);
+  return {
+    id: wc.id, key: '', little: true, wc, session: wc.session, windowId: l.win.id, active: true, index: 0, pinned: false, incognito: false,
+    title: l.title || wc.getTitle() || '', url: wc.getURL() || l.url || '', favIconUrl: '', status: l.loading ? 'loading' : 'complete',
+    audible: wc.isCurrentlyAudible(), muted: wc.isAudioMuted(), width: b.width, height: b.height, lastAccessed: l.usedAt || 0,
+  };
 }
 
 const tabOf = (wc) => tabs().find((t) => t.wc === wc) || null;
 const rtOf = (id) => [...W().live.values()].find((rt) => !rt.wc.isDestroyed() && rt.wc.id === id) || null;
 
 function windows() {
-  return W().OrbeWindow.all.filter((w) => !w.win.isDestroyed()).map((w) => ({
+  return [...W().OrbeWindow.all.filter((w) => !w.win.isDestroyed()), ...littles()].map((w) => ({
     id: w.win.id,
     focused: w.win.id === focusedId,
     incognito: !!w.incognito,
@@ -96,9 +111,11 @@ function currentWindowId(wc) {
     if (pop && !pop.owner.win.isDestroyed()) return pop.owner.win.id;
     const side = panel.ownerOf(wc);
     if (side && !side.win.isDestroyed()) return side.win.id;
-    const owner = W().OrbeWindow.ownerOf(wc);
+    const owner = W().OrbeWindow.ownerOf(wc) || littles().find((l) => l.view.webContents === wc);
     if (owner) return owner.win.id;
   }
+  // A focused Little Radian window (or its popup) is the current one, though never `lastWindow()`.
+  if (focusedId !== -1) return focusedId;
   const w = lastWindow();
   return w ? w.win.id : -1;
 }
@@ -176,8 +193,9 @@ function compare() {
   if (f) lastFocused = f;
   if (lastFocused && lastFocused.win.isDestroyed()) lastFocused = null;
   // Une fenêtre surgissante au premier plan ne retire pas le « focus » à sa fenêtre.
-  const popupFocused = [...popups.values()].some((p) => !p.win.isDestroyed() && p.win.isFocused());
-  const id = f ? f.win.id : popupFocused && lastFocused ? lastFocused.win.id : -1;
+  const pop = [...popups.values()].find((p) => !p.win.isDestroyed() && p.win.isFocused());
+  const little = littles().find((l) => l.win.isFocused());
+  const id = f ? f.win.id : little ? little.win.id : pop ? pop.owner.win.id : -1;
   if (id !== focusedId) { focusedId = id; api.notify.windowFocused(id); }
 }
 
@@ -234,6 +252,7 @@ async function confirmPermissions(ext, names) {
 // --- Fenêtre surgissante --------------------------------------------------------
 
 function activeTab(w) {
+  if (isLittle(w)) return littles().includes(w) ? describeLittle(w) : null;
   const rt = w.activeRt;
   return rt && !rt.internal && !rt.wc.isDestroyed() ? tabs().find((t) => t.wc === rt.wc) || null : null;
 }
@@ -260,7 +279,7 @@ function openPopup(w, id, anchor, options = {}) {
   const tab = activeTab(w);
   const ses = tab ? tab.session : w.session;
   if (!api.isAttached(ses)) return false;
-  lastFocused = w;
+  if (!isLittle(w)) lastFocused = w; // createTab and dialogs need a full window
   for (const p of popups.values()) {
     // Second clic sur le même bouton : referme.
     if (p.owner === w && p.id === id && !p.win.isDestroyed()) { p.win.close(); return true; }
@@ -272,8 +291,8 @@ function openPopup(w, id, anchor, options = {}) {
     access.offer(ses, id).then(() => { if (!w.win.isDestroyed()) openPopup(w, id, anchor, options); }).catch((err) => console.error('[orbe] extension', id, err));
     return true;
   }
-  // L'extension a demandé que son bouton ouvre son panneau latéral.
-  if (panel.actionClick(w, ses, id, tab)) return true;
+  // L'extension a demandé que son bouton ouvre son panneau latéral (Little Radian has no room for one).
+  if (!isLittle(w) && panel.actionClick(w, ses, id, tab)) return true;
   const what = api.clickAction(ses, id, tab);
   if (what !== 'popup') return what === 'clicked';
   const url = api.popupUrl(ses, id, tab ? tab.id : undefined);
@@ -302,7 +321,9 @@ function openPopup(w, id, anchor, options = {}) {
     const base = w.win.getContentBounds();
     const a = anchor && Number.isFinite(anchor.x) && Number.isFinite(anchor.y) ? anchor : { x: (w.sidebarVisible ? w.sidebarWidth : 0) + 12, y: 48 };
     const area = screen.getDisplayMatching(base).workArea;
-    const x = clamp(Math.round(base.x + a.x), area.x + 4, Math.max(area.x + 4, area.x + area.width - width - 4));
+    // `anchor.right`: the popup's right edge lines up with it, as under a button near the window's right side.
+    const left = Number.isFinite(a.right) ? a.right - width : a.x;
+    const x = clamp(Math.round(base.x + left), area.x + 4, Math.max(area.x + 4, area.x + area.width - width - 4));
     const y = clamp(Math.round(base.y + a.y), area.y + 4, Math.max(area.y + 4, area.y + area.height - height - 4));
     pop.setBounds({ x, y, width, height });
   };
@@ -326,6 +347,7 @@ function openPopup(w, id, anchor, options = {}) {
   });
   wc.on('before-input-event', (e, input) => { if (input.type === 'keyDown' && input.key === 'Escape') pop.close(); });
   pop.on('blur', () => { if (options.keepOpen) return; if (!wc.isDestroyed() && !wc.isDevToolsOpened()) pop.close(); });
+  pop.on('focus', () => sync()); // the focused window extensions see is the popup's owner (compare)
   const ownerClosed = () => { if (!pop.isDestroyed()) pop.destroy(); };
   w.win.once('closed', ownerClosed);
   pop.on('closed', () => { popups.delete(wcId); if (!w.win.isDestroyed()) w.win.removeListener('closed', ownerClosed); sync(); });

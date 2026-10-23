@@ -87,4 +87,11 @@ function of(pid, creationTime, now = Date.now()) {
   return state.byPid.get(key(pid, creationTime));
 }
 
-module.exports = { parse, due, refresh, of, state, FRESH, SLOW, FAST, NEAR };
+// macOS memory pressure, as Activity Monitor shows it: 1 normal, 2 warning, 4 critical; 0 if unread.
+// Not the free page count, which macOS keeps near zero by caching files. Never rejects.
+const CRITICAL = 4;
+function pressure() {
+  return new Promise((resolve) => state.exec('/usr/sbin/sysctl', ['-n', 'kern.memorystatus_vm_pressure_level'], { timeout: 2000 }, (err, out) => resolve(err ? 0 : Number(String(out).trim()) || 0)));
+}
+
+module.exports = { parse, due, refresh, of, state, FRESH, SLOW, FAST, NEAR, pressure, CRITICAL };

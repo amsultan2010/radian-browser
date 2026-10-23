@@ -25,6 +25,8 @@
      MOTION.sidebarIn / sidebarOut) : bord de la barre et bord de la page restent collés. */
   --sidebar-out: 60ms var(--ease-out);
   --sidebar-in: 50ms var(--ease-out);
+  /* Library: its panel slides in from the left as the page card slides past it (MOTION.library). */
+  --library-slide: 200ms var(--ease-out);
   /* Barre flottante (survol du bord gauche), relevée de même : elle entre en 240 ms avec un
      dépassement de 1,5 % (≈ 3 pt), repart en 90 ms (MOTION.revealOut). Courbes ajustées au relevé. */
   --sidebar-reveal: 240ms cubic-bezier(0.3, 1.22, 0.32, 1);
@@ -90,7 +92,8 @@ html, body {
   background: transparent;
   color: var(--fg);
   font: 13px/1.35 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
-  -webkit-font-smoothing: antialiased;
+  /* System smoothing, as AppKit text: Arc's stroke weight (`antialiased` draws thinner). */
+  -webkit-font-smoothing: subpixel-antialiased;
   /* Dessin de la police adapté au corps (SF Text / Display), crénage ; pas de
      « optimizeLegibility », coûteux sur les longues listes. */
   font-optical-sizing: auto;
@@ -131,13 +134,21 @@ input, select {
 
 svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
-
 /* « Réduire les animations » (réglage du système) : plus de mouvement, seulement des changements d'état. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* Arc's tooltip (common.js, `tooltips`), measured in Arc 1.170: a 27 pt navy pill, 13 pt
+   semibold text, the shortcut as lavender keycaps with a deeper bottom edge. Arc's own
+   colours: the same over every Space theme, in the sidebar, Little Arc and the theme editor. */
+#tip { position: fixed; left: 0; top: 0; z-index: 50; display: flex; align-items: center; gap: 7px; max-width: 280px; height: 27px; padding: 0 10px 0 11px; border-radius: 13.5px; background: #0a0d4b; box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1); color: #dedffd; font-size: 13px; font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 90ms var(--ease-out); -webkit-app-region: no-drag; }
+#tip[hidden] { display: none; }
+#tip.on { opacity: 1; }
+#tip-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#tip-key { flex: none; display: flex; gap: 3px; font: inherit; }
+#tip-key[hidden] { display: none; }
+#tip-key kbd { min-width: 19px; height: 19px; padding: 0 4px; display: grid; place-items: center; border: 1px solid #898eee; border-bottom-width: 2.5px; border-radius: 4.5px; background: #d3d4fd; color: #212afb; font-family: inherit; font-size: 10.5px; font-weight: 700; line-height: 1; }
 
 /* Adresse affichée à l'étroit (common.js, `addressInto`) : le domaine en avant ; quand la
    place manque, le chemin cède d'abord, puis le nom d'hôte s'efface par la GAUCHE — sa

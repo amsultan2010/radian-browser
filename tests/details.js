@@ -35,14 +35,27 @@ module.exports = async function detailsTests(ctx) {
       at0.opacity === 0 && at0.opening && at0.visible && steps === 1 && l1.win.getPosition()[1] <= pos0[1] && l1.win.getPosition()[1] >= pos0[1] - little.OPEN.rise && l1.win.getPosition()[0] === pos0[0] && l1.win.getSize().join('x') === at0.size,
       JSON.stringify({ at0, pos0, fin: l1.win.getPosition(), opacite: steps }));
 
-    // Première fois : bandeau d'explication, une seule fois.
-    await until(() => uiOf(l1, 'typeof O === "object" && !document.getElementById("hint").hidden').catch(() => false), 'bandeau affiché');
-    check('première petite fenêtre : un bandeau dit à quoi elle sert, et la chose est retenue', l1.hint === true && store.state.window.littleSeen === true && (await uiOf(l1, 'document.querySelector("#hint span").textContent')) === store.t('little.hint'));
+    // First time: Arc's coach mark over the page's top right, once.
+    const floatOf = (l, js) => l.float.webContents.executeJavaScript(js);
+    await until(() => l1.float && floatOf(l1, 'typeof O === "object" && !document.getElementById("coach").hidden').catch(() => false), 'coach mark shown');
+    await until(() => l1.float.getVisible() && l1.float.getBounds().width > 200, 'coach mark placed');
+    check('first Little Radian window: the coach mark “Links Open in Little Radian” floats over the page, top right, and is remembered',
+      l1.hint === true && store.state.window.littleSeen === true && (await floatOf(l1, 'document.getElementById("coach").textContent')).includes(store.t('little.coachBody'))
+      && l1.float.getBounds().y === little.BAR && l1.float.getBounds().x + l1.float.getBounds().width === l1.win.getContentSize()[0]);
     l1.load('http://127.0.0.1:9/petite');
-    const yHint = win.boundsOf(l1.view).y;
-    await uiOf(l1, 'document.getElementById("hint-close").click()');
-    await until(() => !l1.hint && win.boundsOf(l1.view).y === 42, 'bandeau refermé');
-    check('bandeau refermé : la page reprend sa place sous la barre', yHint === 42 + little.HINT && (await uiOf(l1, 'document.getElementById("hint").hidden')) === true);
+    const page = win.boundsOf(l1.view);
+    const kids = l1.win.contentView.children;
+    await floatOf(l1, 'document.getElementById("coach-close").click()');
+    await until(() => !l1.hint && !l1.float.getVisible(), 'coach mark closed');
+    check('the page is flush under the 47 pt toolbar, under the float view, and does not move when the coach mark closes',
+      page.x === 0 && page.y === 47 && page.width === l1.win.getContentSize()[0] && kids.indexOf(l1.float) > kids.indexOf(l1.view) && JSON.stringify(win.boundsOf(l1.view)) === JSON.stringify(page));
+    // Pointer at the page's right edge: Arc's round Close / Enter Full Screen buttons float in.
+    l1.setEdge(true);
+    await until(() => l1.float.getVisible() && floatOf(l1, '!document.getElementById("edge").hidden'), 'edge buttons shown');
+    const edge = l1.float.getBounds();
+    l1.setEdge(false);
+    await until(() => !l1.float.getVisible(), 'edge buttons gone');
+    check('right edge: two round 34 × 33 buttons float in at the top right, and go away', edge.width === 34 + 10 && edge.height === 8 + 33 * 2 + 10);
     win.forceMotion(false);
     const l2 = new LittleWindow('');
     check('fenêtres suivantes : pas de bandeau ; « Réduire les animations » : ouverte d’un coup', l2.hint === false && !l2.opening && l2.win.getOpacity() === 1 && l2.win.isVisible());

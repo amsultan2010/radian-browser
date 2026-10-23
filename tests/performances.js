@@ -441,7 +441,7 @@ module.exports = async function performancesTests(ctx) {
       let rows = null;
       await until(() => ui(`(() => { const r = document.querySelector('.row.tab[data-id="${garde.id}"]'); return !!r && !r.classList.contains('live'); })()`), 'ligne de l’onglet endormi').catch(() => {});
       check('barre latérale : la ligne d’un onglet en veille est marquée (plus pâle), celle d’un onglet vivant ne l’est pas',
-        (rows = await ui(`(() => { const z = document.querySelector('.row.tab[data-id="${garde.id}"]'); const v = document.querySelector('.row.tab[data-id="${w.activeId}"]'); return { z: !!z, v: !!v, zl: !!z && z.classList.contains('live'), vl: !!v && v.classList.contains('live'), zc: z && getComputedStyle(z.querySelector('.title')).color, vc: v && getComputedStyle(v.querySelector('.title')).color, va: !!v && v.classList.contains('active') }; })()`))
+        (rows = await ui(`(() => { const z = document.querySelector('.row.tab[data-id="${garde.id}"]'); const v = document.querySelector('.row.tab[data-id="${w.activeId}"]'); return { z: !!z, v: !!v, zl: !!z && z.classList.contains('live'), zcls: z && z.className, sec: getComputedStyle(document.body).getPropertyValue('--secondary'), vl: !!v && v.classList.contains('live'), zc: z && getComputedStyle(z.querySelector('.title')).color, vc: v && getComputedStyle(v.querySelector('.title')).color, va: !!v && v.classList.contains('active') }; })()`))
         && rows.z && rows.v && !rows.zl && rows.vl && rows.zc !== rows.vc, JSON.stringify(rows));
       for (const x of [garde, libre]) w.close(x.id, { silent: true, ask: false });
       server.close();
@@ -577,7 +577,7 @@ module.exports = async function performancesTests(ctx) {
     const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'shell.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
     const endless = [];
     for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) if (/animation[^;]*\binfinite\b/.test(m[2])) endless.push(m[1].trim().replace(/\s+/g, ' '));
-    const allowed = ['#capture-note', '.row.capturing .act.cap', '#url.loading::after', '#glow i', '.tile.audible .dot i', '.spinner'];
+    const allowed = ['#capture-note', '.row.capturing .act.cap', '#glow i', '.tile.audible .dot i', '.spinner'];
     const extra = endless.filter((x) => !allowed.includes(x));
     check('coque : aucune animation sans fin hors d’un état passager (chargement, capture, favori qui joue)', extra.length === 0 && endless.length > 0, JSON.stringify(extra.length ? extra : endless));
     const idle = await until(() => ui(`document.getAnimations().filter((x) => x.playState === 'running').length === 0`), 'coque au repos', 20000).catch(() => false);

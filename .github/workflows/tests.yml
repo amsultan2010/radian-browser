@@ -35,6 +35,22 @@ jobs:
       - name: Site search and link routing rules
         run: node tests/liens.test.js
 
+      - name: JSON view
+        run: node tests/json.test.js
+
+      - name: Call controls and screen sharing state
+        run: |
+          node tests/capture-state.test.js
+          node tests/media-tracks.test.js
+
+      - name: Notification click hook
+        run: node tests/notifications.test.js
+
+      - name: Library tabs from older versions
+        run: node tests/library.test.js
+      - name: Settings model
+        run: node --test tests/reglages.test.js
+
       - name: Screenshot folder
         run: |
           mkdir -p "$RUNNER_TEMP/captures"

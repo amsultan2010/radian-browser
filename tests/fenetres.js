@@ -225,6 +225,25 @@ module.exports = async function fenetresTests(ctx) {
     w.separateAll(A);
   }
 
+  // Tab dropped on another sidebar tab (BL-98)
+  {
+    w.handle('splitOnTab', { id: C, target: A, before: true });
+    check('tab dropped on the left half of another sidebar tab: a split, the dropped tab on the left, next to the target in its list',
+      w.groupOf(A).join() === [C, A].join() && w.visibleIds().join() === [C, A].join() && w.activeId === C && space.today.indexOf(C) === space.today.indexOf(A) - 1, JSON.stringify(space.today));
+    w.separateAll(A);
+    w.togglePin(B);
+    w.handle('splitOnTab', { id: C, target: B, before: false });
+    const at = w.placeOf(B);
+    check('… dropped on the right half of a pinned tab: the split stays in Pinned, where the target sits',
+      w.groupOf(B).join() === [B, C].join() && w.placeOf(C).list === 'pinned' && w.placeOf(C).index === at.index + 1 && w.activeId === C, JSON.stringify(w.placeOf(C)));
+    const groups = JSON.stringify(w.splits);
+    check('splitOnTab ignores a tab dropped on itself or an unknown tab',
+      w.handle('splitOnTab', { id: A, target: A }) === undefined && w.handle('splitOnTab', { id: A, target: 'nowhere' }) === undefined && w.handle('splitOnTab', null) === undefined && JSON.stringify(w.splits) === groups);
+    w.separateAll(B);
+    for (const id of [B, C]) w.move({ id, to: 'today', index: 0 });
+    w.activate(A);
+  }
+
   // ⌥clic sur un lien de la page : vue scindée
   {
     const L = await open('/liens', 'Liens');
@@ -459,7 +478,7 @@ module.exports = async function fenetresTests(ctx) {
     shield().click();
     await until(async () => (await js('getComputedStyle(document.body).backgroundColor')) === 'rgb(250, 204, 21)', 'Boost rétabli');
     check('Boost rétabli depuis le centre de contrôle', boosts.get(host).enabled === true);
-    check('créer un Boost : bouton « + », commande, centre de contrôle, menu de page', labels(w.sidebarMenuTemplate(true)).includes(t('boost.edit')) && w.commandList().some((c) => c.command === 'boost') && w.commandList().some((c) => c.command === 'boosts') && labels(w.pageMenuTemplate(win.live.get(T), { x: 5, y: 5, mediaType: 'none' })).includes(t('boost.edit')));
+    check('créer un Boost : bouton « + », commande, centre de contrôle, menu de page', await ui(`(() => { document.getElementById('b-plus').click(); const b = document.querySelector('#plus-menu [data-cmd=boost]'); document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); return !!b && !b.disabled; })()`) && w.commandList().some((c) => c.command === 'boost') && w.commandList().some((c) => c.command === 'boosts') && labels(w.pageMenuTemplate(win.live.get(T), { x: 5, y: 5, mediaType: 'none' })).includes(t('boost.edit')));
 
     // Liste des Boosts, export, import
     boosts.set('exemple.org', { css: 'a { color: red }', name: 'Exemple' });
@@ -702,6 +721,28 @@ module.exports = async function fenetresTests(ctx) {
     const calls = [];
     const openInOrbe = little.hooks.openInOrbe;
 
+    // ⌥⌘N: Little Radian's own Command Bar, as in Arc 1.170 (docs/parity/captures/live/chrome.md)
+    {
+      const { screen } = require('electron');
+      commands.run(null, 'newLittle');
+      const bar = little.LittleCommand.open(); // already open: the same window comes forward
+      const barJs = (code) => bar.view.webContents.executeJavaScript(code);
+      await until(() => bar.win.isVisible() && barJs(`document.body.classList.contains('little') && !document.getElementById('command').hidden && document.activeElement === document.getElementById('cmd-input')`).catch(() => false), 'Little Radian command window');
+      const b = bar.win.getBounds();
+      const { bounds: d } = screen.getDisplayMatching(b);
+      check('⌥⌘N: a borderless 490 × 329 Command Bar, 20 pt from the right and 50 pt from the top of the display, no full window yet',
+        b.width === 490 && b.height === 329 && b.x + b.width === d.x + d.width - 20 && b.y === d.y + 50 && count() === 0 && await barJs(`getComputedStyle(document.getElementById('cmd-close')).display !== 'none'`), JSON.stringify([b, d]));
+      await barJs(`(() => { const i = document.getElementById('cmd-input'); i.value = ${JSON.stringify(base + '/p/barre')}; i.dispatchEvent(new Event('input')); i.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); })()`);
+      await until(() => count() === 1 && bar.win.isDestroyed(), 'result opened in a Little Radian window');
+      check('choosing a result: a full Little Radian window opens with it and the command window closes', LittleWindow.all[0].url === base + '/p/barre');
+      await closeAll();
+      const bar2 = little.LittleCommand.open();
+      await until(() => bar2.view.webContents.executeJavaScript(`!document.getElementById('command').hidden`).catch(() => false), 'command window again');
+      await bar2.view.webContents.executeJavaScript(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+      await until(() => bar2.win.isDestroyed(), 'command window closed by Escape');
+      check('Escape closes the command window without opening anything', count() === 0);
+    }
+
     // Liens venus d'autres applications
     settings.externalLinks = 'little';
     settings.routes = [];
@@ -749,7 +790,7 @@ module.exports = async function fenetresTests(ctx) {
     await lui(`(() => { const s = document.getElementById('space-search'); s.value = 'zzz'; s.dispatchEvent(new Event('input', { bubbles: true })); })()`);
     check('recherche d’Espace sans résultat : dit', await lui(`document.querySelectorAll('#space-list button').length === 0 && !document.getElementById('space-none').hidden`));
     await lui(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
-    await until(() => !l1.menu && l1.win.contentView.children[l1.win.contentView.children.length - 1] === l1.view, 'menu refermé');
+    await until(() => !l1.menu && l1.win.contentView.children.indexOf(l1.view) > l1.win.contentView.children.indexOf(l1.ui), 'menu refermé');
     check('Échap referme le menu : la page repasse devant, la fenêtre reste', await lui(`document.getElementById('spaces').hidden && !document.body.classList.contains('menu')`) && count() === 1);
     check('Espace inconnu ou message forgé : rien ne s’ouvre', l1.handle('openInSpace', 'inconnu') === undefined && l1.handle('openInSpace', { id: extra.id }) === undefined && calls.length === 0 && count() === 1);
     l1.run('openInSpace');
@@ -768,6 +809,8 @@ module.exports = async function fenetresTests(ctx) {
     await until(() => count() === 0, 'fenêtre fermée');
     const l3 = new LittleWindow('');
     check('petite fenêtre : la taille choisie est reprise par la suivante', l3.win.getSize().join('x') === '702x505' && store.state.window.littleSize.width === 702, l3.win.getSize().join('x'));
+    check('Little Radian: on every desktop until it takes the focus, then pinned to the one it opened on (PET-8)',
+      l3.win.isVisibleOnAllWorkspaces() && (l3.win.emit('focus'), !l3.win.isVisibleOnAllWorkspaces()));
     store.state.window.littleSize = { width: 'x', height: -5 };
     check('taille enregistrée illisible ou hors bornes : taille par défaut, puis bornée', JSON.stringify(little.savedSize()) === JSON.stringify({ width: 860, height: 640 }) && (store.state.window.littleSize = { width: 10, height: 99999 }) && JSON.stringify(little.savedSize()) === JSON.stringify({ width: 380, height: 3000 }));
     if (before.size) store.state.window.littleSize = before.size; else delete store.state.window.littleSize;
@@ -833,7 +876,8 @@ module.exports = async function fenetresTests(ctx) {
     w.activate(Pn);
     const plain = w.peekRect();
     const zone = w.contentRect();
-    check('aperçu sans barre d’outils : la carte commence à 16 px du haut de la zone des pages', plain.y === zone.y + 16);
+    check('Peek without the toolbar: a card of at most 1024 × 776, centred in the page area, 12 pt from the window top (Arc 1.170)',
+      plain.y === 12 && plain.width <= 1024 && plain.height <= 776 && Math.abs(plain.x - zone.x - (zone.width - plain.width) / 2) <= 1, JSON.stringify([plain, zone]));
     commands.setSetting('showToolbar', true);
     await until(() => w.toolbarShown && w.contentRect().y > zone.y, 'barre d’outils affichée');
     // The address as the toolbar shows it: whole, or without the scheme by default (`showFullUrl`, as in Arc).
@@ -849,7 +893,7 @@ module.exports = async function fenetresTests(ctx) {
     check('l’adresse de l’aperçu suit sa navigation', true);
     commands.setSetting('showToolbar', false);
     await until(() => !w.toolbarShown && w.peekChrome.webContents.executeJavaScript(`document.getElementById('peek-url').hidden`), 'barre d’outils masquée');
-    check('barre d’outils masquée : plus d’adresse, la carte remonte', w.peekRect().y === w.contentRect().y + 16);
+    check('barre d’outils masquée : plus d’adresse, la carte remonte', w.peekRect().y === 12);
     w.closePeek({ animate: false });
     w.togglePin(Pn);
     d.spaces.splice(d.spaces.indexOf(other), 1);
@@ -917,14 +961,28 @@ module.exports = async function fenetresTests(ctx) {
     check('session: every normal window is saved, in opening order, with its own Space, tabs and place (private window left out)',
       list.length === OrbeWindow.all.filter((x) => x.shared && !x.gone).length && list.indexOf(w.entry) >= 0 && list.indexOf(w.entry) < list.indexOf(w2.entry) && !iw.entry
       && w.entry.spaceId === space.id && w.entry.activeBySpace[space.id] === Q && w2.entry.spaceId === w2.spaceId && w2.spaceId !== space.id
-      && JSON.stringify(w2.entry.bounds) === JSON.stringify(w2.win.getBounds()),
+      && JSON.stringify(w2.entry.bounds) === JSON.stringify(w2.win.getBounds()) && w2.entry.fullScreen === false,
       JSON.stringify({ list, w: w.entry, w2: w2.entry }));
     check('session: state.window still holds the first window only (an older Radian reads it)', store.state.window.spaceId === space.id && store.state.window.activeBySpace === w.activeBySpace);
 
     // Restore of two windows, as startup does (main.js): both saved on the same tab.
-    const e1 = { bounds: { x: 60, y: 80, width: 800, height: 560 }, spaceId: space.id, activeBySpace: { [space.id]: P }, sidebarVisible: false };
-    const e2 = { bounds: { x: -30000, y: -30000, width: 760, height: 520 }, spaceId: space.id, activeBySpace: { [space.id]: P }, sidebarVisible: true };
+    const e1 = { bounds: { x: 60, y: 80, width: 800, height: 560 }, spaceId: space.id, activeBySpace: { [space.id]: P }, sidebarVisible: false, fullScreen: true };
+    const e2 = { bounds: { x: -30000, y: -30000, width: 760, height: 520 }, spaceId: space.id, activeBySpace: { [space.id]: P }, sidebarVisible: true, fullScreen: 'yes', focused: true };
+    const enter0 = win.hooks.enterFullScreen;
+    const entered = [];
+    win.hooks.enterFullScreen = (bw) => { entered.push(bw); };
+    const { BaseWindow } = require('electron');
+    const focus0 = BaseWindow.prototype.focus;
+    const refocused = [];
+    BaseWindow.prototype.focus = function () { refocused.push(this); };
     const [r1, r2] = OrbeWindow.reopening({ settings: {}, windows: [e1, e2] }).map((o) => OrbeWindow.open(o));
+    win.hooks.enterFullScreen = enter0;
+    await sleep(50);
+    BaseWindow.prototype.focus = focus0;
+    check('session: a window full screen at quit comes back full screen; a garbled flag does not count', entered.length === 1 && entered[0] === r1.win, entered.length);
+    check('session: the window focused at quit is focused again once all are open', refocused.includes(r2.win) && !refocused.includes(r1.win));
+    r1.win.emit('focus');
+    check('session: focusing a normal window marks it, and only it, for the next launch', e1.focused === true && e2.focused === false && w.entry.focused === false);
     const inside = (b) => screen.getAllDisplays().some(({ workArea: a }) => b.x >= a.x && b.y >= a.y && b.x + b.width <= a.x + a.width && b.y + b.height <= a.y + a.height);
     check('session: a saved window reopens with its place, Space, active tab and sidebar, and stays in the list',
       r1.entry === e1 && r1.spaceId === space.id && r1.activeId === P && r1.sidebarVisible === false && r1.win.getSize().join('x') === '800x560' && win.live.get(P).owner === r1

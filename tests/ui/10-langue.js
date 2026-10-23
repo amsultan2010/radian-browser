@@ -38,7 +38,7 @@ module.exports = {
     await t.verifier('⌘, (élément de menu) ouvre la fenêtre des réglages', async () => {
       await ctx.menu('Cmd+,');
       reglages = await ctx.attendrePage('settings.html');
-      await jusqua(async () => (await reglages.locator('#tab-general').textContent()).trim() === 'Général' && (await reglages.title()) === 'Réglages', 'fenêtre « Réglages »');
+      await jusqua(async () => (await reglages.locator('#tab-general').textContent()).trim() === 'Général' && (await reglages.title()) === 'Général', 'fenêtre « Général » (nom du volet, comme dans Arc)');
       assert.equal(await reglages.inputValue('#lang'), 'fr');
     });
 
@@ -58,7 +58,7 @@ module.exports = {
     });
 
     await t.verifier('la fenêtre des réglages et le menu passent aussi en anglais', async () => {
-      await jusqua(async () => (await reglages.locator('#tab-general').textContent()).trim() === 'General' && (await reglages.title()) === 'Settings', 'fenêtre « Settings »');
+      await jusqua(async () => (await reglages.locator('#tab-general').textContent()).trim() === 'General' && (await reglages.title()) === 'General', 'fenêtre « General »');
       await jusqua(async () => /^New Tab/.test(await menuCmdT()), 'menu « New Tab »');
     });
 
@@ -90,7 +90,7 @@ module.exports = {
       assert.equal(l.bouton, 'Barre latérale');
       assert.equal(l.langue, 'fr');
       await jusqua(async () => /^Nouvel onglet/.test(await menuCmdT()), 'menu « Nouvel onglet »');
-      await jusqua(async () => (await reglages.locator('#tab-general').textContent()).trim() === 'Général' && (await reglages.title()) === 'Réglages', 'fenêtre « Réglages »');
+      await jusqua(async () => (await reglages.locator('#tab-general').textContent()).trim() === 'Général' && (await reglages.title()) === 'Général', 'fenêtre « Général » (nom du volet, comme dans Arc)');
       await ctx.menu('Cmd+W');
       await jusqua(async () => (await libelles()).adresse === 'Rechercher ou saisir une adresse…', 'invite d’adresse en français');
     });

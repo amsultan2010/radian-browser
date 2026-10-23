@@ -12,7 +12,7 @@ let KEYS = O.keys || {};
 const KEY_IN_TEXT = { 'side.empty': 'newTab', 'side.toggle': 'toggleSidebar' };
 
 function t(key, vars) {
-  let s = (O.locales[lang] && O.locales[lang][key]) || O.locales.fr[key] || key;
+  let s = (O.locales[lang] && O.locales[lang][key]) || O.locales.en[key] || O.locales.fr[key] || key;
   const cmd = KEY_IN_TEXT[key];
   const before = cmd && O.defaultKeys && O.defaultKeys[cmd];
   if (before && KEYS[cmd] !== before) s = KEYS[cmd] ? s.replace(before, KEYS[cmd]) : s.replace(` (${before})`, '').replace(before, '…');
@@ -25,9 +25,12 @@ function applyI18n(root = document) {
   for (const el of root.querySelectorAll('[data-t-title]')) el.title = t(el.dataset.tTitle);
   // Bouton à infobulle maison : pas de `title` (deux infobulles se suivraient), mais un nom lisible par les aides techniques.
   for (const el of root.querySelectorAll('[data-tip]')) el.setAttribute('aria-label', t(el.dataset.tip));
+  // A name for assistive tech only, no tooltip at all (Arc's Developer Mode bar).
+  for (const el of root.querySelectorAll('[data-t-aria]')) el.setAttribute('aria-label', t(el.dataset.tAria));
   for (const el of root.querySelectorAll('[data-t-ph]')) el.placeholder = t(el.dataset.tPh);
   // Raccourci d'une commande, dans la notation du système.
-  for (const el of root.querySelectorAll('[data-key]')) if (KEYS[el.dataset.key]) el.textContent = KEYS[el.dataset.key];
+  // A shortcut the user removed empties its label; a command with no default keeps the page's text.
+  for (const el of root.querySelectorAll('[data-key]')) if (KEYS[el.dataset.key] || el.dataset.key in O.defaultKeys) el.textContent = KEYS[el.dataset.key] || '';
 }
 
 // Renvoie true si la langue a changé (la page doit alors se redessiner).
@@ -146,6 +149,57 @@ function faviconEl(url, fallbackText) {
   img.onerror = () => { if (guessedIcons.has(url)) missingIcons.add(url); img.replaceWith(letterIcon(fallbackText)); };
   img.src = url;
   return img;
+}
+
+// --- Arc's tooltips ---------------------------------------------------------------
+// A [data-tip] control hovered for a second shows its name (data-tip, a locale key) in the
+// #tip pill under it, and the shortcut in force for its command (data-tip-key) as keycaps:
+// the one the user picked if they changed it. `o.text(el)` / `o.keys(el)` replace name and
+// shortcut, `o.right()` is the edge the pill stays left of, `o.blocked()` holds tips back.
+function tooltips(o = {}) {
+  const tip = document.getElementById('tip');
+  const caps = document.getElementById('tip-key');
+  let tipFor = null;
+  let timer = null;
+  const hide = () => {
+    clearTimeout(timer);
+    tipFor = null;
+    if (tip.hidden) return;
+    tip.classList.remove('on');
+    tip.hidden = true;
+  };
+  const show = (el) => {
+    if (!el.isConnected || el.disabled || (o.blocked && o.blocked())) return;
+    document.getElementById('tip-text').textContent = o.text ? o.text(el) : t(el.dataset.tip);
+    const keys = (o.keys ? o.keys(el) : KEYS[el.dataset.tipKey]) || '';
+    // One keycap per modifier and one for the key, as in Arc: ⇧⌘C → ⇧ ⌘ C.
+    caps.replaceChildren(...(keys.match(/[⌃⌥⇧⌘]|[^⌃⌥⇧⌘]+/g) || []).map((k) => Object.assign(document.createElement('kbd'), { textContent: k })));
+    caps.hidden = !keys;
+    tip.hidden = false;
+    const r = el.getBoundingClientRect();
+    const right = (o.right ? o.right() : innerWidth) - 6;
+    // A long label (French, German…) shortens with an ellipsis rather than run under the page.
+    tip.style.maxWidth = `${Math.min(280, right - 6)}px`;
+    const w = tip.offsetWidth;
+    const h = tip.offsetHeight;
+    const x = Math.max(6, Math.min(right - w, r.left + r.width / 2 - w / 2));
+    const y = r.bottom + 6 + h > innerHeight - 4 ? r.top - h - 6 : r.bottom + 6;
+    tip.style.transform = `translate(${Math.round(x)}px,${Math.round(y)}px)`;
+    tip.classList.add('on');
+  };
+  document.addEventListener('mouseover', (e) => {
+    const el = e.target.closest ? e.target.closest('[data-tip]') : null;
+    if (el === tipFor) return;
+    hide();
+    if (!el) return;
+    tipFor = el;
+    timer = setTimeout(() => { if (tipFor === el) show(el); }, 1000); // Arc: about a second
+  });
+  for (const ev of ['mousedown', 'keydown', 'wheel', 'dragstart', 'blur']) addEventListener(ev, hide, true);
+  // The pointer leaves the control: the pill goes, even over a disabled control (which reports no hover).
+  document.addEventListener('mouseout', (e) => { if (tipFor && e.target.closest && e.target.closest('[data-tip]') === tipFor && !(e.relatedTarget && tipFor.contains(e.relatedTarget))) hide(); });
+  document.addEventListener('mouseleave', hide);
+  return hide;
 }
 
 document.documentElement.lang = lang;

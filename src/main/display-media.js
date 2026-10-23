@@ -8,6 +8,8 @@
 //  - la source renvoyée est relue dans la liste dressée par le processus
 //    principal : la feuille ne renvoie qu'un identifiant de cette liste ;
 //  - aucune réponse n'est retenue : chaque partage redemande.
+//  - except "Share this tab instead": that click on a sidebar row stands for the
+//    picker, for the same site's next request only, within a minute.
 const { desktopCapturer, webContents } = require('electron');
 const { store } = require('./store');
 const sheets = require('./sheets');
@@ -39,6 +41,16 @@ async function desktopSources() {
   try { return await env.sources(); } catch (err) { console.error('[orbe] partage d’écran', err.message); return []; }
 }
 
+// "Share this tab instead": the tab picked in the sidebar, for the page's next request.
+// shortcut: Electron answers getDisplayMedia once per request and cannot change the source of a
+// running capture (Chromium's seamless switch is not exposed), so the page must share again and that
+// request gets the picked tab without the picker; upgrade if Electron exposes a source change.
+const instead = new WeakMap(); // requester webContents -> { target, origin, until }
+const INSTEAD_FOR = 60000;
+function shareInstead(wc, target) {
+  instead.set(wc, { target, origin: permissions.originOf(wc.getURL()), until: Date.now() + INSTEAD_FOR });
+}
+
 const forSheet = (list) => list.map(({ id, name, kind, thumb }) => ({ id, name: String(name || '').slice(0, 120), kind, thumb }));
 
 async function handle(request, callback) {
@@ -51,6 +63,17 @@ async function handle(request, callback) {
   if (!wc || wc.isDestroyed() || !request.videoRequested) return deny();
   if (!request.userGesture) return deny();
   const origin = permissions.originOf(request.securityOrigin || frame.url || '');
+  const pick = instead.get(wc);
+  instead.delete(wc);
+  if (pick && pick.origin === origin && Date.now() < pick.until && !pick.target.isDestroyed()) {
+    let main = null;
+    try { main = pick.target.mainFrame; } catch {}
+    if (main) {
+      capture.mark(wc, 'screen', { tab: pick.target });
+      // The shared tab keeps playing its sound here, as in Chrome.
+      return reply(request.audioRequested ? { video: main, audio: main, enableLocalEcho: true } : { video: main });
+    }
+  }
   // « Cet onglet » d'abord, sans attendre : les écrans et les fenêtres suivent.
   let list = [{ id: 'tab', name: '', kind: 'tab', thumb: '' }];
   const audio = { tab: true, screen: false };
@@ -84,7 +107,7 @@ async function handle(request, callback) {
     let main = null;
     try { main = wc.mainFrame; } catch {}
     if (!main) return deny();
-    capture.mark(wc, 'screen', { self: true });
+    capture.mark(wc, 'screen', { tab: wc });
     return reply(wantAudio ? { video: main, audio: main } : { video: main });
   }
   capture.mark(wc, 'screen');
@@ -107,4 +130,4 @@ function setup({ test = false, toast } = {}) {
   if (test) env.sources = async () => [];
 }
 
-module.exports = { attach, setup, env, internals: { handle } };
+module.exports = { attach, setup, shareInstead, env, internals: { handle } };

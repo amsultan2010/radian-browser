@@ -252,13 +252,29 @@ module.exports = async function essentielsTests(ctx) {
       panel.payload.site === permissions.siteName(A) && panel.payload.perms.map((x) => x.key + ':' + x.value).join() === 'camera:true' && panel.payload.adblock.on === true && panel.payload.adblock.site === true
       && panel.payload.dev.on === false && panel.payload.dev.can === true && panel.payload.boost.has === false && panel.payload.extensions.length === 2 && panel.origin === A, panel.payload);
     const shown = await inSheet(panel, `(() => { const c = document.getElementById('card'); const r = c.getBoundingClientRect(); return {
-      anchor: document.body.classList.contains('anchor') && r.top < 40 && r.left < 40, title: document.getElementById('title').textContent,
-      perms: [...document.querySelectorAll('#perms .item')].map((x) => x.dataset.key).join(), cookies: document.getElementById('c-cookies').textContent,
-      ext: document.querySelector('#c-exts .item .grow').textContent, imgs: c.querySelectorAll('img, script, iframe').length, pirate: typeof window.pirate,
-      extOff: document.querySelectorAll('#c-exts .item button')[1].disabled, dev: document.getElementById('c-dev').checked, site: document.getElementById('c-shield-site').checked }; })()`);
+      anchor: document.body.classList.contains('anchor') && r.top < 40 && r.left < 40 && Math.round(r.width) === 236, title: document.getElementById('title').textContent,
+      perms: [...document.querySelectorAll('#perms .item')].map((x) => x.dataset.key).join(),
+      ext: document.querySelector('#c-exts [data-ext]').getAttribute('aria-label'), imgs: c.querySelectorAll('img, script, iframe').length, pirate: typeof window.pirate,
+      extOff: document.querySelectorAll('#c-exts [data-ext]')[1].disabled, dev: document.getElementById('c-dev').getAttribute('aria-pressed'), site: document.getElementById('c-shield-site').getAttribute('aria-pressed'),
+      tiles: [...c.querySelectorAll('.tiles button')].slice(0, 5).map((b) => b.getAttribute('aria-label')).join('|'), heads: [...c.querySelectorAll('h2')].map((h) => h.textContent).join('|'),
+      chip: document.getElementById('c-details').textContent, more: !!document.getElementById('c-more') }; })()`);
     check('… affiché en bulle ancrée, tout en texte : un nom d’extension piégé reste du texte',
-      shown.anchor && shown.title === permissions.siteName(A) && shown.perms === 'camera' && shown.cookies === t('ctl.cookieCount', { n: 1 }) && shown.ext === evil && shown.imgs === 0 && shown.pirate === 'undefined'
-      && shown.extOff === true && shown.dev === false && shown.site === true, shown);
+      shown.anchor && shown.title === permissions.siteName(A) && shown.perms === 'camera' && shown.ext === evil && shown.imgs === 0 && shown.pirate === 'undefined'
+      && shown.extOff === true && shown.dev === 'false' && shown.site === 'true', shown);
+    check('… in Arc’s layout: Share, New Boost, the two captures, then Extensions with “+”, Settings, the connection chip and More',
+      shown.tiles === ['ctl.share', 'ctl.newBoost', 'ctl.capturePart', 'ctl.capturePage', 'ctl.addExt'].map((k) => t(k)).join('|') && shown.heads === t('pane.extensions') + '|' + t('ctl.settings')
+      && shown.chip === t('ctl.insecure') && shown.more, shown);
+    // More (…): a native menu with Arc's items (plus Zap and the blocker switch); the cookie count sits under Clear Cookies.
+    {
+      const popup0 = w.popup;
+      let menu = null;
+      w.popup = (tpl) => { menu = tpl; };
+      await act(panel, 'more');
+      w.popup = popup0;
+      check('More menu: Clear Cache, Clear Cookies (with the count), boosts, extensions, All Site Settings…',
+        !!menu && menu.filter((x) => x.label).map((x) => x.label).join('|') === ['ctl.clearCache', 'ctl.clearCookies', 'ctl.manageBoosts', 'ctl.newBoostMenu', 'ctl.zap', 'ext.manage', 'ext.add', 'adblock.everywhere', 'ctl.allSettings'].map((k) => t(k)).join('|')
+        && menu[1].sublabel === t('ctl.cookieCount', { n: 1 }) && !panel.closed, menu && menu.map((x) => x.label).join('|'));
+    }
     // Garde : une action qui change quelque chose est refusée dans la demi-seconde qui suit l'apparition.
     panel.armedAt = Date.now();
     const early = await act(panel, 'dev');
@@ -446,6 +462,27 @@ module.exports = async function essentielsTests(ctx) {
   await until(() => permissions.get(priv.wc.session, B, 'notifications') === true, 'réponse retenue en mémoire');
   check('navigation privée : la réponse n’est pas écrite dans le profil', !('notifications' in (store.state.permissions[B] || {})));
 
+  // A click on a page's notification brings its tab forward (EXT-10).
+  {
+    const shown = [];
+    const show0 = permissions.env.showPage;
+    permissions.env.showPage = (wc) => { shown.push(wc); return true; };
+    const notify = (wc, senderFrame = wc.mainFrame) => permissions.internals.notificationClicked({ sender: wc, senderFrame });
+    permissions.set(cam.wc.session, A, 'notifications', false);
+    notify(cam.wc);
+    permissions.set(cam.wc.session, A, 'notifications', true);
+    notify(cam.wc, { parent: cam.wc.mainFrame, url: A + '/' });
+    notify(cam.wc);
+    check('notification clicked: believed only from a top frame of a site allowed to notify', shown.length === 1 && shown[0] === cam.wc, shown.length);
+    await js(cam.wc, `(() => { const n = new Notification('essai'); n.dispatchEvent(new Event('click')); n.close(); return n instanceof Notification; })()`);
+    await sleep(300);
+    check('notification: a click the page fakes brings nothing forward', shown.length === 1, shown.length);
+    permissions.env.showPage = show0;
+    const later = await open(A + '/apres', 'Page /apres');
+    check('notification clicked: its tab is selected again', w.activeId === later.id && show0(cam.wc) === true && w.activeId === cam.id, w.activeId);
+    delete store.state.permissions[A].notifications;
+  }
+
   // ---------------------------------------------------------------- Partage d'écran
   const fake = { id: 'screen:9999:0', name: 'Écran <b>factice</b>', kind: 'screen', thumb: '', source: { id: 'screen:9999:0', name: 'Écran factice' } };
   displayMedia.env.sources = async () => [fake];
@@ -509,6 +546,27 @@ module.exports = async function essentielsTests(ctx) {
   sheet = await sheetOf(priv.wc, 'picker');
   sheet.close(null);
   check('navigation privée : même sélecteur', (await pending).startsWith('err:'));
+
+  // "Share this tab instead": the sharing page shares again and gets the picked tab, without the picker, once.
+  const montre = await open(A + '/montre', 'Page /montre');
+  capture.mark(share.wc, 'screen');
+  await until(() => ui('document.body.classList.contains("share-on")'), 'partage signalé à la barre');
+  check('« Share this tab instead » : refusé pour un onglet d’une autre fenêtre', win.hooks.action(w, 'shareInstead', priv.id) === false);
+  check('« Share this tab instead » : l’onglet qui partage revient au premier plan', win.hooks.action(w, 'shareInstead', montre.id) === true && w.activeId === share.id);
+  await click(share.wc);
+  pending = js(share.wc, 'navigator.mediaDevices.getDisplayMedia({ video: true }).then((s) => { window.flux = s; return "flux:" + s.getVideoTracks().length; }, (e) => "err:" + e.name)', true);
+  await until(() => capture.shared(montre.wc), 'onglet choisi partagé');
+  check('la demande suivante reçoit l’onglet choisi sans sélecteur ; c’est lui qui est surligné', !sheets.top(share.wc) && !capture.shared(share.wc));
+  const switched = await Promise.race([pending, sleep(20000).then(() => 'délai')]);
+  if (switched === 'délai') outils.ignorer('l’onglet choisi : la page reçoit un flux vidéo', 'Chromium n’a pas livré le flux en 20 s : pas d’affichage sur cette machine');
+  else check('l’onglet choisi : la page reçoit un flux vidéo', switched === 'flux:1', switched);
+  await js(share.wc, 'window.flux && window.flux.getTracks().forEach((x) => x.stop()); 1');
+  await click(share.wc);
+  pending = js(share.wc, 'navigator.mediaDevices.getDisplayMedia({ video: true }).then(() => "flux", (e) => "err:" + e.name)', true);
+  sheet = await sheetOf(share.wc, 'picker');
+  sheet.close(null);
+  check('une seule fois : la demande d’après rouvre le sélecteur', (await pending).startsWith('err:'));
+  capture.clearAll(share.wc);
   displayMedia.env.sources = saved.sources;
 
   // Ancienne capture d'écran (getUserMedia + chromeMediaSource) : pour Electron,
@@ -812,11 +870,12 @@ module.exports = async function essentielsTests(ctx) {
   for (const d of [slowTab, slowIn, slowSleep]) await js(d.wc, 'window.lent = 1500; 1');
   asks.length = 0;
   leave = false;
+  const slowActive = await js(slowTab.wc, 'navigator.userActivation.hasBeenActive');
   let t0 = Date.now();
   w.close(slowTab.id);
   await until(() => asks.length === 1 || slowTab.wc.isDestroyed(), 'réponse de la page lente (onglet)');
   check('fermer l’onglet d’une page qui met plus d’une seconde à répondre : la question est posée quand même, « Rester » garde la page',
-    asks.length === 1 && Date.now() - t0 >= 1400 && await intact(slowTab), JSON.stringify({ questions: asks.length, ms: Date.now() - t0, page: !slowTab.wc.isDestroyed(), journal: slowTab.rt0.trail }));
+    asks.length === 1 && Date.now() - t0 >= 1400 && await intact(slowTab), JSON.stringify({ questions: asks.length, ms: Date.now() - t0, page: !slowTab.wc.isDestroyed(), activated: slowActive, touched: !!slowTab.rt0.touched, journal: slowTab.rt0.trail }));
   if (!slowTab.wc.isDestroyed()) await until(() => w.data.tabs[slowTab.id] && win.live.get(slowTab.id) === slowTab.rt0, 'onglet lent revenu');
   if (!slowTab.wc.isDestroyed()) {
     check('pendant la consultation, la page est à l’abri du délai de Chromium (bouclier levé)', unload.shielded(slowTab.wc) && slowTab.wc.debugger.isAttached());
@@ -1244,13 +1303,13 @@ module.exports = async function essentielsTests(ctx) {
   check('réglages « demander où enregistrer » et « PDF dans un onglet » : validés comme les autres (prefs.SETTABLE)', prefs.SETTABLE.downloadAsk(true) && !prefs.SETTABLE.downloadAsk('oui') && prefs.SETTABLE.downloadOpenPdf(false) && !prefs.SETTABLE.downloadOpenPdf(1));
   // La Bibliothèque montre l'état et les boutons.
   store.state.downloads.unshift({ id: 'vue-1', name: 'calé.bin', path: path.join(dlDir, 'calé.bin'), url: A + '/gros.bin', total: 1000, received: 400, state: 'interrupted', canResume: true, at: Date.now() });
-  const libTab = w.openInternal('library.html#downloads');
-  const libWc = () => rtOf(libTab.id).wc;
+  w.openLibrary('downloads');
+  const libWc = () => w.libraryView.webContents;
   await until(() => libWc().executeJavaScript('document.querySelectorAll("#list .line").length > 0'), 'liste des téléchargements');
   const firstLine = await libWc().executeJavaScript('(() => { const l = document.querySelector("#list .line"); return { state: l.dataset.state, sub: l.querySelector(".sub").textContent, buttons: [...l.querySelectorAll("button")].map((b) => b.dataset.do) }; })()');
   check('Bibliothèque : un téléchargement interrompu affiche où il en est et propose « Reprendre » (et son menu « ··· »)', firstLine.state === 'interrupted' && firstLine.sub.includes(t('lib.failed')) && firstLine.sub.includes('40 %') && firstLine.buttons.join() === 'resume,menu', firstLine);
   store.state.downloads.shift();
-  w.close(libTab.id, { ask: false });
+  w.closeLibrary();
 
   // ---------------------------------------------------------------- Ménage
   for (const [owner, id] of opened) if (owner === w && w.data.tabs[id]) w.close(id, { silent: true, ask: false });

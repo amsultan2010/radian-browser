@@ -128,5 +128,21 @@ module.exports = {
       assert.equal(pageA.url(), ctx.url('/a'), 'la page d’origine n’a pas suivi le lien');
       assert.equal((await ctx.principal(({ store }) => store.state.downloads.length)), 0, 'rien n’a été téléchargé');
     });
+
+    await t.verifier('tab held on another tab in the sidebar: that row is marked on the side it will take; dropped, the two open as a split where the target sits', async () => {
+      await ctx.principal(({ w }) => w.separateAll());
+      await ctx.ouvrir('/e', 'Page E');
+      // E, at the top of Today, comes down onto A's top half (A stays put under the pointer), right of centre.
+      let marque = null;
+      await ctx.glisser(await ctx.centre(ctx.ligne('Page E')), async () => { const b = await ctx.ligne('Page A').boundingBox(); return { x: b.x + b.width * 0.75, y: b.y + b.height * 0.35 }; }, {
+        pause: 900,
+        avantLacher: async () => { marque = await shell.evaluate(() => { const el = document.querySelector('#scroll .row.tab.drop-into'); return el && { titre: el.querySelector('.title').textContent, droite: el.classList.contains('right') }; }); },
+      });
+      assert.deepEqual(marque, { titre: 'Page A', droite: true });
+      await jusqua(async () => (await volets()).ids.join() === 'Page A,Page E', 'split A | E');
+      assert.equal((await volets()).actif, 'Page E');
+      const today = await ctx.principal(({ w }) => w.space.today.map((id) => w.data.tabs[id].title));
+      assert.equal(today.indexOf('Page E'), today.indexOf('Page A') + 1, 'E sits right after A: the split stays where A was');
+    });
   },
 };

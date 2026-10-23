@@ -5,6 +5,7 @@ const { app, BaseWindow, WebContentsView, Menu, clipboard, ClipboardItem, screen
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { pathToFileURL } = require('url');
 const { store, uid, SPACE_COLORS, DEFAULT_SETTINGS } = require('./store');
 const veille = require('./veille');
 const empreinte = require('./empreinte');
@@ -28,11 +29,17 @@ const RADIUS = 6;
 const TOOLBAR_H = 40;
 const PEEK_PULL = 150; // déplacement (px) au bout duquel un aperçu tiré se ferme
 const PEEK_BAR = 40; // marge au-dessus de la carte de l'aperçu quand son adresse s'affiche
+// Peek card in Arc 1.170 (live capture, 1280 × 800 window): 1024 × 776 pt, centred, 12 pt from the window's top
+// (and bottom); a smaller window shrinks it, keeping `side` free on each side for the buttons on its right.
+const PEEK = { width: 1024, height: 776, top: 12, side: 56 };
 const SPLIT_BAR = 28; // petite barre de chaque volet d'une vue scindée (adresse, options, fermer)
 // Feux tricolores : bouton de fermeture à (12, 16), comme dans Arc (cadres d’accessibilité).
 const TRAFFIC = { x: 13, y: 17 }; // Electron les pose 1 pt plus haut et plus à gauche que demandé
 const SIDEBAR_MIN = 200;
 const SIDEBAR_MAX = 420;
+// Library panel in the sidebar's place: 417 pt, 744 pt for its Spaces section (Arc 1.170, live capture).
+const LIBRARY_W = 417;
+const LIBRARY_WIDE = 744;
 const UI_PRELOAD = path.join(__dirname, '../preload/ui.js');
 const INTERNAL = 'orbe://app/';
 // Tout ce qui compte pour la sécurité est écrit ici, sans rien laisser à l'héritage : ces
@@ -93,7 +100,7 @@ const hooks = {
   changed: () => {}, openLittle: () => {}, route: () => null, openRouted: () => {}, openSettings: () => {}, extensionMenu: () => [], rightInset: () => 0, layout: () => {},
   // Raccords posés par essentials.js (feuilles d'onglet, certificats, « quitter la page ? », fenêtres surgissantes…).
   sheetFocus: () => null, leave: () => true, closeAll: async () => true, quitState: { quitting: false }, shield: () => false, unshield: () => {}, stayed: () => Infinity, input: () => {}, popup: () => true, navigated: () => {},
-  busy: () => false, tabState: () => [], navState: () => ({}), failed: () => false, gone: () => {}, hung: () => {}, action: () => undefined, siteMenu: () => [],
+  busy: () => false, tabState: () => [], shared: () => false, navState: () => ({}), failed: () => false, gone: () => {}, hung: () => {}, action: () => undefined, siteMenu: () => [],
   // Note « mise à jour disponible » de la barre latérale ({ version } ou null) : posée par main.js.
   updateNote: () => null,
   // Position du pointeur à l'écran (onglet glissé hors de la fenêtre) ; remplacée dans les essais.
@@ -108,7 +115,7 @@ const hooks = {
 
 const t = (key, vars) => store.t(key, null, vars);
 // Ce qu'une première fenêtre reprend de la session précédente : l'Espace affiché
-// et l'onglet actif de chaque Espace. Réglage coupé : premier Espace, aucun onglet actif.
+// et l'onglet actif de chaque Espace. `on` false: first Space, no active tab.
 // `taken`: tabs already active in another window (a tab is live in one window only).
 function resumed(saved, spaces, on, taken = new Set()) {
   if (!on) return { spaceId: spaces[0].id, activeBySpace: {} };
@@ -117,6 +124,7 @@ function resumed(saved, spaces, on, taken = new Set()) {
 // What a normal window keeps of itself across launches (global flags stay in state.window).
 function keep(into, w) {
   if (!w.win.isFullScreen() && !w.win.isMinimized()) into.bounds = w.win.getBounds();
+  into.fullScreen = w.win.isFullScreen();
   into.spaceId = w.spaceId;
   into.activeBySpace = w.activeBySpace;
   into.sidebarVisible = w.sidebarVisible;
@@ -143,7 +151,8 @@ function spaceLabel(sp, data = store.state, from = null, gap = ' ') {
 const isInternal = (url) => (url || '').startsWith(INTERNAL);
 const isErrorPage = (url) => (url || '').startsWith(INTERNAL + 'error.html');
 // Pages internes pouvant s'ouvrir dans un onglet, avec accès à l'interface.
-const INTERNAL_PAGES = new Set(['library.html', 'shortcuts.html', 'welcome.html', 'notes.html', 'easel.html', 'tasks.html']);
+// (Not the Library: as in Arc it has a panel of its own, see `openLibrary`.)
+const INTERNAL_PAGES = new Set(['shortcuts.html', 'welcome.html', 'notes.html', 'easel.html', 'tasks.html']);
 // Adresse fournie par une page web (lien, image, glisser-déposer) : seuls
 // http et https sont acceptés, jamais file:, orbe: ou chrome:.
 const webUrl = (u) => (/^https?:\/\//i.test(u || '') ? u : null);
@@ -400,7 +409,8 @@ class OrbeWindow {
     if (incognito) require('./trace').discard(OrbeWindow.focused || OrbeWindow.primary);
     this.session = incognito ? sessions.incognitoSession() : sessions.mainSession();
     const taken = new Set(OrbeWindow.all.flatMap((w) => (w.shared ? Object.values(w.activeBySpace) : [])));
-    const resume = resumed(saved, this.data.spaces, restore && store.state.settings.restoreSession !== false, taken);
+    // As in Arc, the first window always comes back on its Space and tab; `restoreSession` only brings back the others (see `reopening`).
+    const resume = resumed(saved, this.data.spaces, restore, taken);
     this.spaceId = resume.spaceId;
     this.activeBySpace = resume.activeBySpace;
     this.closed = [];
@@ -414,6 +424,9 @@ class OrbeWindow {
     this.modalMode = null;
     this.findOpen = false;
     this.switcher = null;
+    this.libraryView = null; // the Library's panel, loaded at its first opening (`openLibrary`)
+    this.libraryShown = false;
+    this.librarySection = null; // section shown in it: the Spaces section is wider
 
     const b = onScreen((restore && saved.bounds) || {});
     const offset = restore ? 0 : 28 * (OrbeWindow.all.length % 6);
@@ -446,9 +459,16 @@ class OrbeWindow {
     this.toastView = null;
 
     this.win.on('resize', () => this.layout());
-    this.win.on('enter-full-screen', () => { this.layout(); OrbeWindow.pushAll(); });
-    this.win.on('leave-full-screen', () => { this.layout(); OrbeWindow.pushAll(); });
-    this.win.on('focus', () => { this.focusContent(); hooks.changed(); });
+    // Remembered for the next launch; not while closing, which may take the window out of full screen.
+    this.win.on('enter-full-screen', () => { this.layout(); OrbeWindow.pushAll(); if (!this.closing) this.remember(); });
+    this.win.on('leave-full-screen', () => { this.layout(); OrbeWindow.pushAll(); if (!this.closing) this.remember(); });
+    this.win.on('focus', () => {
+      this.focusContent();
+      hooks.changed();
+      // The normal window focused last takes the focus back at the next launch (`open`). Quitting
+      // closes windows one by one, handing the focus around: that does not count.
+      if (this.entry && !hooks.quitState.quitting) for (const w of windows.values()) if (w.entry) w.entry.focused = w === this;
+    });
     this.win.on('blur', () => { if (this.peek) this.setPeek(false); });
     this.win.on('close', (e) => {
       // Les pages qui ont quelque chose à perdre (beforeunload) sont consultées d'abord.
@@ -674,10 +694,13 @@ class OrbeWindow {
 
   // Nouvelle fenêtre demandée par l'utilisateur (⌘N, navigation privée, fenêtre vierge) :
   // ouverte depuis une fenêtre en plein écran, elle s'ouvre en plein écran elle aussi (comme dans Arc).
+  // A window reopened at launch comes back full screen if it was at quit, as in Arc.
   static open(opts = {}, from = OrbeWindow.focused) {
-    const full = !!from && !!from.win && !from.win.isDestroyed() && from.win.isFullScreen();
+    const full = (!!from && !!from.win && !from.win.isDestroyed() && from.win.isFullScreen()) || (!!opts.saved && opts.saved.fullScreen === true);
     const w = new OrbeWindow(opts);
     if (full) hooks.enterFullScreen(w.win);
+    // Once every saved window is open, the one focused at quit is focused again.
+    if (opts.saved && opts.saved.focused === true) setImmediate(() => { if (!w.win.isDestroyed()) w.win.focus(); });
     return w;
   }
 
@@ -844,7 +867,8 @@ class OrbeWindow {
     const docked = this.sidebarVisible && this.p === 1;
     const top = PAD + (this.toolbarShown ? TOOLBAR_H : 0);
     return {
-      x: Math.round(PAD + (sw - PAD) * this.p),
+      // Library open: as in Arc, the card is pushed right of its panel without being resized.
+      x: this.libraryShown ? this.libraryWidth : Math.round(PAD + (sw - PAD) * this.p),
       y: top,
       width: Math.max(100, (docked ? W - sw - PAD : W - 2 * PAD) - hooks.rightInset(this)),
       height: Math.max(100, H - top - PAD),
@@ -946,6 +970,7 @@ class OrbeWindow {
     const paneW = n ? panes[Math.max(0, ids.indexOf(this.activeId))].width : 0;
     ids.forEach((id, i) => {
       const rt = this.ensureView(id);
+      if (rt.frozen) OrbeWindow.thaw(rt);
       shown.add(rt.view);
       // Aperçu qui devient un onglet : la carte grandit jusqu'à sa place, par-dessus le reste.
       const grow = this.growing && this.growing.view === rt.view ? this.growing : null;
@@ -966,21 +991,23 @@ class OrbeWindow {
     }
     this.attached = shown;
     if (this.peekChrome && (this.peekState || this.peekJob)) {
-      place(this.peekChrome, rect);
+      place(this.peekChrome, this.shownRect(rect));
       this.peekChrome.setBorderRadius(this.htmlFullscreen ? 0 : RADIUS);
     }
-    if (this.peekState) place(this.peekState.view, this.peekRect(rect));
+    if (this.peekState) place(this.peekState.view, this.peekRect(this.shownRect(rect)));
+    if (this.libraryShown) this.libraryView.setBounds({ x: 0, y: 0, width: Math.min(W, this.libraryWidth), height: H });
     if (this.floatView && this.peek) this.floatView.setBounds({ x: 0, y: 0, width: Math.min(W, this.sidebarWidth + 24), height: H });
     if (this.modalMode) this.modal.setBounds(full);
     if (this.findOpen && this.findView) {
       const i = Math.max(0, ids.indexOf(this.activeId));
-      const right = panes[i] ? panes[i].x + panes[i].width : rect.x + paneW;
+      // (Library open: the card runs off the window; the bar stays on the part that shows.)
+      const right = Math.min(panes[i] ? panes[i].x + panes[i].width : rect.x + paneW, W - PAD);
       this.findView.setBounds({ x: Math.round(right - 372), y: (panes[i] ? panes[i].y + panes[i].bar : rect.y) + 10, width: 360, height: this.findReplace ? 90 : 50 });
     }
     if (this.toastView) {
       // Au-dessus du volet concerné (le volet actif), pas au milieu de la vue scindée.
       const i = this.toastPane && ids.includes(this.toastPane) ? ids.indexOf(this.toastPane) : Math.max(0, ids.indexOf(this.activeId));
-      const zone = panes[i] ? this.pageRect(panes[i]) : rect;
+      const zone = this.shownRect(panes[i] ? this.pageRect(panes[i]) : rect);
       // En haut à droite de la page, comme dans Arc (le message s'aligne à droite dans sa vue).
       const width = Math.min(380, Math.max(160, zone.width - 16));
       this.toastView.setBounds({ x: Math.round(zone.x + zone.width - width - 6), y: zone.y + 6, width, height: 52 });
@@ -1022,7 +1049,7 @@ class OrbeWindow {
   }
 
   setPeek(on) {
-    if (this.peek === on || this.sidebarVisible) return;
+    if (this.peek === on || this.sidebarVisible || (on && this.libraryShown)) return;
     this.peek = on;
     this.setButtons(on);
     // Comme dans Arc : la barre revient en flottant par-dessus la page, qui ne
@@ -1050,7 +1077,7 @@ class OrbeWindow {
   }
 
   pollPeek() {
-    if (this.sidebarVisible || this.win.isDestroyed() || !this.win.isFocused() || this.modalMode || this.menuOpen) return;
+    if (this.sidebarVisible || this.win.isDestroyed() || !this.win.isFocused() || this.modalMode || this.menuOpen || this.peekHeld || this.libraryShown) return;
     const pt = screen.getCursorScreenPoint();
     const b = this.win.getContentBounds();
     const x = pt.x - b.x;
@@ -1095,7 +1122,7 @@ class OrbeWindow {
     clearTimeout(this.floatTimer);
     clearTimeout(this.statusTimer);
     clearTimeout(this.uiRetry);
-    for (const v of [...AUX.map((k) => this[k]), ...this.spares.map((sp) => sp.view), this.ui]) {
+    for (const v of [...AUX.map((k) => this[k]), this.libraryView, ...this.spares.map((sp) => sp.view), this.ui]) {
       if (v && !v.webContents.isDestroyed()) { wcOwner.delete(v.webContents.id); v.webContents.close(); }
     }
     if (this.incognito) this.session.clearStorageData().catch(() => {});
@@ -1129,7 +1156,7 @@ class OrbeWindow {
       webPreferences: { session: this.sessionFor(id), sandbox: true, contextIsolation: true, nodeIntegrationInSubFrames: true, preload: internal ? UI_PRELOAD : undefined },
     });
     view.setBackgroundColor('#ffffff');
-    rt = { id, view, wc: view.webContents, owner: this, loading: false, lastUsed: Date.now(), internal };
+    rt = { id, view, wc: view.webContents, owner: this, loading: false, progress: 1, lastUsed: Date.now(), internal };
     live.set(id, rt);
     this.wire(rt, tab);
     if (!viewOptions && !existing) {
@@ -1227,8 +1254,15 @@ class OrbeWindow {
       if (!owner.win.isDestroyed()) owner.close(rt.id);
       else live.delete(rt.id);
     });
-    wc.on('did-start-loading', () => { rt.loading = true; OrbeWindow.pushAll(); });
-    wc.on('did-stop-loading', () => { rt.loading = false; OrbeWindow.pushAll(); });
+    // Load progress for the top glow (Arc: GlowProgressLoadingIndicator). Electron has no progress
+    // event, so it steps on load milestones; only the shown tab's steps are sent, small ones dropped.
+    const progress = (p) => { if (p - rt.progress < 0.05) return; rt.progress = p; if (rt.owner.activeRt === rt) OrbeWindow.pushAll(); };
+    wc.on('did-start-loading', () => { rt.loading = true; rt.progress = 0.15; OrbeWindow.pushAll(); });
+    wc.on('did-stop-loading', () => { rt.loading = false; rt.progress = 1; OrbeWindow.pushAll(); });
+    wc.on('dom-ready', () => progress(0.6));
+    wc.on('did-frame-finish-load', (e, isMainFrame) => progress(isMainFrame ? 0.9 : rt.progress + (0.9 - rt.progress) / 4));
+    // Share Quote: the page preload says whether the page has selected text (src/preload/page.js).
+    wc.ipc.on('orbe-quote', (e, has) => { if (!!rt.quote !== (has === true)) { rt.quote = has === true; OrbeWindow.pushAll(); } });
     wc.on('page-title-updated', (e, title) => {
       if (isErrorPage(wc.getURL())) return;
       tab.title = String(title).slice(0, 300);
@@ -1251,7 +1285,7 @@ class OrbeWindow {
       if (!incognito) store.visit(url, tab.title, tab.favicon);
       touch();
     };
-    wc.on('did-navigate', (e, url) => { rt.typed = false; rt.objected = false; rt.sleeping = false; hooks.navigated(rt); navigated(url); });
+    wc.on('did-navigate', (e, url) => { rt.typed = false; rt.objected = false; rt.sleeping = false; rt.quote = false; hooks.navigated(rt); navigated(url); });
     // Nouveau document : titre, artiste et pochette annoncés par le précédent ne valent
     // plus rien (le lecteur miniature ne montre jamais ceux d'un autre site).
     wc.on('did-navigate', () => { rt.media = null; });
@@ -1374,9 +1408,42 @@ class OrbeWindow {
     OrbeWindow.consult(rt, 'veille');
   }
 
+  // CPU rule (veille.burning): the page is paused, not unloaded, as Arc does. Chromium's lifecycle
+  // freeze stops its timers, scripts and rendering but keeps the page, its scroll and media position;
+  // `thaw` resumes it once shown. A page that still burns CPU while frozen (a worker the freeze does
+  // not reach) goes to sleep instead.
+  static freezeView(id) {
+    const rt = live.get(id);
+    if (!rt || rt.wc.isDestroyed()) return;
+    if (rt.frozen) { OrbeWindow.sleepView(id); return; }
+    const dbg = rt.wc.debugger;
+    // Held by an extension, a full-page capture or the unload shield: left alone this round.
+    if (dbg.isAttached()) return;
+    try { dbg.attach(); } catch { return; }
+    rt.frozen = true;
+    note(rt, 'frozen (CPU)');
+    dbg.sendCommand('Page.setWebLifecycleState', { state: 'frozen' })
+      .catch(() => { rt.frozen = false; })
+      .finally(() => { try { dbg.detach(); } catch {} });
+  }
+
+  static thaw(rt) {
+    rt.frozen = false;
+    if (rt.wc.isDestroyed()) return Promise.resolve();
+    note(rt, 'thawed');
+    const dbg = rt.wc.debugger;
+    const mine = !dbg.isAttached();
+    try { if (mine) dbg.attach(); } catch { return Promise.resolve(); }
+    return dbg.sendCommand('Page.setWebLifecycleState', { state: 'active' })
+      .catch(() => {})
+      .finally(() => { if (mine) try { dbg.detach(); } catch {} });
+  }
+
   // Consulte la page (beforeunload) avant de la fermer. Le bouclier écarte le délai d'une
   // seconde de Chromium (unload.js) : seul Orbe décide du sort d'une page qui tarde.
   static consult(rt, why) {
+    // A frozen page cannot answer beforeunload: it is resumed first.
+    if (rt.frozen) { OrbeWindow.thaw(rt).then(() => { if (!rt.wc.isDestroyed()) OrbeWindow.consult(rt, why); }); return; }
     note(rt, 'consultée (' + why + ')');
     hooks.shield(rt.wc);
     rt.wc.close({ waitForBeforeUnload: true });
@@ -1495,11 +1562,14 @@ class OrbeWindow {
       };
       say(0);
       OrbeWindow.trimLive({ deep: true });
+    } else if (before && !now) {
+      const target = w || OrbeWindow.focused || OrbeWindow.primary;
+      if (target && !target.win.isDestroyed()) target.toast(t('toast.batterySaverOff'));
     }
     return true;
   }
 
-  static trimLive({ deep = false } = {}) {
+  static trimLive({ deep = false, pressure = false } = {}) {
     const s = store.state.settings;
     if (!deep && live.size <= s.maxLiveTabs) return [];
     const visible = new Set();
@@ -1520,6 +1590,7 @@ class OrbeWindow {
       idleMs: deep ? veille.idleFor(s.sleepAfterHours, veille.saving(OrbeWindow.battery, s.batterySaver !== false)) : 0,
       budgetMb: deep && Number(s.memoryBudget) ? veille.budget(os.totalmem(), Number(s.memoryBudget)) : 0,
       totalMb: mem ? mem.total : 0,
+      pressure,
     });
     lastSweep = { at: now, totalMb: mem ? Math.round(mem.total) : 0, budgetMb: deep && Number(s.memoryBudget) ? veille.budget(os.totalmem(), Number(s.memoryBudget)) : 0, real: !!mem && mem.real };
     // La limite en nombre s'applique tout de suite ; ancienneté et mémoire consultent la page.
@@ -1529,7 +1600,7 @@ class OrbeWindow {
     return picked;
   }
 
-  // CPU rule (veille.burning): hidden tabs that keep burning CPU sleep like idle ones. Sampled only
+  // CPU rule (veille.burning): hidden tabs that keep burning CPU are frozen (`freezeView`). Sampled only
   // while a live tab could sleep, so nothing runs at rest; `trimLive` (each sweep) arms it again.
   static watchCpu(tabs) {
     if (cpuWatch.timer || !tabs.some((t) => !t.kept && !t.typed)) return;
@@ -1555,7 +1626,7 @@ class OrbeWindow {
     tabs.push({ id: '', pids: webContents.getAllWebContents().filter((wc) => !ours.has(wc) && !wc.isDestroyed()).flatMap(pidsOf), kept: true, typed: false });
     const { ids, state } = veille.burning(tabs, readings, cpuWatch.state, { now, saver: veille.saving(OrbeWindow.battery, s.batterySaver !== false) });
     cpuWatch.state = state;
-    for (const id of ids) OrbeWindow.sleepView(id);
+    for (const id of ids) OrbeWindow.freezeView(id);
     if (ids.length) OrbeWindow.pushAll();
     OrbeWindow.watchCpu(tabs);
   }
@@ -1566,7 +1637,9 @@ class OrbeWindow {
     const s = store.state.settings;
     const budgetMb = Number(s.memoryBudget) ? veille.budget(os.totalmem(), Number(s.memoryBudget)) : 0;
     if (empreinte.due({ budgetMb, tabs: live.size, minTabs: veille.MIN_LIVE })) await empreinte.refresh(tabProcesses());
-    return OrbeWindow.trimLive({ deep: true });
+    // Only critical: a busy Mac often sits at warning with plenty of memory still reclaimable.
+    const pressure = live.size > veille.MIN_LIVE && (await empreinte.pressure()) >= empreinte.CRITICAL;
+    return OrbeWindow.trimLive({ deep: true, pressure });
   }
 
   // --- Onglets --------------------------------------------------------------
@@ -1617,6 +1690,9 @@ class OrbeWindow {
         prevRt.playing = true;
         media.add(this, prevId);
         if (!(this.groupOf(id) || []).includes(prevId) && !this.data.tabs[prevId].muted) this.pip(prevRt, true);
+      } else if (prevId !== id && prevRt && !prevRt.wc.isDestroyed() && hooks.tabState(prevRt).some((k) => k !== 'screen')) {
+        // A tab in a call, even silent, gets a player too: its microphone and camera buttons.
+        media.add(this, prevId);
       }
     }
     media.drop(this, id);
@@ -1629,6 +1705,7 @@ class OrbeWindow {
     rt.lastUsed = Date.now();
     if (rt.crashed) { rt.crashed = false; rt.wc.reload(); }
     if (this.peekState && !this.peekAdopting) this.closePeek();
+    this.closeLibrary();
     if (this.findOpen) this.closeFind();
     this.layout();
     this.focusContent();
@@ -1666,6 +1743,7 @@ class OrbeWindow {
     if (this.gone) return undefined;
     if (this.modalMode) return this.modal.webContents.focus();
     if (this.peekState) return this.peekState.view.webContents.focus();
+    if (this.libraryShown) return this.libraryView.webContents.focus();
     // Une feuille posée sur l'onglet actif (question, avertissement) garde le clavier.
     const sheet = hooks.sheetFocus(this);
     if (sheet) return sheet.focus();
@@ -1785,9 +1863,9 @@ class OrbeWindow {
     else this.restoreClosed([last]);
   }
 
-  clearToday() {
-    const space = this.space;
-    const active = this.activeId;
+  // `space`: another Space's column in the Library's Space manager; its shown tab stays, as here.
+  clearToday(space = this.space) {
+    const active = space === this.space ? this.activeId : this.activeBySpace[space.id];
     // Comme dans Arc : un onglet qui joue un média n'est pas effacé.
     const playing = (id) => { const rt = live.get(id); return !!rt && !rt.wc.isDestroyed() && rt.wc.isCurrentlyAudible(); };
     const ids = space.today.filter((id) => id !== active && !playing(id)).reverse();
@@ -1970,6 +2048,17 @@ class OrbeWindow {
     ];
   }
 
+  // The chevron next to reload in Developer Mode: Arc's three items, under the chevron.
+  devReloadMenu(a) {
+    const on = !!this.activeWc;
+    this.popup([
+      { label: t('side.reload'), enabled: on, click: () => this.reload(false) },
+      { label: t('dev.ignoreCache'), enabled: on, click: () => this.reload(true) },
+      { type: 'separator' },
+      { label: t('view.clearCookies'), enabled: on, click: () => this.clearAndReload('cookies') },
+    ], Number.isFinite(a.x) && Number.isFinite(a.y) ? { x: Math.round(a.x), y: Math.round(a.y) } : undefined);
+  }
+
   toggleMute(id = this.activeId) {
     const tab = id && this.data.tabs[id];
     if (!tab) return;
@@ -2146,6 +2235,21 @@ class OrbeWindow {
       for (const x of copies) { const i = this.space.today.indexOf(x); if (i >= 0) this.space.today.splice(i, 1); delete this.data.tabs[x]; }
     }
     this.changed();
+  }
+
+  // Finder files and folders dropped on the sidebar (Arc): a tab each, showing the file (a
+  // folder shows its listing), at the drop place; the first one is shown. The sidebar reads
+  // the paths from the dropped files themselves, never from an address a page could set.
+  dropFiles({ paths, to = 'today', folderId, index = 0 }) {
+    const files = (Array.isArray(paths) ? paths : []).slice(0, 100).filter((p) => typeof p === 'string' && path.isAbsolute(p) && fs.existsSync(p));
+    if (!files.length) return undefined;
+    // At the end of Today, so the ranks the sidebar aimed at do not shift (as in copyTo). Until a
+    // tab loads, its row shows the file's name.
+    const ids = files.map((p) => Object.assign(this.createTab(pathToFileURL(p).href, { index: this.space.today.length }), { title: path.basename(p) }).id);
+    this.moveMany({ ids, to, folderId, index }, null);
+    // Place refused (folder gone, Favorites full): they open at the top of Today, like any new tab.
+    if (to !== 'today' && ids.some((x) => this.space.today.includes(x))) this.moveMany({ ids, to: 'today', index: 0 }, null);
+    return this.activate(ids[0]);
   }
 
   // Épingle les onglets du jour de la sélection ; si tous sont déjà épinglés, les désépingle.
@@ -2630,6 +2734,7 @@ class OrbeWindow {
     const from = this.data.spaces.findIndex((s) => s.id === this.spaceId);
     this.spaceDir = i > from ? 1 : -1;
     this.closePeek();
+    this.closeLibrary();
     this.htmlFullscreen = false;
     this.spaceId = id;
     if (this.findOpen) this.closeFind();
@@ -3233,12 +3338,19 @@ class OrbeWindow {
     return !this.incognito && hooks.route(url) ? 'route' : 'peek';
   }
 
+  // Library open: the card runs off the window's right edge; Peek keeps to the part that shows.
+  shownRect(rect = this.contentRect()) {
+    if (!this.libraryShown) return rect;
+    return { ...rect, width: Math.max(200, Math.min(rect.width, this.win.getContentSize()[0] - rect.x - PAD)) };
+  }
+
   // Place de la carte dans la zone des pages. Barre d'outils affichée : l'aperçu
   // montre aussi son adresse, au-dessus de la carte, qui descend d'autant.
-  peekRect(rect = this.contentRect()) {
-    const m = Math.round(Math.min(90, Math.max(44, rect.width * 0.07)));
-    const top = this.toolbarShown ? PEEK_BAR : 16;
-    return { x: rect.x + m, y: rect.y + top, width: Math.max(200, rect.width - 2 * m), height: Math.max(120, rect.height - top) };
+  peekRect(rect = this.shownRect()) {
+    const [, H] = this.win.getContentSize();
+    const y = this.toolbarShown ? rect.y + PEEK_BAR : PEEK.top;
+    const width = Math.max(200, Math.min(PEEK.width, rect.width - 2 * PEEK.side));
+    return { x: rect.x + Math.round((rect.width - width) / 2), y, width, height: Math.max(120, Math.min(PEEK.height, H - PEEK.top - y)) };
   }
 
   // Rectangle de départ (et de retour) : une petite carte autour du point cliqué
@@ -3279,15 +3391,17 @@ class OrbeWindow {
     const wc = this.peekChrome && this.peekChrome.webContents;
     if (!st || !wc || wc.isDestroyed()) return;
     const full = store.state.settings.showFullUrl !== false;
-    wc.send('overlay', { mode: 'peek-url', text: this.toolbarShown ? (full ? st.url : suggest.strip(st.url)) : '' });
+    wc.send('overlay', { mode: 'peek-url', text: this.toolbarShown && !st.internal ? (full ? st.url : suggest.strip(st.url)) : '' });
   }
 
   // `point` : d'où part la carte (coordonnées de la fenêtre) ; à défaut, le
   // dernier clic dans la page d'origine s'il vient d'avoir lieu.
-  openPeek(url, fromId, options, point) {
+  // `internal`: one of Radian's own pages (Easel, Note), set by Radian code only, never
+  // from an address: the view then gets the interface bridge, like an internal tab.
+  openPeek(url, fromId, options, point, internal = false) {
     this.closePeek({ animate: false });
     const view = new WebContentsView(options || {
-      webPreferences: { session: this.sessionFor(fromId), sandbox: true, contextIsolation: true, nodeIntegrationInSubFrames: true },
+      webPreferences: { session: this.sessionFor(fromId), sandbox: true, contextIsolation: true, nodeIntegrationInSubFrames: true, preload: internal ? UI_PRELOAD : undefined },
     });
     // Pas d'éclair blanc en thème sombre : la carte prend la teinte du thème
     // jusqu'à ce que la page ait de quoi s'afficher, puis le blanc habituel des pages.
@@ -3300,16 +3414,28 @@ class OrbeWindow {
       const b = boundsOf(src.view);
       point = { x: b.x + src.click.x, y: b.y + src.click.y };
     }
-    const state = (this.peekState = { view, from: fromId, url, title: '', handlers: [], point: point || null });
+    const state = (this.peekState = { view, from: fromId, url, title: '', handlers: [], point: point || null, internal });
     const on = (event, fn) => { wc.on(event, fn); state.handlers.push([event, fn]); };
     if (dark) wc.once('dom-ready', () => { try { view.setBackgroundColor('#ffffff'); } catch {} });
     on('page-title-updated', (e, title) => { state.title = title; });
     on('page-favicon-updated', (e, icons) => { state.favicon = icons[0] || ''; });
     on('did-navigate', (e, u) => { state.url = u; this.peekAddress(); });
+    const pane = { view, wc, peek: state };
+    on('update-target-url', (e, u) => this.linkStatus(pane, String(u || '').slice(0, STATUS_MAX)));
     on('did-navigate-in-page', (e, u, main) => { if (main) { state.url = u; this.peekAddress(); } });
     on('will-prevent-unload', (e) => { if (hooks.leave(this, wc)) e.preventDefault(); });
     on('destroyed', () => { if (this.peekState === state) this.closePeek(); });
-    const guard = (e, u) => { if (isInternal(u)) e.preventDefault(); };
+    // Same rules as an internal tab (see `wire`): it may only go to Radian's pages, a web link opens a tab.
+    const guard = internal
+      ? (e, u) => { if (isInternal(u)) return; e.preventDefault(); this.newTab(u); }
+      : (e, u) => { if (isInternal(u)) e.preventDefault(); };
+    // Its messages reach this window (`ownerOf`) until it closes or becomes a tab.
+    if (internal) {
+      const id = wc.id;
+      trusted.add(wc);
+      wcOwner.set(id, this);
+      wc.once('destroyed', () => wcOwner.delete(id));
+    }
     on('will-navigate', guard);
     on('will-redirect', guard);
     on('context-menu', (e, params) => this.pageMenu({ wc, id: fromId }, params));
@@ -3368,7 +3494,7 @@ class OrbeWindow {
     this.flushPeek();
     const state = this.peekState;
     this.peekState = null;
-    place(state.view, this.peekSeed(this.peekRect(), state.point), ms, 'ease-in');
+    place(state.view, this.peekSeed(this.peekRect(), state.point), ms); // Arc closes it ease-out too
     this.peekOverlay({ leaving: true, ms });
     const done = () => {
       if (!this.win.isDestroyed()) {
@@ -3426,9 +3552,10 @@ class OrbeWindow {
     const tab = this.createTab(wc.getURL() || state.url, { after: from });
     tab.title = state.title;
     tab.favicon = state.favicon || '';
+    if (state.internal) { tab.internal = true; wcOwner.delete(wc.id); }
     state.view.setBorderRadius(RADIUS);
     this.ensureView(tab.id, null, state.view);
-    if (!this.incognito) store.visit(tab.url, tab.title, tab.favicon);
+    if (!this.incognito && !state.internal) store.visit(tab.url, tab.title, tab.favicon);
     if (ms) {
       this.growing = { view: state.view, ms, under: new Set(this.attached || []), started: false };
       this.peekOverlay({ leaving: true, ms });
@@ -3590,7 +3717,7 @@ class OrbeWindow {
   openTheme() {
     if (!this.sidebarVisible) this.toggleSidebar(true);
     const s = this.space;
-    this.showModal('theme', { space: themeFields(s), icon: s.icon, dark: nativeTheme.shouldUseDarkColors, x: this.sidebarWidth + 10 });
+    this.showModal('theme', { space: themeFields(s), icon: s.icon, dark: nativeTheme.shouldUseDarkColors, x: this.sidebarWidth + 18 }); // Arc: 18 pt right of the sidebar
   }
 
   // Bascule ⌃Tab : ordre d'utilisation récente, validée au relâchement de ⌃.
@@ -3948,6 +4075,19 @@ class OrbeWindow {
     return this.activateSplit(id);
   }
 
+  // Tab dropped on another sidebar tab (Arc 1.27): the two open as a split, the dropped tab on
+  // the side of the row it fell on (Arc 1.28), the split staying where the target tab sits,
+  // in Pinned too (Arc 1.34).
+  splitOnTab(id, target, before) {
+    if (id === target || this.checkIds([id, target]).length !== 2) return undefined;
+    this.splitWith(target, id, true, before);
+    if (!(this.groupOf(target) || []).includes(id)) return undefined; // split full: splitWith said so
+    // The split shows on its first tab's row: the dropped tab moves next to the target.
+    const p = this.placeOf(target);
+    this.moveMany({ ids: [id], to: p.parentId ? 'folder' : p.list, folderId: p.parentId, index: p.index + (before ? 0 : 1) }, 'undo.move');
+    return this.activateSplit(id);
+  }
+
   // Comme dans Arc, la page déjà affichée s'écarte pour faire place à l'onglet déposé (200 ms, ease-out).
   activateSplit(id) {
     this.splitSlide = motion(MOTION.split);
@@ -4004,8 +4144,10 @@ class OrbeWindow {
   }
 
   // Adresse du lien survolé, en bas à gauche de la page.
+  // `rt` can also be the open Peek (`{ view, wc, peek }`): the pill then sits at the card's bottom left.
   linkStatus(rt, url) {
-    if (this.win.isDestroyed() || !this.visibleIds().includes(rt.id)) return;
+    const gone = (x) => (x.peek ? this.peekState !== x.peek : !this.visibleIds().includes(x.id));
+    if (this.win.isDestroyed() || gone(rt)) return;
     clearTimeout(this.statusTimer);
     clearTimeout(this.statusGrow);
     const hide = () => {
@@ -4026,7 +4168,7 @@ class OrbeWindow {
     };
     const dodge = () => {
       const st = this.status;
-      if (!st || this.win.isDestroyed() || st.rt.wc.isDestroyed()) return hide();
+      if (!st || this.win.isDestroyed() || st.rt.wc.isDestroyed() || (st.rt.peek && gone(st.rt))) return hide();
       const p = this.statusPointer();
       const r = rect(st);
       if (!p || p.x < r.x - STATUS.margin || p.x > r.x + r.width + STATUS.margin || p.y < r.y - STATUS.margin || p.y > r.y + r.height + STATUS.margin) return;
@@ -4290,6 +4432,72 @@ class OrbeWindow {
     return tab;
   }
 
+  // --- Bibliothèque -----------------------------------------------------------
+  // As in Arc, the Library is not a tab: a full-height panel takes the sidebar's place
+  // (hidden, floating or docked) and pushes the page card right, until the user goes back
+  // to a tab (click, new tab, Space), presses Esc or ⇧⌘L, or clicks its icon or its ←.
+  // The panel stays loaded once opened: it reopens at once.
+  get libraryWidth() {
+    return this.librarySection === 'spaces' ? LIBRARY_WIDE : LIBRARY_W;
+  }
+
+  openLibrary(section) {
+    const page = 'library.html#' + section;
+    const width = this.libraryShown && this.libraryWidth;
+    this.librarySection = section;
+    let view = this.libraryView;
+    if (!view) {
+      view = this.libraryView = this.makeUiView(page);
+      const wc = view.webContents;
+      wc.on('before-input-event', (e, input) => {
+        if (input.type === 'keyDown' && input.key === 'Escape' && !input.isAutoRepeat) { e.preventDefault(); this.closeLibrary(); }
+      });
+      wc.on('render-process-gone', () => { this.closeLibrary(); wc.close(); });
+      wc.once('destroyed', () => { if (this.libraryView === view) { this.libraryView = null; this.libraryShown = false; } });
+    } else if (view.webContents.getURL() !== INTERNAL + page) view.webContents.loadURL(INTERNAL + page).catch(() => {});
+    if (!this.libraryShown) {
+      this.libraryShown = true;
+      this.closePeek({ animate: false });
+      if (this.peek) this.setPeek(false);
+      if (this.findOpen) this.closeFind();
+      this.win.contentView.addChildView(view);
+      this.sendUi(view, 'overlay', { mode: 'library-in' }, () => this.libraryShown);
+    }
+    this.layout({ slide: width === this.libraryWidth ? 0 : motion(MOTION.library) });
+    OrbeWindow.pushAll();
+    view.webContents.focus();
+  }
+
+  // Section picked inside the panel (lib:section): the Spaces section widens it.
+  setLibrarySection(section) {
+    const width = this.libraryWidth;
+    this.librarySection = section;
+    if (!this.libraryShown || width === this.libraryWidth) return;
+    this.layout({ slide: motion(MOTION.library) });
+    OrbeWindow.pushAll();
+  }
+
+  closeLibrary() {
+    if (!this.libraryShown) return;
+    this.libraryShown = false;
+    try { this.win.contentView.removeChildView(this.libraryView); } catch {}
+    this.layout({ slide: motion(MOTION.library) });
+    this.focusContent();
+    OrbeWindow.pushAll();
+  }
+
+  toggleLibrary(section) {
+    if (this.libraryShown) this.closeLibrary(); else this.openLibrary(section);
+  }
+
+  // Easels and Notes opened from the Library show in Peek, as in Arc. `page`: built by
+  // library.js from known ids; `at`: the click, in the panel's coordinates.
+  peekPage(page, at) {
+    const b = this.libraryShown ? boundsOf(this.libraryView) : null;
+    const point = b && at && Number.isFinite(at.x) && Number.isFinite(at.y) ? { x: b.x + at.x, y: b.y + at.y } : undefined;
+    return this.openPeek(INTERNAL + page, this.activeId, undefined, point, true);
+  }
+
   // Active ou coupe le bloqueur pour le site affiché, puis recharge la page.
   toggleSiteBlocking() {
     const tab = this.activeId && this.data.tabs[this.activeId];
@@ -4409,10 +4617,38 @@ class OrbeWindow {
   }
 
   // --- Menus contextuels ----------------------------------------------------
-  popup(template) {
+  // `at`: { x, y } in the window, or nothing for the pointer.
+  popup(template, at) {
     this.menuOpen = true;
     const menu = Menu.buildFromTemplate(template);
-    menu.popup({ window: this.win, callback: () => { this.menuOpen = false; } });
+    menu.popup({ window: this.win, ...at, callback: () => { this.menuOpen = false; } });
+  }
+
+  // Developer Mode bar's menus (Arc): Extensions Menu (add, manage, then the pinned extensions)
+  // and Split View Menu (the four sides).
+  devMenu(a) {
+    const at = a && Number.isFinite(a.x) && Number.isFinite(a.y) ? { x: Math.round(a.x), y: Math.round(a.y) } : undefined;
+    if (a && a.which === 'split') {
+      const side = (k) => ({ label: t('view.addSplit.' + k), click: () => this.addSplit(k) });
+      return this.popup([side('right'), side('left'), { type: 'separator' }, side('top'), side('bottom')], at);
+    }
+    let exts = [];
+    try { exts = (require('./ext-host').actionsFor(this) || []).filter((x) => !(store.state.settings.extHidden || []).includes(x.id)); } catch {}
+    return this.popup([
+      // Both open the Extensions settings, as the Extensions menu of the menu bar does.
+      { label: t('ext.add'), click: () => this.run('manageExtensions') },
+      { label: t('ext.manage'), click: () => this.run('manageExtensions') },
+      ...(exts.length ? [{ type: 'separator' }] : []),
+      ...exts.map((x) => ({ label: String(x.title || x.id).slice(0, 80), enabled: x.enabled !== false, click: () => require('./ext-host').openPopup(this, x.id) })),
+    ], at);
+  }
+
+  // Site Settings in the Developer Mode bar: a hidden sidebar comes out and stays while `until` is pending.
+  holdPeek(until) {
+    if (this.sidebarVisible) return;
+    this.setPeek(true);
+    this.peekHeld = true;
+    until.then(() => { this.peekHeld = false; });
   }
 
   tabMenu(id, ids) {
@@ -4609,24 +4845,14 @@ class OrbeWindow {
     this.popup(this.spaceMenuTemplate());
   }
 
-  // Bouton « + » du bas (`plus`) : tout ce qu'on peut créer. Clic droit dans le
-  // vide de la barre : thème et profil de l'Espace, dossiers.
-  sidebarMenuTemplate(plus) {
-    const create = [
+  // Clic droit dans le vide de la barre : thème et profil de l'Espace, dossiers.
+  // (The bottom "+" opens Arc's popover in the sidebar itself, shell.js.)
+  sidebarMenuTemplate() {
+    return [
       { label: t('tabs.newTab'), click: () => this.openCommand('new') },
       { label: t('tabs.newFolder'), click: () => this.newFolder() },
       { label: t('spaces.new'), enabled: this.shared, click: () => this.askNewSpace() },
       { type: 'separator' },
-    ];
-    if (plus) {
-      return [...create,
-        { label: t('view.addSplit'), click: () => this.run('addSplit') },
-        { label: t('easel.new'), click: () => this.run('newEasel') },
-        { label: t('notes.new'), click: () => this.run('newNote') },
-        { label: t('boost.edit'), enabled: !!this.activeRt && !this.incognito, click: () => this.run('boost') },
-      ];
-    }
-    return [...create,
       { label: t('spaces.editTheme'), click: () => this.openTheme() },
       { label: t('spaces.profile'), enabled: this.shared, submenu: this.profileItems() },
       { type: 'separator' },
@@ -4635,8 +4861,8 @@ class OrbeWindow {
     ];
   }
 
-  sidebarMenu(plus) {
-    this.popup(this.sidebarMenuTemplate(!!plus));
+  sidebarMenu() {
+    this.popup(this.sidebarMenuTemplate());
   }
 
   pageMenu(rt, p) {
@@ -4728,8 +4954,7 @@ class OrbeWindow {
   // un nouvel onglet. Rien ne part sans ce clic ; seule l'adresse est transmise.
   translate(url, after) {
     if (!webUrl(url)) return undefined;
-    const to = store.state.settings.lang === 'en' ? 'en' : 'fr';
-    return this.newTab(`https://translate.google.com/translate?sl=auto&tl=${to}&u=${encodeURIComponent(url)}`, { after });
+    return this.newTab(`https://translate.google.com/translate?sl=auto&tl=${store.state.settings.lang}&u=${encodeURIComponent(url)}`, { after });
   }
 
   // --- État envoyé à la coque -----------------------------------------------
@@ -4758,6 +4983,7 @@ class OrbeWindow {
         audible: !!(alive && rt.wc.isCurrentlyAudible()),
         muted: !!tab.muted,
         capture: alive ? hooks.tabState(rt) : [],
+        shared: !!(alive && hooks.shared(rt)),
         live: !!alive,
         changed: !!tab.homeUrl && !samePage(tab.homeUrl, tab.url),
         split: g ? this.splits.indexOf(g) + 1 : 0,
@@ -4805,6 +5031,7 @@ class OrbeWindow {
       blank: this.blank,
       tracing: require('./trace').state.on, // trace de Chromium en cours : la barre le montre
       sidebar: { visible: this.sidebarVisible, peek: this.peek, width: this.sidebarWidth },
+      library: this.libraryShown ? this.libraryWidth : 0, // width of the Library panel the page card is pushed past
       toolbar,
       fullUrl: settings.showFullUrl !== false || (!!tab && prefs.devMode(tab.url)),
       devMode: !!tab && prefs.devMode(tab.url),
@@ -4826,15 +5053,16 @@ class OrbeWindow {
         internal: tab ? isInternal(tab.url) : false,
         title: tab ? (tab.title || '') : '',
         loading: !!(this.activeRt && this.activeRt.loading),
+        progress: this.activeRt ? this.activeRt.progress : 1,
         canBack: !!(wc && wc.navigationHistory.canGoBack()),
         canForward: !!(wc && wc.navigationHistory.canGoForward()),
-        blocked: wc && settings.adblock ? (adblock.stats().blockedByTab.get(wc.id) || 0) : 0,
-        shield: !settings.adblock ? 'off' : (tab && adblock.isSiteAllowed(tab.url) ? 'allowed' : 'on'),
+        // Share Quote: text selected in the page, except on Gmail, Slack and YouTube, as in Arc.
+        quote: !!(tab && this.activeRt && this.activeRt.quote) && !/(^|\.)(mail\.google|slack|youtube)\.com(:\d+)?$/.test(prefs.hostOf(tab.url)),
         // Connexion (cadenas, « Non sécurisé »), fenêtres surgissantes bloquées, captures en cours.
         ...hooks.navState(this, this.activeRt, tab),
       },
       update: this.incognito ? null : hooks.updateNote(),
-      // Boutons des extensions, sous l'adresse.
+      // Pinned extensions' buttons, inside the address pill.
       extensions: (() => {
         try { return (require('./ext-host').actionsFor(this) || []).filter((x) => !(settings.extHidden || []).includes(x.id)).map((x) => ({ id: x.id, title: x.title, icon: typeof x.icon === 'string' ? x.icon : '', badge: x.badgeText, badgeColor: x.badgeColor, badgeTextColor: x.badgeTextColor, enabled: x.enabled })); } catch { return []; }
       })(),
@@ -4875,7 +5103,7 @@ class OrbeWindow {
     const look = JSON.stringify(this.themeNow());
     if (look !== this.themeSig) {
       this.themeSig = look;
-      for (const v of [this.modal, this.findView, this.toastView, this.statusView]) {
+      for (const v of [this.modal, this.findView, this.toastView, this.statusView, this.libraryView]) {
         if (v && !v.webContents.isDestroyed()) v.webContents.send('theme', JSON.parse(look));
       }
     }
@@ -4893,10 +5121,10 @@ class OrbeWindow {
       case 'ready': return this.sendState();
       case 'hoverTab': return this.prewake(a);
       case 'battery': return OrbeWindow.setBattery(a, this);
-      case 'haptic': return store.state.settings.haptics === false ? undefined : require('./haptics').perform(a);
+      case 'haptic': return require('./haptics').perform(a);
       // Clic sur l'onglet déjà affiché : rien à faire, et surtout ne pas
       // reprendre le clavier (second clic d'un double-clic pour renommer).
-      case 'activate': return a === this.activeId && live.has(a) && !this.peekState ? undefined : this.activate(a);
+      case 'activate': return a === this.activeId && live.has(a) && !this.peekState && !this.libraryShown ? undefined : this.activate(a);
       // Variante { ids } : l'action porte sur la sélection (liste vérifiée par checkIds).
       case 'close': return a && typeof a === 'object' ? this.closeMany(a.ids) : this.close(a);
       case 'select': this.selection = this.checkIds(a); return undefined;
@@ -4907,12 +5135,12 @@ class OrbeWindow {
       case 'stepSpace': return this.stepSpace(a);
       case 'tabMenu': return a && typeof a === 'object' ? this.tabMenu(String(a.id), a.ids) : this.tabMenu(a);
       case 'spaceMenu': return this.spaceMenu(a);
-      case 'sidebarMenu': return this.sidebarMenu(a === 'plus');
+      case 'sidebarMenu': return this.sidebarMenu();
       case 'sidebarWidthReset': return this.setSidebarWidth(DEFAULT_SETTINGS.sidebarWidth);
       case 'favHintOff': return require('./commands').setSetting('favHintOff', true);
       case 'navMenu': return this.navMenu(Number(a));
       case 'navNew': return this.navNew(Number(a));
-      case 'reloadMenu': return this.popup(this.reloadMenuTemplate());
+      case 'reloadMenu': return a && a.dev ? this.devReloadMenu(a) : this.popup(this.reloadMenuTemplate());
       case 'resetPinnedAside': return this.resetPinnedAside(a);
       case 'moveSpace': return a && typeof a === 'object' ? this.moveSpace(String(a.id), Number(a.index)) : undefined;
       case 'moveToSpace': {
@@ -4920,7 +5148,9 @@ class OrbeWindow {
         return Array.isArray(a.ids) ? this.moveManyToSpace(a.ids, String(a.spaceId)) : this.moveToSpace(String(a.id), String(a.spaceId));
       }
       // Clic sur le bouclier : le centre de contrôle du site (feuille d'Orbe) ; à défaut (page interne, pas d'onglet), le menu.
-      case 'siteControl': return hooks.action(this, 'siteControl') ? undefined : this.shieldMenu();
+      // 'reveal' (Site Settings in the Developer Mode bar): with the sidebar out, as in Arc.
+      case 'siteControl': return hooks.action(this, 'siteControl', a === 'reveal' ? a : undefined) ? undefined : this.shieldMenu();
+      case 'devMenu': return this.devMenu(a);
       case 'shieldMenu': return this.shieldMenu();
       case 'toolbarMenu': return this.popup(this.toolbarMenuTemplate());
       case 'toastClick': return this.toastClick();
@@ -4945,6 +5175,7 @@ class OrbeWindow {
         if (/^[a-z][a-z0-9+.-]*:/i.test(text) && !webUrl(text)) return undefined;
         return this.newTab(webUrl(text) || suggest.searchUrl(text));
       }
+      case 'dropFiles': return a && typeof a === 'object' ? this.dropFiles(a) : undefined;
       // Saisie seule, ou { q, scope } : 'actions', ou { site } pour la recherche dans un site.
       case 'suggest': return a && typeof a === 'object' ? this.suggest(String(a.q || ''), a.scope === 'actions' ? 'actions' : (a.scope && typeof a.scope.site === 'string' ? { site: a.scope.site } : undefined)) : this.suggest(String(a || ''));
       case 'suggestDelete': return this.incognito ? false : palette.forget(a);
@@ -4973,6 +5204,7 @@ class OrbeWindow {
       case 'paneMenu': return this.visibleIds().includes(a) && this.groupOf(a) ? this.popup(this.paneMenuTemplate(a)) : undefined;
       case 'paneClose': return this.visibleIds().includes(a) ? this.closeSplitPane(a) : undefined;
       case 'splitTab': return this.splitTab(String(a));
+      case 'splitOnTab': return a && typeof a === 'object' ? this.splitOnTab(String(a.id), String(a.target), !!a.before) : undefined;
       // Onglet lâché hors de la fenêtre : seuls les identifiants viennent de l'interface, le point vient du système.
       case 'tearOff': return a && typeof a === 'object' && Array.isArray(a.ids) ? !!this.tearOff(a.ids) : false;
       // Ligne d'une autre fenêtre d'Orbe lâchée sur cette barre latérale.
@@ -5045,7 +5277,7 @@ function archiveStale() {
   // d'office et mène au réglage du délai.
   if (count && store.state.window && !store.state.window.archiveNoticed) {
     store.state.window.archiveNoticed = true;
-    any.toast(t('toast.autoArchive', { n: count, hours: delay }), null, () => hooks.openSettings());
+    any.toast(t('toast.autoArchive', { n: count, hours: delay }), null, () => require('./commands').hooks.openSettings()); // window.js's own hook is never set
   }
   if (count) { store.save(); for (const w of windows.values()) w.layout(); OrbeWindow.pushAll(); }
 }

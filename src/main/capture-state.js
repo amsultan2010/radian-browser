@@ -7,15 +7,15 @@
 //  - il s'allume quand Orbe accorde l'accès à la page ;
 //  - il s'éteint quand la page est remplacée (navigation, rechargement),
 //    détruite, ou arrêtée par l'utilisateur ;
-//  - pour le partage de l'onglet lui-même, `webContents.isBeingCaptured()` permet
-//    d'observer la fin : le témoin s'éteint quand plus rien ne capte la page.
-//    Ce compteur inclut les captures d'Orbe (vignettes, `capturePage`) : il peut
-//    donc retarder l'extinction, jamais la provoquer à tort.
+//  - when a tab is shared (the page's own, or another one through "Share this tab
+//    instead"), that tab's `webContents.isBeingCaptured()` shows the end: the
+//    indicator goes off once nothing captures it. The count includes Radian's own
+//    captures (thumbnails, `capturePage`), so it can delay the end, never fake it.
 // Il peut donc rester allumé après qu'une page a rendu la caméra d'elle-même
 // (jamais l'inverse) : un témoin qu'une page pourrait éteindre ne vaudrait rien.
 const KINDS = ['screen', 'camera', 'microphone'];
 const SETTLE = 4000;
-const states = new Map(); // id webContents -> { wc, kinds: Map(kind -> { at, self }), timer }
+const states = new Map(); // id webContents -> { wc, kinds: Map(kind -> { at, tab }), timer }
 const hooks = { changed: () => {} };
 
 function entry(wc) {
@@ -33,23 +33,28 @@ function entry(wc) {
   return st;
 }
 
-// `self` : la page capte son propre onglet ; la fin de la capture est alors observable.
-function mark(wc, kind, { self = false } = {}) {
+// `tab`: the tab the page captures (itself, or another through "Share this tab
+// instead"); the end of that capture is observable.
+function mark(wc, kind, { tab = null } = {}) {
   if (!wc || wc.isDestroyed() || !KINDS.includes(kind)) return;
   const st = entry(wc);
-  st.kinds.set(kind, { at: Date.now(), self });
-  if (self && !st.timer) {
+  const was = st.kinds.get(kind);
+  // A share of something else may still run in this page: its end would go unseen, so the indicator holds.
+  const held = !!was && (was.held || was.tab !== tab);
+  st.kinds.set(kind, { at: Date.now(), tab, held });
+  if (tab && !held && !st.timer) {
     let idle = 0;
     st.timer = setInterval(() => {
       if (wc.isDestroyed()) return;
       const k = st.kinds.get('screen');
       // Le flux met un instant à démarrer : rien n'est conclu avant quelques
       // secondes, puis il faut deux relevés de suite sans aucune capture.
-      idle = wc.isBeingCaptured() || (k && Date.now() - k.at < SETTLE) ? 0 : idle + 1;
-      if (!k || !k.self || idle >= 2) {
+      const shot = !!(k && k.tab && !k.tab.isDestroyed() && k.tab.isBeingCaptured());
+      idle = shot || (k && Date.now() - k.at < SETTLE) ? 0 : idle + 1;
+      if (!k || !k.tab || k.held || idle >= 2) {
         clearInterval(st.timer);
         st.timer = null;
-        if (k && k.self) { st.kinds.delete('screen'); hooks.changed(); }
+        if (k && k.tab && !k.held) { st.kinds.delete('screen'); hooks.changed(); }
       }
     }, 700);
     if (st.timer.unref) st.timer.unref();
@@ -73,6 +78,15 @@ function of(wc) {
   return KINDS.filter((k) => st.kinds.has(k));
 }
 
+// Tab outlined in yellow: the tab a page shares, or the page itself when it shares a screen or a window.
+function shared(wc) {
+  const own = wc && states.get(wc.id);
+  const k = own && own.kinds.get('screen');
+  if (k && (!k.tab || k.tab === wc)) return true;
+  for (const st of states.values()) { const s = st.kinds.get('screen'); if (s && s.tab === wc) return true; }
+  return false;
+}
+
 // Arrêt demandé par l'utilisateur. Electron n'offre aucun moyen de fermer un
 // flux précis : recharger la page est le seul arrêt garanti (Chromium ferme
 // alors tous ses flux).
@@ -83,4 +97,4 @@ function stop(wc) {
   return true;
 }
 
-module.exports = { mark, of, stop, clearAll, hooks, KINDS };
+module.exports = { mark, of, shared, stop, clearAll, hooks, KINDS };

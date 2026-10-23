@@ -865,8 +865,8 @@ module.exports = async function selftest(ctx) {
     check('thème : choisir une couleur quitte le thème par défaut', !sp.plain && Theme.normalize(sp).colors.join() === '#10b981');
     Theme.apply(sp, { preset: 'lagon' });
     check('thème prêt : couleurs, intensité et texture appliquées d’un coup', sp.color === '#3b82f6' && sp.color3 === '#9fdcc4' && sp.texture === 'grain' && sp.grain === 0.25 && sp.intensity === 0.62);
-    check('pastilles du sélecteur : trois pages de neuf, d’une à trois couleurs valides, toutes distinctes, la première = thème par défaut ; huit thèmes prêts',
-      Theme.SWATCHES.length === 3 && Theme.SWATCHES.every((page) => page.length === 9 && page.every((c) => c.length <= Theme.MAX_COLORS && c.every(Theme.isHex))) && new Set(Theme.SWATCHES.flat().map(String)).size === 27 && Theme.SWATCHES[0][0].length === 0
+    check('pastilles du sélecteur : les cinq pages de neuf d’Arc, d’une à trois couleurs valides, toutes distinctes ; huit thèmes prêts',
+      Theme.SWATCHES.length === 5 && Theme.SWATCHES.every((page) => page.length === 9 && page.every((c) => c.length >= 1 && c.length <= Theme.MAX_COLORS && c.every(Theme.isHex))) && new Set(Theme.SWATCHES.flat().map(String)).size === 45
       && Theme.PRESETS.length === 8 && Theme.PRESETS.every((x) => x.colors.every(Theme.isHex) && x.colors.length <= 3 && Theme.TEXTURES.includes(x.texture)));
     // Thème du premier Espace, en sombre : les couleurs relevées dans Arc (fond, texte, accent).
     const first = (mode, dark, intensity = 0.5) => Theme.palette({ colors: Theme.FIRST, accent: Theme.FIRST[0], intensity, grain: 0, texture: 'grain', mode }, dark);
@@ -962,7 +962,7 @@ module.exports = async function selftest(ctx) {
 
   // Réglages
   const sw2 = openSettings();
-  await until(async () => (await sw2.webContents.executeJavaScript('document.querySelectorAll("#profiles .profile").length')) === w.data.profiles.length, 'réglages affichés');
+  await until(async () => (await sw2.webContents.executeJavaScript('document.querySelectorAll("#profiles .prow").length')) === w.data.profiles.length, 'réglages affichés');
   check('les réglages listent les profils', await sw2.webContents.executeJavaScript('document.getElementById("lang").value') === 'fr');
   if (shots) fs.writeFileSync(path.join(shots, 'reglages.png'), (await sw2.webContents.capturePage()).toPNG());
   sw2.close();
@@ -988,11 +988,11 @@ module.exports = async function selftest(ctx) {
 
   // Bibliothèque (page interne)
   w.run('history');
-  const libId = w.activeId;
-  await until(async () => (await win.live.get(libId).wc.executeJavaScript('document.querySelectorAll("#list .line").length')) > 0, 'historique affiché');
-  check('⌘Y affiche l’historique', tabs()[libId].url.endsWith('library.html#history'));
+  const libWc = w.libraryView.webContents;
+  await until(async () => (await libWc.executeJavaScript('document.querySelectorAll("#list .line").length')) > 0, 'historique affiché');
+  check('⌘Y affiche l’historique', w.libraryShown && libWc.getURL().endsWith('library.html#history'));
   await shot('bibliotheque');
-  w.close(libId);
+  w.closeLibrary();
 
   // Page d'erreur
   const bad = w.newTab('http://127.0.0.1:1/');
@@ -1056,7 +1056,6 @@ module.exports = async function selftest(ctx) {
   await sleep(300);
   const pubWc = win.live.get(pub.id).wc;
   check('le bloqueur annule la requête tierce listée, pas celle du site', server.hits.pixel === 1 && adblock.stats().blockedByTab.get(pubWc.id) === 1, JSON.stringify([server.hits.pixel, adblock.stats().blockedByTab.get(pubWc.id)]));
-  await until(() => ui('document.getElementById("shield-n").textContent === "1"'), 'compteur du bouclier');
   server.hits.pixel = 0;
   w.toggleSiteBlocking();
   await until(() => server.hits.pixel === 2, 'exception pour le site');

@@ -104,22 +104,35 @@ module.exports = async function bibliothequeTests(ctx) {
     { id: 'p2', url: site('p2'), title: 'Lu il y a deux mois', spaceId: space.id, by: 'auto', at: old },
     { id: 'p3', url: site('p3'), title: '<img src=x onerror="window.__xss=1">', spaceId: other.id, by: 'little', at: old - 1000 },
   ];
-  const libTab = w.openInternal('library.html#archive');
-  const page = () => win.live.get(libTab.id).wc;
+  const tabs0 = Object.keys(d.tabs).length;
+  const active0 = w.activeId;
+  const card0 = w.contentRect();
+  w.openLibrary('archive');
+  const page = () => w.libraryView.webContents;
   const js = (code) => page().executeJavaScript(code);
+  check('la Bibliothèque s’ouvre dans son panneau, par-dessus les pages : aucun onglet créé, l’onglet affiché le reste',
+    w.libraryShown && w.win.contentView.children.includes(w.libraryView) && Object.keys(d.tabs).length === tabs0 && w.activeId === active0
+    && !Object.values(d.tabs).some((x) => (x.url || '').includes('library.html')) && w.openInternal('library.html#history') === undefined);
+  const [W0, H0] = w.win.getContentSize();
+  const panel0 = w.libraryView.getBounds();
+  check('comme dans Arc : un panneau de 417 pt à gauche, sur toute la hauteur, à la place de la barre latérale ; la page est poussée à sa droite sans rétrécir',
+    panel0.x === 0 && panel0.y === 0 && panel0.width === Math.min(W0, 417) && panel0.height === H0 && w.contentRect().x === 417 && w.contentRect().width === card0.width, JSON.stringify({ panel0, card: w.contentRect(), card0 }));
+  await until(() => ui('document.body.classList.contains("library") && getComputedStyle(document.getElementById("sidebar")).visibility === "hidden"'), 'barre latérale cachée sous le panneau');
   await until(() => js('document.querySelectorAll("#list .line").length === 3'), 'archive affichée');
   const fixed = new Date(2026, 9, 14, 15, 0).getTime(); // mercredi 14 octobre 2026
   const labels = await js(`[0, 1, 2, 3, 9, 12, 13, 14, 40, 400].map((n) => period(${fixed} - n * 864e5, ${fixed}))`);
   check('périodes, comme dans Arc : aujourd’hui, hier, plus tôt cette semaine, la semaine dernière, plus tôt ce mois-ci, puis le mois',
     labels.join('|') === [T('lib.today'), T('lib.yesterday'), T('lib.thisWeek'), T('lib.lastWeek'), T('lib.lastWeek'), T('lib.thisMonth'), T('lib.thisMonth'), 'Septembre', 'Septembre', 'Septembre 2025'].join('|'), labels.join('|'));
+  const filtersShut = await js('document.getElementById("filters").hidden && !document.getElementById("filter").hidden');
+  await js('document.getElementById("filter").click()');
   const seen = await js(`({ titres: [...document.querySelectorAll('#list h2')].map((h) => h.textContent), filtres: !document.getElementById('filters').hidden,
     choix: [...document.getElementById('f-how').options].map((o) => o.textContent), espaces: [...document.getElementById('f-space').options].map((o) => o.textContent),
-    croix: document.querySelectorAll('#list .line [data-do=delete]').length, etiquettes: [...document.querySelectorAll('#list .line .tag')].map((x) => x.textContent),
+    croix: document.querySelectorAll('#list .line [data-do=delete]').length, recherche: document.getElementById('q').placeholder,
     injecte: document.querySelectorAll('#list img[src="x"]').length, brut: document.querySelectorAll('#list .line .name')[2].textContent, xss: window.__xss || 0 })`);
   check('page de l’archive : lignes groupées par période', seen.titres.length === 2 && seen.titres[0] === T('lib.today') && seen.titres[1] !== T('lib.today'), seen.titres.join(' | '));
-  check('page de l’archive : filtres (façon de fermer, Espace), croix par ligne, étiquettes d’Espace et de cause',
-    seen.filtres && seen.choix.join('|') === ['all', 'manual', 'auto', 'little'].map((k) => T('lib.how.' + k)).join('|') && seen.espaces[0] === T('lib.allSpaces') && seen.espaces.includes('📚 Lecture')
-    && seen.croix === 3 && seen.etiquettes.includes('📚 Lecture') && seen.etiquettes.includes(T('lib.by.auto')) && seen.etiquettes.includes(T('lib.by.little')), JSON.stringify(seen));
+  check('page de l’archive, comme dans Arc : « Search Archive… », bouton « Filter » qui montre les filtres (façon de fermer, Espace), croix par ligne',
+    filtersShut && seen.filtres && seen.recherche === T('lib.searchArchive') && seen.choix.join('|') === ['all', 'manual', 'auto', 'little'].map((k) => T('lib.how.' + k)).join('|') && seen.espaces[0] === T('lib.allSpaces') && seen.espaces.includes('📚 Lecture')
+    && seen.croix === 3, JSON.stringify(seen));
   check('un titre de page n’est jamais interprété comme du HTML', seen.injecte === 0 && seen.xss === 0 && seen.brut === '<img src=x onerror="window.__xss=1">');
   await js(`(() => { const s = document.getElementById('f-how'); s.value = 'auto'; s.dispatchEvent(new Event('change')); })()`);
   await until(() => js('document.querySelectorAll("#list .line").length === 1 && document.querySelector("#list .line .name").textContent === "Lu il y a deux mois"'), 'archive filtrée');
@@ -150,29 +163,42 @@ module.exports = async function bibliothequeTests(ctx) {
   await until(() => store.state.window.librarySection === 'downloads', 'section retenue après un clic');
   for (const bad of ['inconnue', null, 42, { a: 1 }, '__proto__']) await lib('lib:section', bad);
   check('la Bibliothèque retient la dernière section affichée ; une valeur inconnue est ignorée', store.state.window.librarySection === 'downloads' && commands.librarySection() === 'downloads');
-  w.close(libTab.id, { ask: false });
+  const shownTab = w.activeId;
   w.run('library');
-  const again = w.activeId;
-  check('⇧⌘L rouvre la Bibliothèque sur cette section', d.tabs[again].url.endsWith('library.html#downloads'));
+  check('⇧⌘L, Bibliothèque ouverte : elle se ferme, l’onglet affiché revient', !w.libraryShown && !w.win.contentView.children.includes(w.libraryView) && w.activeId === shownTab);
+  w.run('library');
+  await until(() => page().getURL().endsWith('library.html#downloads'), 'section rouverte');
+  check('⇧⌘L rouvre la Bibliothèque sur cette section, sans onglet', w.libraryShown && w.activeId === shownTab && Object.keys(d.tabs).length === tabs0);
+  page().emit('before-input-event', { preventDefault() {} }, { type: 'keyDown', key: 'Escape' });
+  check('Échap ferme la Bibliothèque ; la page reprend sa place', !w.libraryShown && w.contentRect().x === card0.x);
+  w.run('library');
+  w.run('closeTab');
+  check('⌘W, Bibliothèque ouverte : elle se ferme, sans fermer l’onglet dessous', !w.libraryShown && w.activeId === shownTab && Object.keys(d.tabs).length === tabs0);
+  if (shownTab) {
+    w.run('library');
+    w.handle('activate', shownTab);
+    check('clic sur l’onglet affiché, dans la barre latérale : la Bibliothèque se ferme sur lui', !w.libraryShown && w.activeId === shownTab);
+  }
   w.run('history');
-  await until(() => d.tabs[again].url.endsWith('library.html#history') && store.state.window.librarySection === 'history', 'historique demandé');
-  check('⌘Y demande toujours l’historique, dans le même onglet', w.activeId === again);
+  await until(() => page().getURL().endsWith('library.html#history') && store.state.window.librarySection === 'history', 'historique demandé');
+  check('⌘Y demande toujours l’historique, dans le même panneau', w.libraryShown && w.activeId === shownTab);
   store.state.window.librarySection = 'inconnue';
-  check('section retenue illisible : l’historique', commands.librarySection() === 'history');
+  check('section retenue illisible : les Médias, première section d’Arc', commands.librarySection() === 'media');
 
   // --- Espaces --------------------------------------------------------------------------
   w.run('librarySpaces');
-  const page2 = () => win.live.get(w.activeId).wc;
-  const libId = w.activeId;
-  await until(() => page2().executeJavaScript(`location.hash === '#spaces' && document.querySelectorAll('#list .line').length === ${d.spaces.length}`), 'section Espaces');
+  const page2 = page;
+  check('section Espaces : le panneau s’élargit à 744 pt, la page le suit', w.libraryView.getBounds().width === Math.min(w.win.getContentSize()[0], 744) && w.contentRect().x === 744);
+  await until(() => page2().executeJavaScript(`location.hash === '#spaces' && document.querySelectorAll('#list .col').length === ${d.spaces.length}`), 'section Espaces');
   got = await lib('lib:get', {});
   const row = got.spaces.find((s) => s.id === space.id);
-  check('section « Espaces » : chaque Espace avec son profil et le nombre de ses onglets ; l’Espace affiché est marqué',
-    got.spaces.length === d.spaces.length && !!row && row.name === 'Lecture' && row.icon === '📚' && row.today === space.today.length && row.pinned === 0 && row.current === (w.spaceId === space.id)
-    && got.spaces.filter((s) => s.current).length === 1 && typeof row.profile === 'string' && row.profile.length > 0);
-  check('« Gérer les Espaces… » ouvre cette section, onglet « Espaces » allumé', await page2().executeJavaScript(`document.querySelector('[data-tab].on').dataset.tab === 'spaces' && document.getElementById('clear').textContent === ${JSON.stringify(T('spaces.new'))}`));
+  check('section « Espaces » : chaque Espace avec son profil et ses onglets',
+    got.spaces.length === d.spaces.length && !!row && row.name === 'Lecture' && row.icon === '📚' && row.items.today.length === space.today.length && row.items.pinned.length === 0 && typeof row.profile === 'string' && row.profile.length > 0);
+  check('« Gérer les Espaces… » ouvre cette section, onglet « Espaces » allumé : une colonne par Espace, sans champ de recherche, un + rond pour un nouvel Espace',
+    await page2().executeJavaScript(`document.querySelector('[data-tab].on').dataset.tab === 'spaces' && getComputedStyle(document.getElementById('bar')).display === 'none'
+      && document.querySelector('#list .add-space').title === ${JSON.stringify(T('spaces.new'))} && [...document.querySelectorAll('#list .col .col-name')].map((x) => x.textContent).includes('📚Lecture')`));
   w.switchSpace(space.id);
-  check('aller à un Espace depuis la Bibliothèque', (await lib('lib:space', { id: other.id, do: 'focus' })) === true && w.spaceId === other.id);
+  check('aller à un Espace depuis la Bibliothèque : l’Espace s’affiche, la Bibliothèque se ferme', (await lib('lib:space', { id: other.id, do: 'focus' })) === true && w.spaceId === other.id && !w.libraryShown);
   const spaces0 = d.spaces.length;
   const refused = [];
   for (const bad of [null, 'x', { id: 'inconnu', do: 'focus' }, { id: other.id, do: 'exploser' }, { id: other.id }, { do: 'delete' }]) refused.push(await lib('lib:space', bad));
@@ -183,8 +209,33 @@ module.exports = async function bibliothequeTests(ctx) {
   await lib('lib:space', { id: other.id, do: 'delete' });
   dialog.showMessageBox = box0;
   check('supprimer un Espace depuis la Bibliothèque : même confirmation que par le menu', asked.length === 1 && asked[0].message === T('spaces.deleteConfirm', { name: 'Musique' }) && d.spaces.includes(other));
+  // Gestionnaire d'Espaces (Arc) : colonnes, clic sur un onglet, « ↓ Clear », poignée, menu « … ».
   w.switchSpace(space.id);
-  w.activate(libId);
+  w.openLibrary('spaces');
+  got = await lib('lib:get', {});
+  const col = got.spaces.find((s) => s.id === other.id);
+  check('gestionnaire d’Espaces : chaque colonne porte le thème de son Espace, ses épinglés et ses onglets du jour',
+    !!col && col.theme.color === other.color && col.items.pinned.length === 0 && col.items.today.map((x) => x.id).join() === other.today.join() && col.items.today.every((x) => typeof x.title === 'string' && typeof x.url === 'string'), JSON.stringify(col));
+  const theirs = other.today[0];
+  check('onglet pris dans la colonne d’un autre Espace : refusé', (await lib('lib:space', { id: space.id, do: 'tab', tab: theirs })) === false && w.libraryShown);
+  check('clic sur un onglet d’une colonne : son Espace s’affiche, sur lui ; la Bibliothèque se ferme',
+    (await lib('lib:space', { id: other.id, do: 'tab', tab: theirs })) === true && w.spaceId === other.id && w.activeId === theirs && !w.libraryShown);
+  w.switchSpace(space.id);
+  const extra = [make('vider1', other), make('vider2', other)];
+  check('« ↓ Clear » d’une colonne : ses onglets du jour partent, sauf celui que l’Espace affiche ; l’Espace affiché ne change pas',
+    (await lib('lib:space', { id: other.id, do: 'clear' })) === true && other.today.join() === theirs && extra.every((id) => !d.tabs[id]) && w.spaceId === space.id);
+  const ids0 = d.spaces.map((s) => s.id);
+  check('poignée d’une colonne : l’Espace change de rang ; un rang illisible est refusé',
+    (await lib('lib:space', { id: other.id, do: 'move', index: 0 })) === true && d.spaces[0] === other && (await lib('lib:space', { id: other.id, do: 'move', index: 'x' })) === false);
+  d.spaces.sort((a, b) => ids0.indexOf(a.id) - ids0.indexOf(b.id));
+  let spaceTpl = null;
+  const popup0 = library.env.popup;
+  library.env.popup = (win2, tpl) => { spaceTpl = tpl; };
+  check('menu « … » d’une colonne : renommer, modifier le thème, supprimer',
+    (await lib('lib:space', { id: other.id, do: 'menu' })) === true && spaceTpl.filter((x) => x.label).map((x) => x.label).join('|') === [T('spaces.rename'), T('spaces.editTheme'), T('spaces.delete')].join('|'));
+  library.env.popup = popup0;
+  w.switchSpace(space.id);
+  w.openLibrary('spaces');
 
   // --- Boosts ---------------------------------------------------------------------------
   store.state.boosts = { 'exemple.fr': { css: 'body { color: red }', zaps: ['.pub', '#bandeau'], enabled: true }, 'autre.org': { css: '', zaps: ['.x'], enabled: false } };
@@ -455,6 +506,22 @@ module.exports = async function bibliothequeTests(ctx) {
       const brute = await nwc.executeJavaScript(`(() => { const e = document.getElementById('editor'); return { tags: [...e.querySelectorAll('*')].map((x) => x.tagName).join(), a: e.querySelectorAll('a').length, text: e.textContent }; })()`);
       check('note altérée sur le disque (type inconnu, lien « javascript: ») : le bloc inconnu est ignoré, le lien n’est pas créé', brute.tags === 'P' && brute.a === 0 && brute.text === 'clic', JSON.stringify(brute));
       w.close(tab.id);
+      // Bibliothèque → Tableaux et notes : une note s'ouvre en aperçu (Peek), comme dans Arc.
+      w.openLibrary('easels');
+      const lwc = w.libraryView.webContents;
+      await until(() => lwc.executeJavaScript(`location.hash === '#easels' && rows.filter((r) => r.note).length === 2 && document.querySelectorAll('#list .board .thumb.text').length === 2`), 'notes listées dans la Bibliothèque');
+      const tabs1 = Object.keys(d.tabs).length;
+      await lwc.executeJavaScript(`document.querySelector('#list .board[data-i="' + rows.findIndex((r) => r.id === 'n-hostile') + '"] .meta').click()`);
+      await until(() => w.peekState && w.peekState.url === 'orbe://app/notes.html#n-hostile', 'note ouverte en aperçu');
+      const pwc = w.peekState.view.webContents;
+      await until(() => pwc.executeJavaScript('document.querySelector("#editor h1") !== null').catch(() => false), 'note affichée dans l’aperçu');
+      check('Bibliothèque : une note s’ouvre en aperçu (Peek), pas en onglet ; la Bibliothèque reste dessous',
+        w.peekState.internal === true && Object.keys(d.tabs).length === tabs1 && w.libraryShown && (await pwc.executeJavaScript('window.__pwn || 0')) === 0);
+      w.dismissPeek();
+      check('aperçu fermé : retour à la Bibliothèque', !w.peekState && w.libraryShown);
+      check('aperçu demandé pour une note inconnue, ou par une autre page que la Bibliothèque : refusé',
+        (await library.action('lib:peek', { note: 'inconnue' }, lwc)) === false && (await library.action('lib:peek', { note: 'n-hostile' }, w.ui.webContents)) === false && !w.peekState);
+      w.closeLibrary();
     }
     store.state.notes = notes0;
     notes.env.pickFolder = pick0;
@@ -549,7 +616,7 @@ module.exports = async function bibliothequeTests(ctx) {
   Object.assign(downloads.env, env0);
   library.env.startDrag = startDrag0;
   try { fs.rmSync(dir, { recursive: true, force: true }); } catch {}
-  w.close(libId, { ask: false });
+  w.closeLibrary();
   for (const sp of [space, other]) {
     for (const id of [...sp.today]) { win.OrbeWindow.destroyView(id); delete d.tabs[id]; }
     sp.today = [];

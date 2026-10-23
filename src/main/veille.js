@@ -7,6 +7,7 @@
 //      (`lastUsed` est le dernier instant où il était à l'écran, pas sa dernière activation) ;
 //   3. la mémoire : tant que les processus des onglets dépassent `budgetMb`,
 //      les plus anciens s'endorment, sans descendre sous `MIN_LIVE` vivants.
+//      Also, while macOS is short of memory (`pressure`), one more tab sleeps at each sweep.
 //
 // Les sites qui restent éveillés (keepalive.js : liste d'Orbe et liste de l'utilisateur) comptent
 // comme des onglets où l'on a agi : les règles 2 et 3 les épargnent, la règle 1 ne les prend qu'en dernier.
@@ -55,7 +56,7 @@ function idleFor(hours, saver) {
 // `tabs` : [{ id, lastUsed, mb, kept, typed }] — `mb` : mémoire propre à l'onglet (0 si inconnue).
 // `totalMb` : mémoire de l'ensemble des processus d'onglets (les processus partagés comptés une fois).
 // Renvoie [{ id, why }] dans l'ordre d'endormissement ; why : 'count', 'idle' ou 'memory'.
-function pick(tabs, { max = Infinity, idleMs = 0, budgetMb = 0, totalMb = 0, now = Date.now() } = {}) {
+function pick(tabs, { max = Infinity, idleMs = 0, budgetMb = 0, totalMb = 0, pressure = false, now = Date.now() } = {}) {
   const out = [];
   const asleep = new Set();
   let alive = tabs.length;
@@ -77,6 +78,12 @@ function pick(tabs, { max = Infinity, idleMs = 0, budgetMb = 0, totalMb = 0, now
       sleep(t, 'memory');
     }
   }
+  // System memory pressure (Arc: "proactive memory release"): the oldest tab the memory rule may take,
+  // one per sweep (every minute) until the pressure eases.
+  if (pressure && alive > MIN_LIVE) {
+    const t = oldest.find((x) => !asleep.has(x.id) && !x.typed);
+    if (t) sleep(t, 'memory');
+  }
   return out;
 }
 
@@ -86,8 +93,9 @@ function budget(totalBytes, percent) {
 }
 
 // CPU rule (Arc: "background tabs using a lot of CPU are frozen automatically"): a hidden tab whose
-// renderer stays above `pct` % of one core for `samples` samples in a row sleeps like an idle tab
-// (the page is consulted, so it can refuse). Each sample is the mean over the whole interval, so
+// renderer stays above `pct` % of one core for `samples` samples in a row is frozen, not unloaded
+// (window.js, `freezeView`); one still burning once frozen sleeps like an idle tab (the page is
+// consulted, so it can refuse). Each sample is the mean over the whole interval, so
 // a short burst never counts. Sampling runs only while some tab could sleep (window.js, `watchCpu`).
 // 50 % of a core is Chrome's heavy-ad CPU line; two minutes lets a page finish a real job.
 const CPU = { everyMs: 30e3, pct: 50, samples: 4 };
@@ -97,7 +105,7 @@ const CPU_SAVER = { everyMs: 15e3, pct: 25, samples: 4 };
 // `tabs`: [{ id, pids, kept, typed }], the same `kept` / `typed` as `pick`, `pids` every renderer
 // process of the tab's frames. `readings`: Map pid -> cumulative CPU seconds of that process.
 // `state`: what the previous call returned (an empty Map the first time).
-// Returns { ids, state }: the tabs to put to sleep, and the state for the next call.
+// Returns { ids, state }: the tabs to freeze, and the state for the next call.
 function burning(tabs, readings, state, { now = Date.now(), saver = false } = {}) {
   const { pct, samples } = saver ? CPU_SAVER : CPU;
   const users = new Map(); // pid -> the tabs that use it

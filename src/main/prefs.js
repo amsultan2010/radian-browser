@@ -17,6 +17,10 @@ function isDir(p) {
 const downloadDir = (v) => typeof v === 'string' && (v === '' || (v.length < 1024 && path.isAbsolute(v) && isDir(v)));
 const searchEngine = (v) => typeof v === 'string' && Object.hasOwn(require('./suggest').ENGINES, v);
 
+// Arc's "Default Document App": the page New Note opens, by app. 'notes' keeps Radian's own Notes.
+const NOTE_APPS = { notion: 'https://notion.so/new', googleDocs: 'https://doc.new', word: 'https://word.new', confluence: 'https://confluence.new' };
+const noteApp = (v) => v === 'notes' || (typeof v === 'string' && Object.hasOwn(NOTE_APPS, v));
+
 const hostList = (v) => Array.isArray(v) && v.length <= 200 && v.every((h) => typeof h === 'string' && HOST.test(h)) && new Set(v).size === v.length;
 
 // Réglages qu'un profil peut redéfinir.
@@ -25,6 +29,8 @@ const PROFILE_KEYS = {
   suggestions: bool,
   archiveAfterHours: (v) => ARCHIVE_HOURS.includes(v),
   downloadDir,
+  downloadAsk: bool, // Arc's "Ask every time" item of the profile's download location
+  noteApp,
 };
 
 function profileSettings(v) {
@@ -175,7 +181,7 @@ const SETTABLE = {
   haptics: bool, // REG-40, played by src/main/haptics.js
   peekShift: bool,
   littleAltClick: bool,
-  littleArchiveHours: (v) => v === 6 || ARCHIVE_HOURS.includes(v), // 6 h is Arc's delay for Little Arc
+  littleArchiveHours: (v) => v === 1 || v === 6 || ARCHIVE_HOURS.includes(v), // Arc offers 1, 6 (its default) and 12 h for Little Arc
   cookieBanners: bool,
   themeData: bool,
   boostsEnabled: bool,
@@ -197,6 +203,7 @@ const SETTABLE = {
   downloadOpenPdf: bool,
   updateCheck: bool,
   siteSearch,
+  noteApp,
   profileSettings,
   shortcuts: (v) => require('./shortcuts').validMap(v),
 };
@@ -251,4 +258,4 @@ function isLocal(url) {
 const devAuto = (url) => store.state.settings.devLocalhost !== false && isLocal(url) && !(store.state.settings.devOff || []).includes(hostOf(url));
 const devMode = (url) => { const h = hostOf(url); return !!h && ((store.state.settings.devSites || []).includes(h) || devAuto(url)); };
 
-module.exports = { routeRule, routeText, routeMatches, routeFor, migrateRoutes, routes, siteSearch, SETTABLE, PROFILE_KEYS, ARCHIVE_HOURS, externalLinks, get, setForProfile, forgetProfile, downloadDirFor, hostOf, devMode, devAuto, isLocal };
+module.exports = { NOTE_APPS, routeRule, routeText, routeMatches, routeFor, migrateRoutes, routes, siteSearch, SETTABLE, PROFILE_KEYS, ARCHIVE_HOURS, externalLinks, get, setForProfile, forgetProfile, downloadDirFor, hostOf, devMode, devAuto, isLocal };

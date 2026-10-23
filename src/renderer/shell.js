@@ -44,22 +44,24 @@ function setIcon(el, it) {
 function tabRow(el, it) {
   if (!el._built) {
     el._built = true;
-    el.innerHTML = `<span class="ic" data-act="icon"></span><span class="more"></span><span class="slash">/</span><span class="title"></span>`
+    el.innerHTML = `<span class="ic" data-act="icon"></span><span class="more"></span><span class="slash">/</span><span class="title"></span><span class="host"></span>`
       + `<button class="act reset" data-act="reset">${icon('reset')}</button>`
       + `<button class="act cap" data-act="capture">${icon('screen')}</button>`
       + `<button class="act snd" data-act="mute">${icon('sound')}</button>`
+      + `<button class="act inst" data-act="instead" title="${t('share.instead')}" data-t-title="share.instead">${icon('share-tab')}</button>`
       // Au survol : « × » pour un onglet du jour, « − » pour un épinglé (il est déchargé, pas fermé), comme dans Arc.
       + `<button class="act x" data-act="close">${icon('close', 'i cl')}${icon('minus', 'i mi')}</button>`;
     el._ic = el.firstChild;
     el._title = el.children[3];
     el._more = el.children[1];
+    el._host = el.children[4];
     el._snd = el.querySelector('.snd use');
     el._cap = el.querySelector('.cap use');
     el.draggable = true;
   }
   el.className = 'row tab' + (it.active ? ' active' : '') + (it.shown ? ' shown' : '') + (it.live ? ' live' : '')
     + (it.audible ? ' audible' : '') + (it.muted ? ' muted' : '') + (it.changed ? ' changed' : '') + (it.partners ? ' split' : '') + (it.grouped ? ' grouped' : '')
-    + (it.capture && it.capture.length ? ' capturing' : '') + (it.capture && it.capture.includes('screen') ? ' sharing' : '')
+    + (it.capture && it.capture.length ? ' capturing' : '') + (it.shared ? ' sharing' : '') + (/^https?:/i.test(it.url) ? ' web' : '')
     + (sel.has(it.id) ? ' sel' : '') + (flashId === it.id ? ' flash' : '');
   // Témoin de capture : écran, caméra ou micro (le premier de la liste).
   const cap = (it.capture && it.capture[0]) || '';
@@ -71,6 +73,9 @@ function tabRow(el, it) {
     el._title.textContent = label;
     el.title = label;
   }
+  // Second line of a Developer Mode row (shell.css): host:port, as in Arc.
+  const hostPort = /^https?:/i.test(it.url) ? (() => { try { return new URL(it.url).host; } catch { return ''; } })() : '';
+  if (el._h !== hostPort) { el._h = hostPort; el._host.textContent = hostPort; }
   const moreKey = it.partners ? it.partners.map((p) => p.id + p.favicon + (p.icon || '')).join(',') : '';
   if (el._mk !== moreKey) {
     el._mk = moreKey;
@@ -78,6 +83,8 @@ function tabRow(el, it) {
     for (const p of it.partners || []) el._more.appendChild(p.icon ? emojiEl(p.icon) : faviconEl(S && S.incognito ? '' : (p.favicon || guessIcon(p.url)), p.title));
   }
   if (el._m !== it.muted) { el._m = it.muted; el._snd.setAttribute('href', it.muted ? '#i-mute' : '#i-sound'); }
+  // Redrawn while a dragged tab is held on it for a split (see splitTarget): it keeps the mark.
+  if (el === intoEl) el.classList.add('drop-into', ...(target.before ? [] : ['right']));
   setIcon(el, it);
   keepRow(el, it);
 }
@@ -88,7 +95,7 @@ function tabRow(el, it) {
 // que rien d'autre n'a touché la ligne depuis (classes posées par un geste, une
 // animation, la sélection), elle est laissée telle quelle. Comparaison champ par
 // champ, sans rien allouer : à 1 000 onglets, c'est ce passage qui coûtait.
-const ROW_FIELDS = ['title', 'url', 'favicon', 'icon', 'loading', 'audible', 'muted', 'live', 'changed', 'grouped', 'active', 'shown', 'split', 'noBadge'];
+const ROW_FIELDS = ['title', 'url', 'favicon', 'icon', 'loading', 'audible', 'muted', 'live', 'changed', 'grouped', 'active', 'shown', 'split', 'noBadge', 'shared'];
 const rowStats = { drawn: 0, kept: 0 };
 function keepRow(el, it) {
   el._vm = it;
@@ -322,7 +329,7 @@ function drawSpaces(list, current) {
   // Seul l'Espace courant change : les pastilles restent, leur largeur passe au ressort (CSS).
   if (same && list.length > 1) { for (const el of spaces.children) el.classList.toggle('active', el.dataset.space === current); return; }
   spaces.innerHTML = list.length > 1
-    ? list.map((x) => `<button class="sp${x.id === current ? ' active' : ''}" data-space="${esc(x.id)}" title="${esc(x.name)}" draggable="true"><span class="em">${esc(x.icon) || '•'}</span></button>`).join('')
+    ? list.map((x, i) => `<button class="sp${x.id === current ? ' active' : ''}" data-space="${esc(x.id)}" data-tip="${esc(x.name)}"${i < 9 ? ` data-tip-keys="⌃${i + 1}"` : ''} aria-label="${esc(x.name)}" draggable="true"><span class="em">${esc(x.icon) || '•'}</span></button>`).join('')
     : '';
 }
 
@@ -351,11 +358,16 @@ function render(s) {
   paintTheme(b, s.space, s);
   b.style.setProperty('--sw', s.sidebar.width + 'px');
   b.classList.toggle('open', open);
+  if (!open) plusClose();
   b.classList.toggle('docked', s.sidebar.visible);
   b.classList.toggle('translucent', s.translucent);
   b.classList.toggle('incognito', s.incognito);
+  b.classList.toggle('share-on', !!s.nav.sharing);
   b.classList.toggle('blank-window', !!s.blank);
   b.classList.toggle('toolbar', s.toolbar);
+  // Library open (window.js `contentRect`): the page card sits right of its panel; its shadow, toolbar and glow go along.
+  b.classList.toggle('library', !!s.library);
+  if (s.library) b.style.setProperty('--lib-dx', s.library - (s.sidebar.visible ? s.sidebar.width : 10) + 'px');
   b.classList.toggle('dev-site', !!s.devMode); // liseré jaune et noir sous l'adresse (mode développeur du site)
   fxToolbar(s.pageColor);
   b.classList.toggle('fullscreen', s.fullScreen);
@@ -371,18 +383,32 @@ function render(s) {
   scroller.classList.toggle('pinned-collapsed', (side.collapsed || []).includes(s.space.id));
   $('fav').dataset.hint = t('side.favHint');
   $('url-copy').hidden = !s.activeId || s.nav.internal || !s.nav.url;
+  // Share Quote (Arc): with text selected, the pill reads the host over "Share Quote", and the link button copies the quote.
+  const quote = !!s.nav.quote;
+  $('url').classList.toggle('quote', quote);
+  const copy = $('url-copy');
+  copy.dataset.tip = quote ? 'side.copyQuote' : 'side.copyCurrentUrl';
+  copy.dataset.tipKey = quote ? 'copyUrlQuote' : 'copyUrl';
+  copy.setAttribute('aria-label', t(copy.dataset.tip));
+  $('url-copy-icon').setAttribute('href', quote ? '#i-quote' : '#i-link');
 
   const label = s.nav.internal ? (s.nav.title || 'Radian') : host(s.nav.url);
   $('url-text').textContent = label || t('side.search');
   $('url-text').classList.toggle('placeholder', !label);
-  $('url').classList.toggle('loading', s.nav.loading);
   // Lueur de chargement le long du bord haut de la page.
-  b.classList.toggle('loading', !!s.nav.loading && !!s.activeId);
+  // Its width follows the load progress (window.js) and fills up before fading out. A new load or
+  // another tab jumps to its own value instead of sliding back.
+  const loading = !!s.nav.loading && !!s.activeId;
+  const glow = $('glow').firstElementChild;
+  const snap = (loading && !b.classList.contains('loading')) || glow.dataset.tab !== String(s.activeId || '');
+  glow.dataset.tab = String(s.activeId || '');
+  if (snap) glow.style.transition = 'none';
+  glow.style.transform = `scaleX(${loading ? s.nav.progress : 1})`;
+  if (snap) { getComputedStyle(glow).transform; glow.style.transition = ''; }
+  b.classList.toggle('loading', loading);
   $('url').title = s.nav.internal ? '' : s.nav.url;
   const shield = $('shield');
   shield.hidden = !s.activeId || s.nav.internal || false;
-  shield.className = s.nav.shield;
-  $('shield-n').textContent = s.nav.shield === 'on' && s.nav.blocked ? (s.nav.blocked > 99 ? '99+' : String(s.nav.blocked)) : '';
   // Connexion : cadenas discret en https, « Non sécurisé » en http ou avec un certificat refusé.
   const sec = s.activeId && !s.nav.internal ? (s.nav.security || '') : '';
   const lock = $('lock');
@@ -405,6 +431,12 @@ function render(s) {
     $(p + '-reload').disabled = !s.activeId;
   }
   $('reload-icon').setAttribute('href', s.nav.loading ? '#i-stop' : '#i-reload');
+  // Arc: "Hide sidebar" while docked, "Lock sidebar" on the floating one; reload has no tooltip.
+  const sbTip = s.sidebar.visible ? 'side.hideSidebar' : 'side.lockSidebar';
+  $('b-sidebar').dataset.tip = sbTip;
+  $('b-sidebar').setAttribute('aria-label', t(sbTip));
+  $('b-reload').setAttribute('aria-label', t(s.nav.loading ? 'view.stop' : 'side.reload'));
+  $('b-plus').setAttribute('aria-label', t('side.plus'));
 
   if (editing !== s.space.id) $('space-name').textContent = s.space.name;
   $('space-icon').textContent = s.space.icon;
@@ -424,8 +456,9 @@ function render(s) {
   drawSpaces(s.spaces, s.space.id);
 
   // Boutons des extensions : icône, pastille, clic = fenêtre de l'extension.
-  // Barre d'outils affichée : ils sont à sa droite (comme dans Arc), et non plus sous l'adresse.
-  const exts = s.toolbar && !FLOATING ? $('tb-exts') : $('exts');
+  // In the address pill, revealed on hover (shell.css); with the toolbar shown they sit at its right, always visible (Arc).
+  // Arc's Developer Mode bar has none (they are in its Extensions menu): they stay in the pill.
+  const exts = s.toolbar && !s.devMode && !FLOATING ? $('tb-exts') : $('exts');
   const extSig = JSON.stringify(s.extensions || []);
   if (exts._sig !== extSig) {
     exts._sig = extSig;
@@ -475,6 +508,7 @@ function render(s) {
   drawPanes(s.panes || []);
 
   const lib = $('b-library');
+  lib.classList.toggle('on', !!s.library);
   lib.classList.toggle('downloading', !!s.downloads);
   fxDownloads(s.downloadsStarted);
   if (s.downloads) lib.querySelector('circle').style.strokeDashoffset = String(75.4 * (1 - s.downloads.progress));
@@ -747,6 +781,7 @@ sidebar.addEventListener('click', (e) => {
     if (act.dataset.act === 'close') send('close', id);
     else if (act.dataset.act === 'mute') send('toggleMute', id);
     else if (act.dataset.act === 'capture') send('captureMenu', id);
+    else if (act.dataset.act === 'instead') send('shareInstead', id);
     else if (act.dataset.act === 'reset') send('resetPinned', id);
     // Clic sur l'icône d'un épinglé sorti de son adresse : retour à celle-ci.
     // ⌘clic : la page qu'il affichait part dans un nouvel onglet.
@@ -816,6 +851,13 @@ sidebar.addEventListener('contextmenu', (e) => {
 $('trace-note').onclick = () => send('trace:stop');
 $('update-open').onclick = () => send('update:show');
 $('update-close').onclick = () => send('update:dismiss');
+// Buttons revealed in the address pill sit over it: the address text stops before the first one instead of running under it.
+const urlFit = new ResizeObserver(() => {
+  const row = $('url-row');
+  const first = [...row.children].find((el) => el.id !== 'url' && el.offsetWidth);
+  $('url').style.paddingRight = first ? `${Math.round(row.getBoundingClientRect().right - first.getBoundingClientRect().left) + 4}px` : '';
+});
+for (const el of $('url-row').children) if (el.id !== 'url') urlFit.observe(el);
 for (const box of [$('exts'), $('tb-exts')]) {
   box.addEventListener('contextmenu', (e) => {
     const b = e.target.closest('[data-ext]');
@@ -832,20 +874,82 @@ for (const box of [$('exts'), $('tb-exts')]) {
   });
 }
 $('b-sidebar').onclick = () => send('toggleSidebar');
-$('url').onclick = () => send('openCommand', 'edit');
+$('b-reload-more').onclick = () => { const r = $('b-reload-more').getBoundingClientRect(); send('reloadMenu', { dev: true, x: Math.round(r.left), y: Math.round(r.bottom + 4) }); };
+$('url').onclick = (e) => (e.target.closest('#url-quote') ? send('command', 'copyUrlQuote') : send('openCommand', 'edit'));
 $('shield').onclick = () => send('siteControl');
 $('shield').addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); send('shieldMenu'); });
 $('lock').onclick = () => send('siteInfo');
 $('popup-note').onclick = () => send('popupMenu');
 $('capture-note').onclick = () => send('captureMenu');
 $('tb-url').onclick = () => send('openCommand', 'edit');
+$('tb-dev').onclick = (e) => {
+  const b = e.target.closest('[data-cmd], [data-menu]');
+  if (!b) return;
+  if (b.dataset.cmd) return send('command', b.dataset.cmd);
+  // Extensions and split view menus open under their button.
+  const r = b.getBoundingClientRect();
+  send('devMenu', { which: b.dataset.menu, x: Math.round(r.left), y: Math.round(r.bottom + 4) });
+};
+// Site Settings (Arc): the sidebar comes out if hidden, with the Site Control Center.
+$('tb-site').onclick = () => send('siteControl', 'reveal');
 // Clic droit sur la barre d'outils : adresse entière, copie, capture, partage.
 $('toolbar').addEventListener('contextmenu', (e) => { e.preventDefault(); send('toolbarMenu'); });
 $('b-newtab').onclick = () => send('openCommand', 'new');
 $('b-clear').onclick = () => send('command', 'clearToday');
-$('b-library').onclick = () => send('command', S && S.downloads ? 'downloads' : 'library');
-$('b-plus').onclick = () => send('sidebarMenu', 'plus');
-$('url-copy').onclick = () => send('command', 'copyUrl');
+// Library open: its icon closes it, as in Arc.
+$('b-library').onclick = () => send('command', S && S.downloads && !S.library ? 'downloads' : 'library');
+// Bottom "+": Arc's navy menu above it, New Tab highlighted; the "+" turns into "✕" while it is open.
+// Each item runs an existing command; one that cannot run here is dimmed.
+const PLUS_ITEMS = [
+  ['newSpace', 'side.plusSpace', 'i-new-space', (s) => !s.incognito && !s.blank],
+  ['newFolder', 'side.plusFolder', 'i-folder-line'],
+  null,
+  ['newEasel', 'easel.new', 'i-easel'],
+  ['boost', 'side.plusBoost', 'i-boost', (s) => !s.incognito && !!s.activeId && /^https?:/i.test(s.nav.url)],
+  null,
+  ['addSplit', 'side.plusSplit', 'i-new-split', (s) => !!s.activeId],
+  ['newTab', 'tabs.newTab', 'i-new-tab'],
+];
+const plusMenu = $('plus-menu');
+function plusClose() {
+  if (plusMenu.hidden) return;
+  plusMenu.hidden = true;
+  $('b-plus').setAttribute('aria-expanded', 'false');
+  $('b-plus').querySelector('use').setAttribute('href', '#i-plus');
+}
+function plusOpen() {
+  plusMenu.innerHTML = PLUS_ITEMS.map((it) => (it
+    ? `<button role="menuitem" data-cmd="${it[0]}"${it[3] && !it[3](S) ? ' disabled' : ''}><svg class="i"><use href="#${it[2]}"/></svg><span>${esc(t(it[1]))}</span><kbd>${esc(KEYS[it[0]] || '')}</kbd></button>`
+    : '<hr>')).join('');
+  plusMenu.hidden = false;
+  const b = $('b-plus').getBoundingClientRect();
+  plusMenu.style.setProperty('--arrow-x', `${Math.round(b.left + b.width / 2 - plusMenu.getBoundingClientRect().left)}px`);
+  $('b-plus').setAttribute('aria-expanded', 'true');
+  $('b-plus').querySelector('use').setAttribute('href', '#i-close');
+  plusMenu.querySelector('[data-cmd="newTab"]').focus();
+}
+$('b-plus').onclick = () => (plusMenu.hidden && S ? plusOpen() : plusClose());
+plusMenu.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-cmd]');
+  if (!b || b.disabled) return;
+  plusClose();
+  send('command', b.dataset.cmd);
+});
+plusMenu.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); });
+// The highlight follows the pointer and the arrow keys (Enter runs it); Escape closes.
+plusMenu.addEventListener('mouseover', (e) => { const b = e.target.closest('[data-cmd]:not(:disabled)'); if (b) b.focus(); });
+document.addEventListener('keydown', (e) => {
+  if (plusMenu.hidden) return;
+  if (e.key === 'Escape') { plusClose(); return; }
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  e.preventDefault();
+  const items = [...plusMenu.querySelectorAll('[data-cmd]:not(:disabled)')];
+  const i = items.indexOf(document.activeElement);
+  items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+});
+document.addEventListener('mousedown', (e) => { if (!plusMenu.contains(e.target) && !$('b-plus').contains(e.target)) plusClose(); }, true);
+addEventListener('blur', plusClose);
+$('url-copy').onclick = () => send('command', S && S.nav.quote ? 'copyUrlQuote' : 'copyUrl');
 const LONG_PRESS = 500; // appui long sur précédent / suivant (ms)
 for (const p of ['b', 'tb']) {
   // Précédent, suivant : clic = aller ; ⌘clic ou clic molette = dans un nouvel
@@ -1198,7 +1302,8 @@ function onState(s) {
   } else if (slide && S && s.space.id !== S.space.id) {
     slideEnd(); // changement venu d'ailleurs pendant un balayage : le balayage est abandonné
   }
-  const visible = FLOATING ? s.sidebar.peek && !s.sidebar.visible : s.sidebar.visible;
+  // Floating (hover-revealed) sidebar: Arc 1.170 swaps the list in one frame (live capture, motion.md); docked, it slides.
+  const visible = !FLOATING && s.sidebar.visible;
   if (S && !slide && s.space.id !== S.space.id && visible && document.body.classList.contains('open') && !reducedMotion.matches && !drag) return slideTo(s);
   const first = !S;
   render(s);
@@ -1574,7 +1679,7 @@ function dropGeom() {
 // libre, ou trait dans la grille des favoris.
 let feltAt = ''; // last drop place a haptic tap marked, as Arc taps on each new place
 function showTarget(t) {
-  const same = t === target || (t && target && t.to === target.to && t.folderId === target.folderId && t.index === target.index && t.into === target.into && !t.pos && t.g === target.g);
+  const same = t === target || (t && target && t.to === target.to && t.folderId === target.folderId && t.index === target.index && t.into === target.into && !t.pos && t.g === target.g && t.before === target.before);
   if (same) return;
   target = t;
   const place = t ? `${t.to}|${t.folderId}|${t.index}|${t.into ? 1 : 0}` : '';
@@ -1582,10 +1687,11 @@ function showTarget(t) {
   feltAt = place;
   const into = (t && t.into) || null;
   if (into !== intoEl) {
-    if (intoEl) intoEl.classList.remove('drop-into');
+    if (intoEl) intoEl.classList.remove('drop-into', 'right');
     if (into) into.classList.add('drop-into');
     intoEl = into;
   }
+  if (into) into.classList.toggle('right', !!t.split && !t.before);
   if (geom) part(t && t.g != null ? t.g : null, t ? t.room : 0);
   if (t && t.slot) placeSlot();
   else if (t && t.pos) {
@@ -1619,8 +1725,9 @@ scroller.addEventListener('scroll', offViewSoon, { passive: true });
 function endDrag() {
   if (!drag) return;
   clearTimeout(drag.timer);
+  clearHold();
   const settled = drag.settling;
-  if (!settled && !drag.space) send('dragZone', false);
+  if (!settled && !drag.space && !drag.ext) send('dragZone', false);
   zoneOn = false;
   // Dépôt accepté : les lignes sont déjà à leur place définitive, on retire les
   // décalages sans animation. Abandon : elles reviennent en glissant.
@@ -1786,9 +1893,11 @@ function spaceTarget(e) {
 // Calcule la destination sous le pointeur : liste, position et repère visuel.
 function dropTarget(e) {
   if (drag.space) return spaceTarget(e);
+  const split = splitTarget(e);
+  if (split) return split;
   // Onglet au-dessus de la pastille d'un autre Espace : il y sera déplacé.
   const dot = e.target.closest('#spaces [data-space]');
-  if (dot) return drag.folder || dot.dataset.space === S.space.id ? null : { toSpace: dot.dataset.space, into: dot, g: null };
+  if (dot) return drag.folder || drag.ext || dot.dataset.space === S.space.id ? null : { toSpace: dot.dataset.space, into: dot, g: null };
   const fav = e.target.closest('#fav');
   if (fav) return gridTarget(e, fav);
   const hint = e.target.closest('#fav-hint');
@@ -1798,9 +1907,42 @@ function dropTarget(e) {
   return listTarget(e.clientY - geom.top + geom.scroll);
 }
 
+// Arc 1.27: a tab held a moment on another tab's row makes a split with it; the half of the row
+// under the pointer is the side the dropped tab takes (Arc 1.28). Reordering passes over rows
+// without resting on one, so it is unchanged; once the hold is reached the rows close up (the
+// row under the pointer never moves when they do: it is the one row left at rest).
+const SPLIT_HOLD = 450; // guessed: Arc also waits (splitDropTargetDelaySatisfied), for a time it does not publish
+let hold = null; // tab row the dragged tab rests on: { id, row, x, y, on, timer }
+function clearHold() {
+  if (hold) clearTimeout(hold.timer);
+  hold = null;
+}
+function splitTarget(e) {
+  const row = drag.folder || drag.ids || drag.ext ? null : e.target.closest('#scroll .row.tab[data-id]');
+  if (!row || row.dataset.id === drag.id) return clearHold();
+  if (!hold || hold.row !== row) {
+    clearHold();
+    hold = { id: row.dataset.id, row, on: false };
+    hold.timer = setTimeout(() => {
+      // Still under the pointer (a row parting away under a still pointer does not count).
+      const el = drag && !drag.settling && hold && document.elementFromPoint(hold.x, hold.y);
+      if (!el || el.closest('.row.tab') !== hold.row) return clearHold();
+      hold.on = true;
+      showTarget(splitAt());
+    }, SPLIT_HOLD);
+  }
+  hold.x = e.clientX;
+  hold.y = e.clientY;
+  return hold.on ? splitAt() : null;
+}
+function splitAt() {
+  const r = hold.row.getBoundingClientRect();
+  return { split: hold.id, into: hold.row, before: hold.x < r.left + r.width / 2, g: null };
+}
+
 // Au-dessus de la page : lâcher l'onglet crée une vue scindée. Pendant un
 // glisser, c'est la coque qui reçoit les événements, même au-dessus des pages.
-const overPage = (e) => !!drag && !drag.settling && !drag.folder && !drag.space && !!S && S.sidebar.visible && !!S.activeId && e.clientX > S.sidebar.width + 12;
+const overPage = (e) => !!drag && !drag.settling && !drag.folder && !drag.space && !drag.ext && !!S && S.sidebar.visible && !!S.activeId && e.clientX > S.sidebar.width + 12;
 // Le côté visé (moitié gauche ou droite du volet survolé) est éclairé par la zone
 // de dépôt : le processus principal le calcule d'après le point transmis.
 let zoneOn = false;
@@ -1828,11 +1970,14 @@ function overDocument(e) {
   if (!overPage(e)) return setZone(false);
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
+  clearHold();
   showTarget(null);
   return setZone(true, e);
 }
 document.addEventListener('dragover', overDocument, true);
 document.addEventListener('dragenter', overDocument, true);
+// Arc taps the trackpad when a drag is dropped; a drop only fires here once a handler accepted it.
+addEventListener('drop', () => send('haptic', 'align'), true);
 document.addEventListener('drop', (e) => {
   if (!overPage(e)) return;
   e.preventDefault();
@@ -1854,26 +1999,53 @@ function overSidebar(e) {
       e.dataTransfer.dropEffect = 'move';
       return;
     }
-    // Adresse ou texte venu d'ailleurs.
-    if (!types.some((x) => x === 'text/uri-list' || x === 'text/plain')) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-    return;
+    // Files from the Finder: the rows part for them as for a dragged tab (see dropFiles).
+    if (types.includes('Files')) {
+      drag = { ext: true };
+      document.body.classList.add('dragging', 'parting');
+    } else {
+      // Adresse ou texte venu d'ailleurs.
+      if (!types.some((x) => x === 'text/uri-list' || x === 'text/plain')) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      return;
+    }
   }
   const t = dropTarget(e);
   showTarget(t);
   if (!t) return;
   e.preventDefault();
-  e.dataTransfer.dropEffect = copying(e, t) ? 'copy' : 'move';
+  e.dataTransfer.dropEffect = drag.ext || copying(e, t) ? 'copy' : 'move';
 }
 // ⌥glisser un onglet : il est dupliqué à l'endroit du dépôt (ni dossier, ni autre Espace).
-const copying = (e, t) => e.altKey && !drag.folder && !drag.space && !t.toSpace;
+const copying = (e, t) => e.altKey && !drag.folder && !drag.space && !t.toSpace && !t.split;
 sidebar.addEventListener('dragover', overSidebar);
 sidebar.addEventListener('dragenter', overSidebar);
+// A Finder drag that leaves the window, or is let go where nothing takes it, sends no dragend
+// here; a mouse move (none comes during a drag) is the fallback.
+document.addEventListener('dragleave', (e) => { if (drag && drag.ext && !drag.settling && !e.relatedTarget) endDrag(); });
+addEventListener('mousemove', () => { if (drag && drag.ext && !drag.settling) endDrag(); }, true);
+
+// Finder files and folders: a tab each, where they are dropped. Their paths come from the
+// dropped files themselves (the preload asks Electron), never from a file: address, which a
+// page can put in a drag of its own.
+function dropFiles(e) {
+  const paths = [...e.dataTransfer.files].map((f) => O.filePath(f)).filter(Boolean);
+  const t = dropTarget(e);
+  if (!paths.length) return endDrag();
+  send('dropFiles', { paths, ...(t && t.to ? { to: t.to, folderId: t.folderId, index: t.index } : null) });
+  if (t && t.into) dropPulse(t.into);
+  if (!t || !t.slot) return endDrag();
+  // The rows stay parted until the state that brings the new tabs into the open place.
+  drag.settling = structSig(S);
+  drag.timer = setTimeout(endDrag, 400);
+  return undefined;
+}
 
 sidebar.addEventListener('drop', (e) => {
   if (overPage(e)) return undefined;
   e.preventDefault();
+  if (drag && drag.ext) return dropFiles(e);
   if (!drag) {
     // Ligne venue d'une autre fenêtre Orbe : ce n'est pas une adresse ; l'onglet s'affiche ici
     // (le processus principal vérifie l'identifiant et la fenêtre d'où il vient).
@@ -1891,6 +2063,7 @@ sidebar.addEventListener('drop', (e) => {
   if (!t) return endDrag();
   if (drag.space) { send('moveSpace', { id: drag.space, index: t.index }); return endDrag(); }
   if (t.toSpace) { send('moveToSpace', { ...(drag.ids ? { ids: drag.ids } : { id: drag.id }), spaceId: t.toSpace }); return endDrag(); }
+  if (t.split) { send('splitOnTab', { id: drag.id, target: t.split, before: t.before }); return endDrag(); }
   showTarget(t);
   if (t.into) dropPulse(t.into);
   send('move', { ...(drag.ids ? { ids: drag.ids } : { id: drag.id }), to: t.to, folderId: t.folderId, index: t.index, ...(copying(e, t) ? { copy: true } : {}) });
@@ -1916,52 +2089,16 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// --- Infobulles maison ---------------------------------------------------------
-// Un bouton de la barre survolé une demi-seconde montre son nom et le raccourci en
-// vigueur (celui que l'utilisateur a choisi, s'il l'a changé). L'infobulle reste
-// dans la barre latérale : les pages sont posées par-dessus le reste de la fenêtre.
-const TIP_DELAY = 500;
-const tipEl = $('tip');
-let tipFor = null;
-let tipTimer = null;
-function tipHide() {
-  clearTimeout(tipTimer);
-  tipFor = null;
-  if (tipEl.hidden) return;
-  tipEl.classList.remove('on');
-  tipEl.hidden = true;
-}
-function tipShow(el) {
-  if (!el.isConnected || el.disabled || drag) return;
-  // « Actualiser » devient « Arrêter » pendant le chargement, comme son icône.
-  const stop = el.id === 'b-reload' && S && S.nav.loading;
-  $('tip-text').textContent = t(stop ? 'view.stop' : el.dataset.tip);
-  const keys = (stop ? KEYS.stop : KEYS[el.dataset.tipKey]) || '';
-  $('tip-key').textContent = keys;
-  $('tip-key').hidden = !keys;
-  tipEl.hidden = false;
-  const r = el.getBoundingClientRect();
-  const w = tipEl.offsetWidth;
-  const h = tipEl.offsetHeight;
-  const right = (FLOATING || !S || !S.sidebar.visible ? innerWidth : Math.min(innerWidth, S.sidebar.width)) - 6;
-  const x = Math.max(6, Math.min(right - w, r.left + r.width / 2 - w / 2));
-  const y = r.bottom + 6 + h > innerHeight - 4 ? r.top - h - 6 : r.bottom + 6;
-  tipEl.style.transform = `translate(${Math.round(x)}px,${Math.round(y)}px)`;
-  tipEl.classList.add('on');
-}
-document.addEventListener('mouseover', (e) => {
-  const el = e.target.closest ? e.target.closest('[data-tip]') : null;
-  if (el === tipFor) return;
-  tipHide();
-  if (!el) return;
-  tipFor = el;
-  tipTimer = setTimeout(() => { if (tipFor === el) tipShow(el); }, TIP_DELAY);
+// --- Infobulles maison (common.js) ---------------------------------------------
+// L'infobulle reste dans la barre latérale : les pages sont posées par-dessus le
+// reste de la fenêtre.
+tooltips({
+  right: () => (FLOATING || !S || !S.sidebar.visible ? innerWidth : Math.min(innerWidth, S.sidebar.width)),
+  blocked: () => !!drag,
+  // Space dock: the Space's own name and its ⌃1…⌃9 shortcut (Arc: "Space 1 ⌃1").
+  text: (el) => (el.classList.contains('sp') ? el.dataset.tip : t(el.dataset.tip)),
+  keys: (el) => (el.classList.contains('sp') ? el.dataset.tipKeys : KEYS[el.dataset.tipKey]),
 });
-for (const ev of ['mousedown', 'keydown', 'wheel', 'dragstart', 'blur']) addEventListener(ev, tipHide, true);
-// Le pointeur quitte le bouton : l'infobulle s'efface, même s'il passe sur un bouton
-// grisé (qui ne signale aucun survol).
-document.addEventListener('mouseout', (e) => { if (tipFor && e.target.closest && e.target.closest('[data-tip]') === tipFor && !(e.relatedTarget && tipFor.contains(e.relatedTarget))) tipHide(); });
-document.addEventListener('mouseleave', tipHide);
 
 // Pointeur posé 150 ms sur un onglet en veille : le processus principal prépare
 // la connexion à son site, pour un réveil plus rapide au clic.

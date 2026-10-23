@@ -34,7 +34,7 @@ const LIMITS = {
 };
 // Gestes qui prêtent une activation d'utilisateur à la page (voir `act`).
 const GESTURE = new Set(['toggle', 'prev', 'next', 'pip']);
-const ACTIONS = new Set(['toggle', 'prev', 'next', 'back', 'forward', 'seek', 'close', 'mute', 'open', 'volume', 'pip']);
+const ACTIONS = new Set(['toggle', 'prev', 'next', 'back', 'forward', 'seek', 'close', 'mute', 'open', 'volume', 'pip', 'mic', 'cam']);
 const attached = new WeakSet();
 // Clé du document affiché par chaque onglet : elle ouvre la table des gestionnaires
 // `mediaSession` que src/preload/media.js garde hors de portée de la page.
@@ -60,10 +60,12 @@ const infoCode = (key) => `(() => { try {
   } catch {}
   let acts = [];
   try { const l = ${/^[0-9a-f]{32}$/.test(key) ? `ms.setActionHandler(${JSON.stringify(key)}, null)` : 'null'}; acts = Array.isArray(l) ? l.slice(0, 16).map((x) => String(x).slice(0, 32)) : []; } catch {}
+  let call = [];
+  try { const l = ${/^[0-9a-f]{32}$/.test(key) ? `ms.setActionHandler(${JSON.stringify(key)}, 'tracks')` : 'null'}; call = Array.isArray(l) ? l.slice(0, 2).map(String) : []; } catch {}
   const num = (v) => (typeof v === 'number' && isFinite(v) ? v : 0);
   return {
     has: !!m, paused: m ? !!m.paused : true, t: m ? num(m.currentTime) : 0, d: m ? num(m.duration) : 0, v: m && typeof m.volume === 'number' ? m.volume : 1,
-    title: md ? String(md.title || '').slice(0, ${LIMITS.raw}) : '', artist: md ? String(md.artist || '').slice(0, ${LIMITS.raw}) : '', art, acts,
+    title: md ? String(md.title || '').slice(0, ${LIMITS.raw}) : '', artist: md ? String(md.artist || '').slice(0, ${LIMITS.raw}) : '', art, acts, mic: call[0] || '', cam: call[1] || '',
     pip: !!m && m.tagName === 'VIDEO' && m.videoWidth > 0 && !m.disablePictureInPicture && document.pictureInPictureEnabled && document.pictureInPictureElement !== m,
   };
 } catch { return null; } })()`;
@@ -75,6 +77,9 @@ const seekCode = (expr) => `(() => { ${PICK} if (!m || !isFinite(m.duration)) re
 // lecteurs de la page (tous ses <audio>/<video>), comme le ferait son propre curseur.
 const volumeCode = (v) => `(() => { let n = 0; document.querySelectorAll('video, audio').forEach((x) => { try { x.volume = ${v}; n += 1; } catch {} }); return n > 0; })()`;
 const actCode = (key, name) => (/^[0-9a-f]{32}$/.test(key) ? `(() => { try { return navigator.mediaSession.setActionHandler(${JSON.stringify(key)}, ${JSON.stringify(name)}) === true; } catch { return false; } })()` : 'false');
+// Microphone or camera button: turns the page's own getUserMedia tracks off or back on (src/preload/media.js).
+const trackCode = (key, kind) => (/^[0-9a-f]{32}$/.test(key) ? `(() => { try { return navigator.mediaSession.setActionHandler(${JSON.stringify(key)}, ${JSON.stringify(kind)}); } catch { return ''; } })()` : "''");
+const callState = (v) => (v === 'on' || v === 'off' ? v : '');
 
 const text = (v) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f‪-‮⁦-⁩]/g, ' ').trim().slice(0, LIMITS.text) : '');
 const num = (v, max = 360000) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.min(v, max) : 0);
@@ -96,6 +101,8 @@ function clean(raw) {
     prev: acts.includes('previoustrack'),
     next: acts.includes('nexttrack'),
     pip: r.pip === true,
+    mic: callState(r.mic),
+    cam: callState(r.cam),
   };
 }
 
@@ -164,11 +171,13 @@ function make(env) {
     const now = Date.now();
     const expected = before.at ? before.position + (before.paused ? 0 : (now - before.at) / 1000) : -1;
     const drift = !info.duration || Math.abs(info.position - (info.duration ? Math.min(expected, info.duration) : expected)) > LIMITS.drift;
-    const changed = drift || ['has', 'paused', 'track', 'artist', 'prev', 'next', 'volume'].some((k) => before[k] !== info[k]) || Math.round(before.duration || 0) !== Math.round(info.duration);
+    const changed = drift || ['has', 'paused', 'track', 'artist', 'prev', 'next', 'volume', 'mic', 'cam'].some((k) => before[k] !== info[k]) || Math.round(before.duration || 0) !== Math.round(info.duration);
     rt.media = changed ? { ...info, art, at: now } : { ...info, art, position: before.position, at: before.at };
     if (info.has) rt.playing = !info.paused;
     wantArt(rt);
-    if (changed && (info.has || before.has)) pushAll();
+    // A call page may have no <audio>/<video>: its microphone and camera still update the player.
+    const call = info.mic !== (before.mic || '') || info.cam !== (before.cam || '');
+    if (changed && (info.has || before.has || call)) pushAll();
     return rt.media;
   }
 
@@ -216,6 +225,8 @@ function make(env) {
         next: !!m.next,
         seek: !!m.duration,
         pip: !!m.pip,
+        mic: m.mic || '',
+        cam: m.cam || '',
       };
     });
   }
@@ -250,6 +261,8 @@ function make(env) {
       case 'prev': return run(actCode(keyOf(rt.wc), 'previoustrack'));
       case 'next': return run(actCode(keyOf(rt.wc), 'nexttrack'));
       case 'pip': return run(PIP);
+      case 'mic': return run(trackCode(keyOf(rt.wc), 'audio'));
+      case 'cam': return run(trackCode(keyOf(rt.wc), 'video'));
       case 'back': return run(seekCode(`m.currentTime - ${LIMITS.step}`));
       case 'forward': return run(seekCode(`m.currentTime + ${LIMITS.step}`));
       case 'seek': {

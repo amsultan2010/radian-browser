@@ -47,7 +47,10 @@ function debuggee(ctx, target) {
   let id = d.tabId;
   if (typeof id !== 'number' && typeof d.targetId === 'string' && /^orbe-tab-\d+$/.test(d.targetId)) id = Number(d.targetId.slice(9));
   if (typeof id !== 'number') throw X.fail('Only a tab can be debugged ("tabId").');
-  return X.findTab(ctx, id);
+  const t = X.findTab(ctx, id);
+  // A Little Radian page has no room for the "is debugging this page" banner: it is never debugged unseen.
+  if (t.little) throw X.fail(`Cannot attach to the tab with id: ${id}.`);
+  return t;
 }
 
 function owned(ctx, t) {
@@ -128,7 +131,7 @@ api.extend({
   },
   'debugger.getTargets'(ctx) {
     X.need(ctx, 'debugger');
-    return X.visibleTabs(ctx).map((t) => ({ id: `orbe-tab-${t.id}`, type: 'page', tabId: t.id, title: t.title, url: t.url, attached: sessions.has(t.id) || t.wc.debugger.isAttached(), faviconUrl: t.favIconUrl || undefined }));
+    return X.visibleTabs(ctx).filter((t) => !t.little).map((t) => ({ id: `orbe-tab-${t.id}`, type: 'page', tabId: t.id, title: t.title, url: t.url, attached: sessions.has(t.id) || t.wc.debugger.isAttached(), faviconUrl: t.favIconUrl || undefined }));
   },
 });
 

@@ -1,5 +1,5 @@
 // Point d'entrée d'Orbe.
-const { app, ipcMain, BrowserWindow, nativeTheme, shell, webContents, dialog, net, session } = require('electron');
+const { app, ipcMain, BrowserWindow, nativeTheme, shell, webContents, dialog, net, session, systemPreferences } = require('electron');
 const { pathToFileURL } = require('url');
 const path = require('path');
 const os = require('os');
@@ -46,6 +46,11 @@ function testModeAllowed() {
 const pendingUrls = [];
 
 app.setName('Radian');
+// App Nap off, as Arc does (its defaults domain holds NSAppSleepDisabled = 1): timers of hidden
+// windows are not delayed (media and timers keep time), at a small energy cost. A user default like Arc's (the
+// Info.plist key LSAppNapIsDisabled is reported not to stick); it may only apply from the next
+// launch. Packaged app only: in development the defaults domain is Electron's.
+if (app.isPackaged) systemPreferences.setUserDefault('NSAppSleepDisabled', 'boolean', true);
 const SELFTEST = process.argv.includes('--selftest') && testModeAllowed();
 if (process.argv.includes('--selftest') && !SELFTEST) {
   console.error('[orbe] --selftest refusé : application fabriquée, sans --orbe-test ni ORBE_USER_DATA à part');
@@ -174,7 +179,7 @@ function broadcastSettings() {
 
 const SETTABLE = {
   ...prefs.SETTABLE,
-  lang: (v) => v === 'fr' || v === 'en',
+  lang: (v) => typeof v === 'string' && Object.hasOwn(locales, v),
   searchEngine: (v) => Object.prototype.hasOwnProperty.call(suggest.ENGINES, v),
   suggestions: (v) => typeof v === 'boolean',
   archiveAfterHours: (v) => [0, 12, 24, 168, 720].includes(v),
@@ -212,15 +217,14 @@ function shortcutGroups() {
     title,
     items: [...names.map((n) => commands.byName.get(n)).filter((c) => c && shortcuts.keysOf(c.name)).map((c) => ({ label: t(c.label), keys: shortcuts.keysOf(c.name) })), ...extra],
   });
-  const fr = store.state.settings.lang === 'fr';
   return [
     group(t('menu.tabs'), ['newTab', 'commandBar', 'closeTab', 'reopen', 'togglePin', 'nextTab', 'prevTab', 'clearToday'], [
-      { label: fr ? 'Aller à l’onglet 1 à 9' : 'Go to tab 1 to 9', keys: '⌘1 … ⌘9' },
-      { label: fr ? 'Onglets récents (maintenir ⌃)' : 'Recent tabs (hold ⌃)', keys: '⌃⇥' },
+      { label: t('keys.goTabN'), keys: '⌘1 … ⌘9' },
+      { label: t('keys.recentTabs'), keys: '⌃⇥' },
     ]),
-    group(t('menu.spaces'), ['nextSpace', 'prevSpace'], [{ label: fr ? 'Aller à l’Espace 1 à 9' : 'Go to Space 1 to 9', keys: '⌃1 … ⌃9' }]),
+    group(t('menu.spaces'), ['nextSpace', 'prevSpace'], [{ label: t('keys.goSpaceN'), keys: '⌃1 … ⌃9' }]),
     group(t('menu.window'), ['newWindow', 'newIncognito', 'newLittle', 'closeWindow', 'toggleSidebar', 'toggleToolbar', 'addSplit', 'closeSplit', 'fullscreen', 'library', 'downloads', 'newEasel', 'settings']),
-    group(fr ? 'Page' : 'Page', ['back', 'forward', 'reload', 'forceReload', 'stop', 'find', 'findNext', 'findPrev', 'copyUrl', 'copyUrlMarkdown', 'capture', 'captureToEasel', 'savePage', 'print', 'zoomIn', 'zoomOut', 'actualSize', 'history']),
+    group(t('keys.page'), ['back', 'forward', 'reload', 'forceReload', 'stop', 'find', 'findNext', 'findPrev', 'copyUrl', 'copyUrlMarkdown', 'capture', 'captureToEasel', 'savePage', 'print', 'zoomIn', 'zoomOut', 'actualSize', 'history']),
     group(t('view.developer'), ['devtools', 'inspect', 'console', 'source']),
   ];
 }
@@ -290,6 +294,15 @@ async function globalAction(action, a, sender) {
       if (p && name) { p.name = name; store.save(); menu.refresh(true); }
       return profileList();
     }
+    // Profiles pane "+": a new profile, no Space yet (Spaces → Profile assigns it).
+    case 'settings:addProfile': {
+      const p = { id: require('./store').uid(), name: store.t('profiles.name', null, { n: s.profiles.length + 1 }) };
+      s.profiles.push(p);
+      s.favs[p.id] = [];
+      store.save();
+      menu.refresh(true);
+      return profileList();
+    }
     case 'settings:deleteProfile':
       if (OrbeWindow.deleteProfile(String(a))) { passwords.forgetProfile(String(a)); prefs.forgetProfile(String(a)); essentials.permissions.forgetProfile(String(a)); menu.refresh(true); }
       return profileList();
@@ -353,7 +366,7 @@ function setupUpdates() {
     test: SELFTEST || (!app.isPackaged && process.env.ORBE_UI_TEST === '1'),
     downloadsDir: () => prefs.downloadDirFor('default') || app.getPath('downloads'),
     reveal: (file) => shell.showItemInFolder(file),
-    show: () => openSettings('advanced'),
+    show: () => openSettings('general'),
     open: (url) => { const w = OrbeWindow.primary || newWindow(); w.newTab(url); w.win.focus(); },
     changed: () => {
       const st = updates.status();
@@ -362,7 +375,7 @@ function setupUpdates() {
     },
   });
   win.hooks.updateNote = () => updates.note();
-  commands.hooks.checkUpdates = () => { openSettings('advanced'); updates.check({ manual: true }); };
+  commands.hooks.checkUpdates = () => { openSettings('general'); updates.check({ manual: true }); };
   updates.start();
 }
 
@@ -389,6 +402,8 @@ function setupIpc() {
   ipcMain.on('i18n', (e) => {
     e.returnValue = ok(e) ? { locales, lang: store.state.settings.lang, settings: store.state.settings, keys: shortcuts.keysMap(), defaultKeys: shortcuts.defaultKeysMap() } : null;
   });
+  // Labels of the JSON view's buttons (src/preload/json.js), asked by web pages: nothing else.
+  ipcMain.on('orbe-json', (e) => { e.returnValue = { pretty: store.t('json.pretty') }; });
   ipcMain.handle('orbe', async (e, action, payload) => {
     if (!ok(e) || typeof action !== 'string') return undefined;
     if (action.startsWith('boost:')) return boostEditor.action(action, payload, e.sender);
@@ -401,7 +416,7 @@ function setupIpc() {
     if (action.startsWith('welcome:')) return welcomeAction(action, e.sender);
     if (action.startsWith('lib:')) return library.action(action, payload, e.sender);
     if (/^(settings|shortcuts|ext|notes|tasks):/.test(action)) return globalAction(action, payload, e.sender);
-    const owner = OrbeWindow.ownerOf(e.sender) || little.LittleWindow.ownerOf(e.sender) || OrbeWindow.primary;
+    const owner = OrbeWindow.ownerOf(e.sender) || little.LittleWindow.ownerOf(e.sender) || little.LittleCommand.ownerOf(e.sender) || OrbeWindow.primary;
     return owner ? owner.handle(action, payload) : undefined;
   });
 }
@@ -466,10 +481,10 @@ app.whenReady().then(async () => {
   setupIpc();
 
   commands.hooks.newWindow = newWindow;
-  commands.hooks.newLittle = (url) => new little.LittleWindow(url);
+  commands.hooks.newLittle = () => little.LittleCommand.open(); // ⌥⌘N: Little Radian's own Command Bar first, as in Arc
   commands.hooks.openSettings = openSettings;
   commands.hooks.openBoost = (w, mode) => boostEditor.open(w, mode);
-  boostEditor.hooks.openSettings = () => openSettings('privacy');
+  boostEditor.hooks.openSettings = () => openSettings('advanced'); // where the Boosts settings are
   commands.hooks.openPasswords = () => passwords.openManager();
   passwords.configure({ trusted, uiPreload: UI_PRELOAD, internal: INTERNAL, toast: (wc, text) => { const o = OrbeWindow.ownerOf(wc); if (o) o.toast(text); } });
   commands.hooks.settingsChanged = broadcastSettings;

@@ -17,9 +17,17 @@ const uid = () => crypto.randomBytes(6).toString('base64url');
 const lightIcon = (u) => !!u && !(u.startsWith('data:') && u.length > 2048);
 const INTERNAL_PAGE = /^orbe:\/\/app\/(library|shortcuts|welcome|notes|easel)\.html/;
 
+function systemLang() {
+  try {
+    for (const l of require('electron').app.getPreferredSystemLanguages()) if (Object.hasOwn(locales, l.slice(0, 2))) return l.slice(0, 2);
+  } catch {} // outside Electron (pure-node tests)
+  return 'en';
+}
+
+const TEST = process.argv.includes('--selftest') || process.env.ORBE_UI_TEST === '1';
 const DEFAULT_SETTINGS = {
   // Anglais par défaut ; les essais (npm test, test:ui) vérifient le texte de référence, en français.
-  lang: process.argv.includes('--selftest') || process.env.ORBE_UI_TEST === '1' ? 'fr' : 'en',
+  lang: TEST ? 'fr' : 'en',
   searchEngine: 'google',
   suggestions: true,
   archiveAfterHours: 12,
@@ -68,6 +76,7 @@ const DEFAULT_SETTINGS = {
   devLocalhost: true,
   devOff: [],
   downloadDir: '',
+  noteApp: 'notes', // New Note opens Radian's Notes unless a document app is chosen (src/main/prefs.js)
   profileSettings: {},
   shortcuts: {},
   // Raccourcis des extensions choisis dans les réglages : { '<id>/<commande>': accélérateur, ou '' s'il a été retiré }.
@@ -124,8 +133,16 @@ class Store {
   normalize(s) {
     const from = s.version || 0;
     s.version = 2;
+    const fresh = !(s.settings && s.settings.lang);
     s.settings = { ...DEFAULT_SETTINGS, ...(s.settings || {}) };
+    // A first launch speaks the Mac's language when Radian has it (tests keep their fixed language).
+    if (fresh && s.settings.lang === 'en') s.settings.lang = systemLang();
+    // Arc's defaults, for new installs only: a saved settings file keeps what its user had. Tests keep the old ones.
+    if (fresh && !TEST) Object.assign(s.settings, { warnOnQuit: true, restoreSession: false });
     s.tabs = s.tabs || {};
+    // The Library is a panel now, never a tab: one left by an older version is dropped
+    // (the lists below then forget it).
+    for (const [id, tab] of Object.entries(s.tabs)) if (/^orbe:\/\/app\/library\.html/.test((tab && tab.url) || '')) delete s.tabs[id];
     // Profils : chacun a ses cookies, ses connexions et ses favoris.
     if (!Array.isArray(s.profiles) || !s.profiles.length) s.profiles = [{ id: 'default', name: this.t('profiles.default', s.settings.lang) }];
     if (!s.profiles.some((p) => p.id === 'default')) s.profiles.unshift({ id: 'default', name: this.t('profiles.default', s.settings.lang) });
@@ -199,7 +216,7 @@ class Store {
 
   t(key, lang, vars) {
     const l = lang || (this.state && this.state.settings.lang) || 'en';
-    let str = (locales[l] && locales[l][key]) || locales.fr[key] || key;
+    let str = (locales[l] && locales[l][key]) || locales.en[key] || locales.fr[key] || key;
     if (vars) for (const k of Object.keys(vars)) str = str.replace(`{${k}}`, vars[k]);
     return str;
   }

@@ -410,22 +410,31 @@ module.exports = async function finitions2Tests(ctx) {
   {
     const shortcuts = ctx.shortcuts || require('../src/main/shortcuts');
     const over = (id) => ui(`document.getElementById(${JSON.stringify(id)}).dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))`);
-    const tip = () => ui(`(() => { const el = document.getElementById('tip'); const r = el.getBoundingClientRect(); return { on: !el.hidden && el.classList.contains('on'), text: document.getElementById('tip-text').textContent, key: document.getElementById('tip-key').hidden ? '' : document.getElementById('tip-key').textContent, left: r.left, right: r.right, top: r.top, sw: S.sidebar.width, events: getComputedStyle(el).pointerEvents }; })()`);
+    const tip = () => ui(`(() => { const el = document.getElementById('tip'); const r = el.getBoundingClientRect(); return { on: !el.hidden && el.classList.contains('on'), text: document.getElementById('tip-text').textContent, key: document.getElementById('tip-key').hidden ? '' : document.getElementById('tip-key').textContent, left: r.left, right: r.right, top: r.top, sw: S.sidebar.width, events: getComputedStyle(el).pointerEvents, caps: el.querySelectorAll('#tip-key kbd').length, fill: getComputedStyle(el).backgroundColor, h: r.height }; })()`);
     check('boutons de la barre : plus d’infobulle native (pas de « title »), un nom pour les aides techniques',
-      await ui(`['b-sidebar', 'b-back', 'b-forward', 'b-reload', 'b-library', 'b-clear', 'b-newtab'].every((id) => { const el = document.getElementById(id); return !el.title && el.getAttribute('aria-label') === t(el.dataset.tip); })`));
+      await ui(`['b-sidebar', 'b-back', 'b-forward', 'b-library', 'b-clear', 'url-copy', 'shield'].every((id) => { const el = document.getElementById(id); return !el.title && el.getAttribute('aria-label') === t(el.dataset.tip); })`));
+    check('« Actualiser » : pas d’infobulle (Arc), mais un nom pour les aides techniques',
+      await ui(`(() => { const el = document.getElementById('b-reload'); return !el.title && !el.dataset.tip && el.getAttribute('aria-label') === t(S.nav.loading ? 'view.stop' : 'side.reload'); })()`));
+    check('Espaces du bas : infobulle maison au nom de l’Espace avec ⌃1…⌃9 (Arc : « Space 1 ⌃1 »), pas de « title »',
+      await ui(`[...document.querySelectorAll('#spaces .sp')].every((b, i) => !b.title && b.dataset.tip === S.spaces[i].name && b.dataset.tipKeys === (i < 9 ? '⌃' + (i + 1) : undefined))`));
+    check('séparateur du jour : « ↓ Clear », une flèche vers le bas devant le mot (Arc)',
+      await ui(`document.querySelector('#b-clear use').getAttribute('href') === '#i-forward' && document.querySelector('#b-clear span').textContent === t('side.clear')`));
+    check('« Nouvel onglet » : pas d’infobulle, son raccourci écrit au bout de la ligne (comme dans Arc)',
+      await ui(`(() => { const el = document.getElementById('b-newtab'); return !el.dataset.tip && el.querySelector('kbd').textContent === KEYS.newTab; })()`));
     await over('b-sidebar');
     await sleep(200);
     check('survol bref : pas encore d’infobulle', (await tip()).on === false);
     await until(async () => (await tip()).on, 'infobulle affichée');
     const t1 = await tip();
     const btn = await ui(`(() => { const r = document.getElementById('b-sidebar').getBoundingClientRect(); return { bottom: r.bottom }; })()`);
-    check('survol d’une demi-seconde : infobulle maison avec le nom et le raccourci, sous le bouton, dans la barre latérale, sans prendre les clics',
-      t1.text === T('side.sidebar') && t1.key === shortcuts.keysOf('toggleSidebar') && t1.key.length > 0 && t1.left >= 6 && t1.right <= t1.sw - 5 && t1.top >= btn.bottom && t1.events === 'none', JSON.stringify(t1));
-    await over('b-plus');
-    await until(async () => { const x = await tip(); return x.on && x.text === T('side.plus'); }, 'infobulle du bouton +');
-    check('bouton sans raccourci : le nom seul', (await tip()).key === '');
+    check('survol d’une seconde : infobulle maison avec le nom et le raccourci en touches, sous le bouton, dans la barre latérale, sans prendre les clics',
+      t1.text === T('side.hideSidebar') && t1.key === shortcuts.keysOf('toggleSidebar') && t1.key.length > 0 && t1.caps === t1.key.match(/[⌃⌥⇧⌘]|[^⌃⌥⇧⌘]+/g).length && t1.fill === 'rgb(10, 13, 75)' && t1.h === 27 && t1.left >= 6 && t1.right <= t1.sw - 5 && t1.top >= btn.bottom && t1.events === 'none', JSON.stringify(t1));
+    await over('shield');
+    await until(async () => { const x = await tip(); return x.on && x.text === T('side.siteControl'); }, 'infobulle du centre de contrôle');
+    check('bouton sans raccourci : le nom seul — centre de contrôle du site (curseurs, Arc), sans compteur', (await tip()).key === '' && await ui(`document.getElementById('shield').textContent === '' && document.querySelector('#shield use').getAttribute('href') === '#i-sliders'`));
     await ui(`document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
     check('un clic referme l’infobulle', (await tip()).on === false);
+    check('« + » du bas : pas d’infobulle (Arc), un nom pour les aides techniques', await ui(`(() => { const b = document.getElementById('b-plus'); return !b.dataset.tip && !b.title && b.getAttribute('aria-label') === t('side.plus'); })()`));
     // Raccourci changé par l'utilisateur : l'infobulle le suit.
     const free = ['Alt+Cmd+F9', 'Alt+Shift+Cmd+F9', 'Ctrl+Alt+Cmd+F9'].find((a) => !shortcuts.owner(shortcuts.canon(a), 'library'));
     const r = free ? shortcuts.assign('library', free) : { error: 'pris' };
@@ -433,7 +442,7 @@ module.exports = async function finitions2Tests(ctx) {
     else {
       await until(() => ui(`KEYS.library === ${JSON.stringify(r.keys)}`), 'raccourci reçu par la coque');
       await over('b-library');
-      await until(async () => { const x = await tip(); return x.on && x.text === T('side.library'); }, 'infobulle de la Bibliothèque');
+      await until(async () => { const x = await tip(); return x.on && x.text === T('side.viewLibrary'); }, 'infobulle de la Bibliothèque');
       const t2 = await tip();
       check('raccourci modifié dans les réglages : l’infobulle montre le nouveau ; au bas de la barre elle se place au-dessus du bouton', t2.key === r.keys
         && await ui(`document.getElementById('tip').getBoundingClientRect().bottom <= document.getElementById('b-library').getBoundingClientRect().top`), JSON.stringify(t2));
@@ -448,13 +457,13 @@ module.exports = async function finitions2Tests(ctx) {
       const s0 = S;
       const ext = [{ id: 'abcdefghijklmnop', title: 'Essai <i>', icon: '', enabled: true, badge: '7' }];
       render({ ...s0, toolbar: true, extensions: ext });
-      const on = { tb: document.querySelectorAll('#tb-exts .ext').length, side: document.querySelectorAll('#exts .ext').length, title: document.querySelector('#tb-exts .ext').title, tags: document.querySelector('#tb-exts .ext i') ? 1 : 0, badge: document.querySelector('#tb-exts .badge').textContent, after: document.getElementById('tb-url').nextElementSibling.id };
+      const on = { tb: document.querySelectorAll('#tb-exts .ext').length, side: document.querySelectorAll('#exts .ext').length, title: document.querySelector('#tb-exts .ext').title, tags: document.querySelector('#tb-exts .ext i') ? 1 : 0, badge: document.querySelector('#tb-exts .badge').textContent, after: document.getElementById('toolbar').lastElementChild.id };
       render({ ...s0, toolbar: false, extensions: ext });
       const off = { tb: document.querySelectorAll('#tb-exts .ext').length, side: document.querySelectorAll('#exts .ext').length };
       render(s0);
       return { on, off, rest: document.querySelectorAll('#tb-exts .ext, #exts .ext').length === (s0.extensions || []).length };
     })()`);
-    check('barre d’outils affichée : les boutons d’extension sont à droite de l’adresse (et plus sous la pastille) ; masquée, ils reviennent sous l’adresse',
+    check('barre d’outils affichée : les boutons d’extension sont à droite de l’adresse (et plus dans la pastille) ; masquée, ils reviennent dans la pastille',
       seen.on.tb === 1 && seen.on.side === 0 && seen.on.title === 'Essai <i>' && seen.on.tags === 0 && seen.on.badge === '7' && seen.on.after === 'tb-exts' && seen.off.tb === 0 && seen.off.side === 1 && seen.rest === true, JSON.stringify(seen));
   }
 
@@ -494,7 +503,7 @@ module.exports = async function finitions2Tests(ctx) {
       const reduced = reducedMotion.matches;
       const first = s0.today[0];
       const css = (sel) => { const el = document.querySelector(sel); if (!el) return null; const cs = getComputedStyle(el); return { anim: cs.animationName, shadow: getComputedStyle(el.closest('.row, .tile')).boxShadow, cls: el.closest('.row, .tile').className }; };
-      render({ ...s0, today: [{ ...first, capture: ['screen', 'microphone'] }, ...s0.today.slice(1)] });
+      render({ ...s0, today: [{ ...first, capture: ['screen', 'microphone'], shared: true }, ...s0.today.slice(1)] });
       const share = css('#today .row.tab .act.cap');
       render({ ...s0, today: [{ ...first, capture: ['camera'] }, ...s0.today.slice(1)] });
       const cam = css('#today .row.tab .act.cap');
@@ -553,6 +562,7 @@ module.exports = async function finitions2Tests(ctx) {
     w.handle('battery', { level: 0.14, charging: true });
     OrbeWindow.trimLive({ deep: true });
     check('réglage coupé, ou machine rebranchée : le délai choisi revient', asked.join() === `${3 * 36e5},${3 * 36e5}`, asked.join());
+    check('machine rebranchée : un message dit que l’économie de batterie s’arrête', toasts.slice(1).join() === T('toast.batterySaverOff'), toasts.join('|'));
     check('réglage « Économie de batterie » : actif par défaut', require('../src/main/store').DEFAULT_SETTINGS.batterySaver === true);
     veille.pick = pick0;
     w.toast = toast0;
@@ -605,11 +615,11 @@ module.exports = async function finitions2Tests(ctx) {
     const item = find(Menu.getApplicationMenu(), T('window.viewMedia'));
     const before = w.activeId;
     item.click();
-    const opened = await until(() => { const tab = w.activeId && d.tabs[w.activeId]; return tab && tab.internal && tab.url === 'orbe://app/library.html#media' ? tab : null; }, 'section Médias ouverte');
-    check('barre de menus : « Médias » ouvre la Bibliothèque sur sa section Médias, dans un onglet d’Orbe', !!item && item.enabled !== false && !!opened && opened.internal === true);
-    const rt = await until(() => { const x = win.live.get(opened.id); return x && !x.wc.isLoading() ? x : null; }, 'page chargée');
+    const opened = await until(() => (w.libraryShown && w.libraryView.webContents.getURL() === 'orbe://app/library.html#media' ? w.libraryView : null), 'section Médias ouverte');
+    check('barre de menus : « Médias » ouvre la Bibliothèque sur sa section Médias, dans son panneau, sans onglet', !!item && item.enabled !== false && !!opened && w.activeId === before);
+    const rt = await until(() => (!opened.webContents.isLoading() ? { wc: opened.webContents } : null), 'page chargée');
     check('… la section Médias y est affichée', await until(() => rt.wc.executeJavaScript(`(() => { const on = document.querySelector('[data-tab].on'); return !!on && on.dataset.tab === 'media'; })()`).catch(() => false), 'onglet Médias sélectionné').then(() => true, () => false));
-    w.close(opened.id, { silent: true, ask: false });
+    w.closeLibrary();
     if (before && d.tabs[before]) w.activate(before);
   }
 

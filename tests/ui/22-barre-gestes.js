@@ -114,8 +114,8 @@ module.exports = {
     });
 
     // --- Pastille d'adresse ---------------------------------------------------------
-    await t.verifier('pastille d’adresse : « Copier le lien » paraît au survol et copie l’adresse', async () => {
-      assert.equal(await shell.locator('#url-copy').isVisible(), false);
+    await t.verifier('pastille d’adresse : « Copier le lien » paraît au survol de la barre latérale et copie l’adresse', async () => {
+      await jusqua(async () => { await shell.mouse.move(600, 600); return !(await shell.locator('#url-copy').isVisible()); }, '« Copier le lien » masqué hors de la barre latérale');
       await ctx.clic(shell, '#url-copy', { survol: shell.locator('#url') });
       await jusqua(async () => (await pressePapiers()) === ctx.url('/relent'), 'adresse dans le presse-papiers');
       const r = await shell.evaluate(() => {
@@ -169,10 +169,22 @@ module.exports = {
     });
 
     // --- Menus de la barre ----------------------------------------------------------------
-    await t.verifier('bouton « + » : onglet, dossier, Espace, vue scindée, tableau, note, Boost', async () => {
+    await t.verifier('bouton « + » : le menu bleu nuit d’Arc au-dessus du bouton, « New Tab » en surbrillance, le « + » devenu « ✕ » ; Échap le referme', async () => {
       await oublier();
       await ctx.clic(shell, '#b-plus');
-      assert.deepEqual(await menuVu(), await textes('tabs.newTab', 'tabs.newFolder', 'spaces.new', 'view.addSplit', 'easel.new', 'notes.new', 'boost.edit'));
+      const menu = shell.locator('#plus-menu');
+      await jusqua(() => menu.isVisible(), 'menu « + »');
+      assert.deepEqual(await menu.locator('[data-cmd] span').allTextContents(), await textes('side.plusSpace', 'side.plusFolder', 'easel.new', 'side.plusBoost', 'side.plusSplit', 'tabs.newTab'));
+      assert.equal(await shell.evaluate(() => document.activeElement.dataset.cmd), 'newTab');
+      assert.equal(await shell.locator('#b-plus use').getAttribute('href'), '#i-close');
+      const m = await menu.boundingBox();
+      const b = await shell.locator('#b-plus').boundingBox();
+      assert.ok(m.y + m.height <= b.y && m.width <= 222 && m.height > 250, 'au-dessus du bouton : ' + JSON.stringify([m, b]));
+      assert.equal(await menu.evaluate((el) => getComputedStyle(el).backgroundColor), 'rgb(5, 6, 37)');
+      assert.equal(await ctx.principal(({ w }) => w.menuVu), null, 'pas de menu natif');
+      await shell.keyboard.press('Escape');
+      await jusqua(async () => !(await menu.isVisible()), 'menu refermé');
+      assert.equal(await shell.locator('#b-plus use').getAttribute('href'), '#i-plus');
     });
 
     await t.verifier('clic droit dans le vide de la barre : thème, profil, dossiers', async () => {

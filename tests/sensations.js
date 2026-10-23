@@ -241,10 +241,9 @@ module.exports = async function sensationsTests(ctx) {
     library.env.mediaDir = (from) => { asked.push(from); return from === 'desktop' ? desk : path.join(root, 'absent'); };
     store.state.downloads = [];
     // Les dossiers de l'utilisateur ne se lisent qu'à la demande de la page Bibliothèque.
-    const mediaTab = w.openInternal('library.html#media');
-    const fenetres = require('../src/main/window');
-    const mediaWc = () => { const rt = fenetres.live.get(mediaTab.id); return rt ? rt.wc : null; };
-    await until(() => mediaWc() && mediaWc().getURL().startsWith('orbe://app/library.html') && !mediaWc().isLoading(), 'page Bibliothèque ouverte');
+    w.openLibrary('media');
+    const mediaWc = () => (w.libraryView ? w.libraryView.webContents : null);
+    await until(() => mediaWc() && mediaWc().getURL().startsWith('orbe://app/library.html') && !mediaWc().isLoading(), 'panneau Bibliothèque ouvert');
     const lib = (name, a) => library.action(name, a, mediaWc());
     const other = (name, a) => library.action(name, a, w.ui.webContents);
     await lib('lib:get', {});
@@ -272,6 +271,7 @@ module.exports = async function sensationsTests(ctx) {
     let swapped = false;
     if (linked) { fs.rmSync(path.join(desk, 'film.mp4')); fs.symlinkSync(secret, path.join(desk, 'film.mp4')); swapped = (await lib('lib:openFile', film.id)) === false && (await lib('lib:drag', film.id)) === false; }
     check('identifiant inconnu, ou fichier remplacé depuis par un lien : refusé', (await lib('lib:openFile', 'f:' + '0'.repeat(20))) === false && (await lib('lib:reveal', 'f:../../x')) === false && (!linked || swapped) && opened.length === 1);
+    w.closeLibrary();
     Object.assign(library.env, saved.env);
     downloads.env.openPath = saved.open;
     downloads.env.reveal = saved.reveal;

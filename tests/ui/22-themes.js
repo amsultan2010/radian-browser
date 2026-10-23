@@ -85,20 +85,50 @@ module.exports = {
     await ctx.principal(({ w }) => { const tab = w.createTab('http://127.0.0.1:9/veille', { index: w.space.today.length }); tab.title = 'En veille'; w.changed(); });
     await jusqua(async () => (await shell.locator('#today .row.tab').count()) === 4, 'quatre onglets');
 
-    await t.verifier('le sélecteur s’ouvre comme celui d’Arc : apparence claire / auto / sombre, champ à poignées, pastilles par neuf, vague et molette', async () => {
+    await t.verifier('le sélecteur s’ouvre comme celui d’Arc : apparence auto / claire / sombre, champ à poignées, pastilles par neuf, vague et molette', async () => {
       await ouvrirEditeur();
       const m = await modal.evaluate(() => ({
         points: document.querySelectorAll('#theme-wheel .dot').length,
         modes: [...document.querySelectorAll('#theme-modes .mode')].map((b) => b.dataset.mode),
-        pastilles: document.querySelectorAll('#theme-presets .swatch').length,
+        pastilles: document.querySelectorAll('#theme-presets .swatch[data-p="0"]').length,
         choisie: document.querySelectorAll('#theme-presets .swatch.sel').length,
         fleches: [document.getElementById('theme-prev').disabled, document.getElementById('theme-next').disabled],
         reglages: [!!document.querySelector('#theme-wave input[type=range]'), !!document.querySelector('#theme-dial input[type=range]')],
         grille: document.getElementById('theme-grid').width > 0,
         visible: (() => { const r = document.getElementById('theme').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && r.width > 200; })(),
       }));
-      // Premier Espace : le thème à deux couleurs relevé dans Arc, sur la dernière page de pastilles.
-      assert.deepEqual(m, { points: 2, modes: ['light', 'auto', 'dark'], pastilles: 9, choisie: 1, fleches: [false, true], reglages: [true, true], grille: true, visible: true });
+      // First Space: Arc's measured two-colour theme, which is not one of Arc's swatches, so page 1 opens with none chosen.
+      assert.deepEqual(m, { points: 2, modes: ['auto', 'light', 'dark'], pastilles: 9, choisie: 0, fleches: [true, false], reglages: [true, true], grille: true, visible: true });
+    });
+
+    await t.verifier('cotes du popover d’Arc 1.170 : 356 × 508 à 18 pt de la barre et 23 pt du haut ; champ de 340, apparences et − + de 32 au pas de 40, pastilles de 24 au pas de 29,5, vague de 224 × 44, molette de 84 ; infobulle d’Arc sur « Automatic Appearance »', async () => {
+      const barre = await ctx.principal(({ w }) => w.sidebarWidth);
+      await jusqua(() => modal.evaluate(() => !document.getElementById('theme').getAnimations().some((a) => a.playState === 'running')), 'panneau arrivé');
+      const c = await modal.evaluate(() => {
+        const p = document.getElementById('theme').getBoundingClientRect();
+        const box = (el) => { const r = el.getBoundingClientRect(); return [r.left - p.left, r.top - p.top, r.width, r.height]; };
+        const q = (s) => [...document.querySelectorAll(s)].map(box);
+        return { panneau: [p.left, p.top, p.width, p.height], haut: innerHeight, champ: q('#theme-wheel'), modes: q('#theme-modes .mode'), compte: q('#theme-count .tb'), fleches: q('#theme-pages .pg'), pastilles: q('#theme-presets .swatch[data-p="0"]'), vague: q('#theme-wave'), molette: q('#theme-dial'), points: document.querySelectorAll('#theme-ring circle[data-a]').length };
+      });
+      // ±1 pt : le liseré du panneau (0,5 pt) et les arrondis de mise en page.
+      const pres = (vu, attendu, quoi) => assert.ok(vu.length === attendu.length && vu.every((v, i) => Math.abs(v - attendu[i]) <= 1), `${quoi} : ${JSON.stringify(vu)} au lieu de ${JSON.stringify(attendu)}`);
+      pres(c.panneau, [barre + 18, 23, 356, Math.min(508, c.haut - 31)], 'panneau');
+      pres(c.champ[0], [8, 8, 340, 340], 'champ');
+      c.modes.forEach((b, i) => pres(b, [122 + 40 * i, 32, 32, 32], 'apparence ' + i));
+      c.compte.forEach((b, i) => pres(b, [142 + 40 * i, 300, 32, 32], '− / + ' + i));
+      pres(c.fleches[0], [8, 364, 32, 32], '‹');
+      pres(c.fleches[1], [316, 364, 32, 32], '›');
+      c.pastilles.forEach((b, i) => pres(b, [48 + 29.5 * i, 368, 24, 24], 'pastille ' + i));
+      pres(c.vague[0], [18, 430, 224, 44], 'vague');
+      pres(c.molette[0], [258, 412, 84, 84], 'molette');
+      assert.equal(c.points, 20, 'vingt points autour de la molette');
+      const auto = await ctx.centre(modal.locator('#theme-modes .mode[data-mode=auto]'));
+      await modal.mouse.move(auto.x, auto.y, { steps: 3 });
+      const bulle = await jusqua(() => modal.evaluate(() => { const el = document.getElementById('tip'); const r = el.getBoundingClientRect(); return !el.hidden && el.classList.contains('on') ? { texte: document.getElementById('tip-text').textContent, milieu: r.left + r.width / 2, haut: r.top, hauteur: r.height, fond: getComputedStyle(el).backgroundColor } : null; }), 'infobulle de l’apparence automatique');
+      assert.equal(bulle.texte, await ctx.texte('theme.autoAppearance'));
+      assert.ok(Math.abs(bulle.milieu - auto.x) <= 1 && bulle.haut >= auto.box.y + auto.box.height && bulle.hauteur === 27 && bulle.fond === 'rgb(10, 13, 75)', 'pilule d’Arc centrée sous le bouton : ' + JSON.stringify(bulle));
+      await modal.mouse.move(auto.x, auto.y + 120, { steps: 3 });
+      await jusqua(() => modal.evaluate(() => document.getElementById('tip').hidden), 'infobulle effacée');
     });
 
     await t.verifier('déplacer un point du nuancier à la souris change la couleur de l’Espace, tout de suite', async () => {
@@ -154,6 +184,8 @@ module.exports = {
       await applique(p.stops);
       assert.equal(await modal.locator('#theme-less').isDisabled(), true);
       assert.equal(await modal.locator('#theme-plain').isVisible(), true, 'le champ annonce le thème par défaut');
+      assert.equal(await modal.locator('#theme-plain').textContent(), await ctx.texte('theme.tapToPick'));
+      assert.deepEqual(await modal.evaluate(() => ['theme-wave', 'theme-dial'].map((id) => getComputedStyle(document.getElementById(id)).opacity)), ['0.5', '0.5'], 'vague et molette atténuées sans couleur, comme dans Arc');
       await lisible('thème par défaut');
       // Un clic dans le nuancier repose une première couleur.
       const roue = (await ctx.centre(modal.locator('#theme-wheel'))).box;
@@ -162,7 +194,10 @@ module.exports = {
     });
 
     await t.verifier('les flèches font défiler les pastilles ; une pastille s’applique d’un clic ; l’intensité renforce ou allège le fond', async () => {
-      await ctx.clic(modal, '#theme-prev');
+      const decalage = () => modal.evaluate(() => new DOMMatrix(getComputedStyle(document.getElementById('theme-presets')).transform).m41);
+      await ctx.clic(modal, '#theme-next');
+      await jusqua(() => modal.evaluate(() => !document.getElementById('theme-prev').disabled), 'deuxième page');
+      await jusqua(async () => (await decalage()) === -265.5, 'la bande des pastilles a glissé d’une page');
       await ctx.clic(modal, '#theme-prev');
       await jusqua(() => modal.evaluate(() => document.getElementById('theme-prev').disabled), 'première page');
       await ctx.clic(modal, '#theme-presets .swatch >> nth=5');
@@ -195,6 +230,8 @@ module.exports = {
       await modal.mouse.up();
       await jusqua(async () => Math.abs((await espace()).grain - 0.6) <= 0.02, 'grain 0,6');
       const g = (await espace()).grain;
+      // Les points de −135° à 27° s'allument : neuf sur vingt.
+      assert.equal(await modal.locator('#theme-ring circle.on').count(), 9);
       const x = await jusqua(async () => { const y = await rendu(); return y.grainy && Math.abs(y.force - g * Theme.GRAIN_MAX) < 0.011 ? y : null; }, 'grain affiché');
       assert.equal(x.melange, 'overlay');
       assert.match(x.texture, /textures\/\w+\.png/);
@@ -202,6 +239,16 @@ module.exports = {
       assert.equal(await shell.evaluate(() => getComputedStyle(document.body, '::before').zIndex), '-1');
       await modal.locator('#theme-grain').evaluate((el) => { el.value = '0'; el.dispatchEvent(new Event('input', { bubbles: true })); });
       await jusqua(async () => (await espace()).grain === 0 && !(await rendu()).grainy, 'grain retiré');
+    });
+
+    await t.verifier('un clic sur la molette passe à la texture suivante, dans l’ordre d’Arc (grain, sand, denim, tweed)', async () => {
+      const avant = Theme.normalize(await espace()).texture;
+      const suivante = Theme.TEXTURES[(Theme.TEXTURES.indexOf(avant) + 1) % Theme.TEXTURES.length];
+      const grain = (await espace()).grain;
+      await ctx.clic(modal, '#theme-dial');
+      await jusqua(async () => (await espace()).texture === suivante, 'texture ' + suivante);
+      assert.equal((await espace()).grain, grain, 'un clic ne tourne pas la molette');
+      assert.match(await modal.evaluate(() => document.getElementById('theme-dial').style.getPropertyValue('--knob')), new RegExp(`textures/${suivante}\\.png`));
     });
 
     await t.avecEcran('verifier', 'apparence de l’Espace (automatique, claire, sombre) : l’icône s’anime, la barre et les panneaux suivent', async () => {
@@ -219,11 +266,11 @@ module.exports = {
       }
     });
 
-    await t.verifier('les pastilles de la première page et un dégradé de la dernière s’appliquent et restent lisibles, en clair comme en sombre', async () => {
+    await t.verifier('les pastilles de la première page et un dégradé de la deuxième s’appliquent et restent lisibles, en clair comme en sombre', async () => {
       const mini = [];
       const essayer = async (i, page) => {
         const colors = Theme.SWATCHES[page][i];
-        await ctx.clic(modal, `#theme-presets .swatch >> nth=${i}`);
+        await ctx.clic(modal, `#theme-presets .swatch[data-p="${page}"] >> nth=${i}`);
         await jusqua(async () => { const e = await espace(); return colors.length ? Theme.normalize(e).colors.join() === colors.join() : e.plain === true; }, 'pastille ' + (colors.join(' ') || 'neutre'));
         for (const mode of ['light', 'dark']) {
           await regler({ mode });
@@ -233,9 +280,8 @@ module.exports = {
       };
       for (let i = 0; i < 9; i++) await essayer(i, 0);
       await ctx.clic(modal, '#theme-next');
-      await ctx.clic(modal, '#theme-next');
-      await essayer(0, 2);
-      assert.equal((await rendu()).arrets.length, 2, 'dégradé à deux couleurs');
+      await essayer(3, 1);
+      assert.equal((await rendu()).arrets.length, 3, 'dégradé à trois couleurs');
       console.log(`    contraste le plus faible sur les 20 combinaisons : ${Math.min(...mini).toFixed(2)}`);
       await regler({ mode: 'auto' });
     });

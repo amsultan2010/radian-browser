@@ -11,7 +11,7 @@ const path = require('path');
 const { store, uid } = require('./store');
 const downloads = require('./downloads');
 
-const SECTIONS = ['history', 'archive', 'downloads', 'media', 'easels', 'spaces', 'boosts'];
+const SECTIONS = ['media', 'downloads', 'easels', 'spaces', 'boosts', 'archive', 'history'];
 const HOW = ['manual', 'auto', 'little']; // façon dont un onglet a rejoint l'archive
 const MEDIA = /\.(png|jpe?g|gif|webp|avif|svg|mp4|mov|webm|mp3|wav|m4a)$/i;
 
@@ -255,13 +255,19 @@ function keepCapture(name, png, { incognito = false, done = null } = {}) {
 }
 
 // --- Espaces, Boosts --------------------------------------------------------------
-const count = (nodes) => nodes.reduce((n, x) => n + (x.type === 'folder' ? count(x.children) : 1), 0);
+// A tab in a column of the Space manager: its title over its address, as in the sidebar.
+const tabItem = (id) => { const tab = store.state.tabs[id]; return tab ? { id, title: tab.customTitle || tab.title || tab.url, url: tab.url, favicon: tab.favicon || '' } : null; };
 
-function spaceRows(w, q) {
+function spaceRows(q) {
   const profiles = new Map(store.state.profiles.map((p) => [p.id, p.name]));
   return store.state.spaces
     .filter((s) => !q || s.name.toLowerCase().includes(q))
-    .map((s) => ({ id: s.id, name: s.name, icon: s.icon, color: s.color, profile: profiles.get(s.profileId) || '', pinned: count(s.pinned), today: s.today.length, current: !!w && w.spaceId === s.id, only: store.state.spaces.length < 2 }));
+    .map((s) => ({
+      id: s.id, name: s.name, icon: s.icon, profile: profiles.get(s.profileId) || '',
+      // Space manager (Arc): each column in its Space's colours, its top-level pinned items, then its Today tabs.
+      theme: { color: s.color, color2: s.color2, color3: s.color3, plain: s.plain, intensity: s.intensity, mode: s.mode },
+      items: { pinned: s.pinned.map((n) => (n.type === 'folder' ? { id: n.id, folder: true, title: n.name } : tabItem(n.id))).filter(Boolean), today: s.today.map(tabItem).filter(Boolean) },
+    }));
 }
 
 function boostRows(q) {
@@ -298,7 +304,7 @@ async function action(name, a, sender) {
         // Médias : images, vidéos et sons téléchargés, plus les captures d'Orbe.
         // (`from` : un dossier de l'utilisateur, lu parce qu'il vient d'être choisi.)
         media: FROM.includes(o.from) && o.from !== 'orbe' && fromLibrary(sender) ? await folderRows(o.from, q) : fileRows(s.downloads, q, true),
-        spaces: spaceRows(w, q),
+        spaces: spaceRows(q),
         boosts: boostRows(q),
         // Pour les filtres de l'archive.
         spaceNames: s.spaces.map((sp) => ({ id: sp.id, name: `${sp.icon} ${sp.name}` })),
@@ -307,7 +313,9 @@ async function action(name, a, sender) {
     }
     // Dernière section affichée : la Bibliothèque s'y rouvre (⇧⌘L).
     case 'lib:section':
-      if (SECTIONS.includes(a) && s.window.librarySection !== a) { s.window.librarySection = a; store.save(true); }
+      if (!SECTIONS.includes(a)) return true;
+      if (w) w.setLibrarySection(a);
+      if (s.window.librarySection !== a) { s.window.librarySection = a; store.save(true); }
       return true;
     case 'lib:clear':
       if (a === 'history') { s.history = {}; store.historyCount = 0; store.saveHistory(true); require('./backups').forget({ historyAll: true }); }
@@ -348,7 +356,7 @@ async function action(name, a, sender) {
       return recent();
     case 'lib:peekMenu':
       if (!w) return false;
-      env.popup(w, [...peekMenuTemplate(), { type: 'separator' }, { label: t('peek.open'), click: () => w.run('library') }]);
+      env.popup(w, [...peekMenuTemplate(), { type: 'separator' }, { label: t('peek.open'), click: () => w.openLibrary(require('./commands').librarySection()) }]);
       return true;
     case 'lib:space': {
       const o = a && typeof a === 'object' ? a : {};
@@ -358,11 +366,42 @@ async function action(name, a, sender) {
       if (o.do === 'rename') { w.switchSpace(sp.id); w.askRename(sp.id); return true; }
       if (o.do === 'theme') { w.switchSpace(sp.id); w.openTheme(); return true; }
       if (o.do === 'delete') { await w.deleteSpace(sp.id); return true; }
+      // Space manager: a tab of the column (shown in its Space), its "↓ Clear", its move handle, its "…" menu.
+      if (o.do === 'tab') {
+        if (!sp.today.includes(o.tab) && !sp.pinned.some((n) => n.type !== 'folder' && n.id === o.tab)) return false;
+        w.activate(o.tab);
+        return true;
+      }
+      if (o.do === 'clear') { w.clearToday(sp); return true; }
+      if (o.do === 'move') { if (!Number.isInteger(o.index)) return false; w.moveSpace(sp.id, o.index); return true; }
+      if (o.do === 'menu') {
+        const go = (what) => () => action('lib:space', { id: sp.id, do: what }, sender);
+        env.popup(w, [
+          { label: t('spaces.rename'), click: go('rename') },
+          { label: t('spaces.editTheme'), click: go('theme') },
+          { type: 'separator' },
+          { label: t('spaces.delete'), enabled: s.spaces.length > 1, click: go('delete') },
+        ]);
+        return true;
+      }
       return false;
     }
     case 'lib:newSpace':
       if (w) w.askNewSpace();
       return !!w;
+    case 'lib:close':
+      if (w) w.closeLibrary();
+      return !!w;
+    // An Easel or a Note opens in Peek, as in Arc. Only an id found in Radian's own data makes the page.
+    case 'lib:peek': {
+      const o = a && typeof a === 'object' ? a : {};
+      const board = typeof o.easel === 'string' ? require('./easels').list().find((b) => b.id === o.easel) : null;
+      const note = typeof o.note === 'string' ? s.notes.find((n) => n.id === o.note) : null;
+      const page = board ? 'easel.html?id=' + board.id : note ? 'notes.html#' + note.id : '';
+      if (!w || !page || !fromLibrary(sender)) return false;
+      w.peekPage(page, { x: Number(o.x), y: Number(o.y) });
+      return true;
+    }
     case 'lib:boost': {
       const o = a && typeof a === 'object' ? a : {};
       const host = String(o.host || '');
