@@ -83,10 +83,10 @@ module.exports = async function accueilTests(ctx) {
   await click('#next');
   await click('#next');
   await until(async () => (await step()) === 'ready', 'dernière étape');
-  const ready = JSON.parse(await js(`JSON.stringify({ title: document.querySelector('.support b').textContent, body: document.querySelector('.support .sub').textContent, btn: document.querySelector('.support [data-cmd=support]').textContent,
+  const ready = JSON.parse(await js(`JSON.stringify({ support: !!document.querySelector('.support'),
     tips: [...document.querySelectorAll('.tips .line')].map((l) => l.textContent.trim()).length, next: document.getElementById('next').textContent, skip: document.getElementById('skip').hidden })`));
-  check('dernière étape : premiers gestes avec leurs raccourcis, et le mot de soutien tel qu’il est écrit',
-    ready.title === store.t('support.title') && ready.body === store.t('support.body') && ready.btn === 'Soutenir le projet' && ready.tips === 6 && ready.next === 'Commencer à naviguer' && ready.skip, JSON.stringify(ready));
+  check('dernière étape : premiers gestes avec leurs raccourcis, sans appel aux dons (Orbe est crédité dans le README, NOTICE et la licence)',
+    !ready.support && ready.tips === 6 && ready.next === 'Commencer à naviguer' && ready.skip, JSON.stringify(ready));
   check('le lien de soutien est celui du projet', /^https:\/\/buymeacoffee\.com\/amadouba$/.test(require('fs').readFileSync(require('path').join(__dirname, '..', 'src', 'main', 'commands.js'), 'utf8').match(/SUPPORT_URL = '([^']+)'/)[1]));
   await click('#next');
   await until(() => !w.data.tabs[tab.id], 'accueil refermé');
@@ -96,12 +96,12 @@ module.exports = async function accueilTests(ctx) {
   const again = w.openInternal('welcome.html');
   await until(() => win.live.get(again.id) && win.live.get(again.id).wc.executeJavaScript('typeof show === "function" && !!document.getElementById("skip")'), 'accueil rouvert depuis l’aide');
   await win.live.get(again.id).wc.executeJavaScript('document.getElementById("skip").click()');
-  // « Passer » ne ferme pas : il mène à la dernière étape, celle du mot de soutien.
+  // « Passer » ne ferme pas : il mène à la dernière étape.
   const awc = win.live.get(again.id).wc;
   await until(() => awc.executeJavaScript('document.querySelector(".step.on").dataset.step === "ready"'), 'dernière étape après « Passer »');
-  const skipped = JSON.parse(await awc.executeJavaScript(`JSON.stringify({ soutien: document.querySelector('.support').getClientRects().length > 0, bouton: document.querySelector('.support [data-cmd="support"]').textContent, passer: document.getElementById('skip').hidden, suite: document.getElementById('next').textContent })`));
-  check('« Passer l’accueil » mène à la dernière étape : le mot de soutien est affiché, puis « Commencer à naviguer »',
-    !!w.data.tabs[again.id] && skipped.soutien && skipped.bouton === 'Soutenir le projet' && skipped.passer === true && skipped.suite === 'Commencer à naviguer', JSON.stringify(skipped));
+  const skipped = JSON.parse(await awc.executeJavaScript(`JSON.stringify({ passer: document.getElementById('skip').hidden, suite: document.getElementById('next').textContent })`));
+  check('« Passer l’accueil » mène à la dernière étape, puis « Commencer à naviguer »',
+    !!w.data.tabs[again.id] && skipped.passer === true && skipped.suite === 'Commencer à naviguer', JSON.stringify(skipped));
   await awc.executeJavaScript('document.getElementById("next").click()');
   await until(() => !w.data.tabs[again.id], 'accueil refermé');
   check('après « Passer », « Commencer à naviguer » referme l’accueil', !w.data.tabs[again.id]);

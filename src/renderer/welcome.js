@@ -1,6 +1,6 @@
 // Accueil du premier lancement : bienvenue, import, couleur, navigateur par
 // défaut, premiers gestes. Chaque étape est facultative ; « Passer » mène droit à
-// la dernière (premiers gestes et mot de soutien), d'où l'on commence à naviguer.
+// la dernière (premiers gestes), d'où l'on commence à naviguer.
 const steps = [...document.querySelectorAll('.step')];
 const dots = document.getElementById('dots');
 const next = document.getElementById('next');
