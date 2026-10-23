@@ -1414,7 +1414,8 @@ class OrbeWindow {
   // not reach) goes to sleep instead.
   static freezeView(id) {
     const rt = live.get(id);
-    if (!rt || rt.wc.isDestroyed()) return;
+    // Radian's own pages (an Easel receiving a capture) must keep answering: only web pages freeze.
+    if (!rt || rt.wc.isDestroyed() || isInternal(rt.wc.getURL())) return;
     if (rt.frozen) { OrbeWindow.sleepView(id); return; }
     const dbg = rt.wc.debugger;
     // Held by an extension, a full-page capture or the unload shield: left alone this round.
