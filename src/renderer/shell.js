@@ -375,6 +375,14 @@ function render(s) {
   scroller.classList.toggle('pinned-collapsed', (side.collapsed || []).includes(s.space.id));
   $('fav').dataset.hint = t('side.favHint');
   $('url-copy').hidden = !s.activeId || s.nav.internal || !s.nav.url;
+  // Share Quote (Arc): with text selected, the pill reads the host over "Share Quote", and the link button copies the quote.
+  const quote = !!s.nav.quote;
+  $('url').classList.toggle('quote', quote);
+  const copy = $('url-copy');
+  copy.dataset.tip = quote ? 'side.copyQuote' : 'side.copyCurrentUrl';
+  copy.dataset.tipKey = quote ? 'copyUrlQuote' : 'copyUrl';
+  copy.setAttribute('aria-label', t(copy.dataset.tip));
+  $('url-copy-icon').setAttribute('href', quote ? '#i-quote' : '#i-link');
 
   const label = s.nav.internal ? (s.nav.title || 'Radian') : host(s.nav.url);
   $('url-text').textContent = label || t('side.search');
@@ -403,7 +411,6 @@ function render(s) {
   lock.title = sec ? t('site.sec.' + sec) : '';
   const blocked = s.activeId ? (s.nav.popups || 0) : 0;
   $('popup-note').hidden = !blocked;
-  $('quote-note').hidden = !s.nav.quote;
   $('popup-note').title = t('popup.blocked');
   const caps = s.activeId ? (s.nav.capture || []) : [];
   $('capture-note').hidden = !caps.length;
@@ -859,7 +866,7 @@ for (const box of [$('exts'), $('tb-exts')]) {
   });
 }
 $('b-sidebar').onclick = () => send('toggleSidebar');
-$('url').onclick = () => send('openCommand', 'edit');
+$('url').onclick = (e) => (e.target.closest('#url-quote') ? send('command', 'copyUrlQuote') : send('openCommand', 'edit'));
 $('shield').onclick = () => send('siteControl');
 $('shield').addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); send('shieldMenu'); });
 $('lock').onclick = () => send('siteInfo');
@@ -875,8 +882,7 @@ $('b-clear').onclick = () => send('command', 'clearToday');
 $('b-library').onclick = () => send('command', S && S.downloads && !S.library ? 'downloads' : 'library');
 $('b-plus').onclick = () => send('sidebarMenu', 'plus');
 $('b-reload-more').onclick = () => send('reloadMenu', 'dev');
-$('url-copy').onclick = () => send('command', 'copyUrl');
-$('quote-note').onclick = () => send('command', 'copyUrlQuote');
+$('url-copy').onclick = () => send('command', S && S.nav.quote ? 'copyUrlQuote' : 'copyUrl');
 const LONG_PRESS = 500; // appui long sur précédent / suivant (ms)
 for (const p of ['b', 'tb']) {
   // Précédent, suivant : clic = aller ; ⌘clic ou clic molette = dans un nouvel

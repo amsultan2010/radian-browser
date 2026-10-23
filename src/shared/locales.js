@@ -1336,6 +1336,7 @@ const fr = {
   'side.devForceReload': 'Actualiser (sans le cache)',
   'side.copyCurrentUrl': 'Copier l’URL actuelle',
   'side.siteControl': 'Centre de contrôle du site',
+  'side.copyQuote': 'Copier la citation en URL',
   // theme editor as Arc's popover
   'theme.autoAppearance': 'Apparence automatique',
   'theme.lightAppearance': 'Apparence claire',
@@ -2657,6 +2658,7 @@ const en = {
   'side.devForceReload': 'Refresh (Ignore Cache)',
   'side.copyCurrentUrl': 'Copy Current URL',
   'side.siteControl': 'Site Control Center',
+  'side.copyQuote': 'Copy Quote as URL',
   // theme editor as Arc's popover
   'theme.autoAppearance': 'Automatic Appearance',
   'theme.lightAppearance': 'Light Appearance',

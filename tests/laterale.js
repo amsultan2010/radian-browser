@@ -669,12 +669,17 @@ module.exports = async function lateraleTests(ctx) {
   await w.run('copyUrlQuote');
   await until(async () => (await clipboard.readText()) === `> une phrase à citer\n>\n> — [P1](${base}/p1)`, 'citation copiée');
   check('Édition → « Copier l’URL en citation » : la sélection en citation Markdown, avec sa source', true);
-  // Share Quote: with text selected, the URL row offers it; a click copies the same quote.
-  await until(() => ui('!document.getElementById("quote-note").hidden'), 'bouton « Share Quote » affiché');
-  clipboard.writeText('');
-  await ui('document.getElementById("quote-note").click()');
-  await until(async () => (await clipboard.readText()) === `> une phrase à citer\n>\n> — [P1](${base}/p1)`, 'citation copiée par le bouton');
-  check('« Share Quote » : le bouton paraît dans la ligne de l’adresse avec une sélection et copie la citation', true);
+  // Share Quote (Arc): with text selected, the pill reads the host over "Share Quote" and the link button becomes the quote button.
+  await until(() => ui('document.getElementById("url").classList.contains("quote") && getComputedStyle(document.getElementById("url-quote")).display !== "none"'), 'pastille « Share Quote »');
+  check('« Share Quote » : l’hôte au-dessus de « Share Quote », bouton citation avec « Copy Quote as URL » et son raccourci, plus de bouton séparé',
+    await ui(`document.getElementById('url-quote').textContent === t('side.shareQuote') && document.getElementById('url-copy-icon').getAttribute('href') === '#i-quote'
+      && document.getElementById('url-copy').dataset.tip === 'side.copyQuote' && document.getElementById('url-copy').dataset.tipKey === 'copyUrlQuote' && !document.getElementById('quote-note')`));
+  for (const id of ['url-quote', 'url-copy']) {
+    clipboard.writeText('');
+    await ui(`document.getElementById('${id}').click()`);
+    await until(async () => (await clipboard.readText()) === `> une phrase à citer\n>\n> — [P1](${base}/p1)`, 'citation copiée par ' + id);
+  }
+  check('… « Share Quote » et le bouton citation copient la citation avec son lien', true);
 
   // « Utiliser la sélection pour rechercher ».
   await w.run('useSelectionFind');
@@ -685,8 +690,8 @@ module.exports = async function lateraleTests(ctx) {
   await w.run('useSelectionFind');
   await sleep(120);
   check('… sans sélection, elle ne s’ouvre pas', !w.findOpen);
-  await until(() => ui('document.getElementById("quote-note").hidden'), 'bouton « Share Quote » caché');
-  check('… et le bouton « Share Quote » s’en va avec la sélection', true);
+  await until(() => ui('!document.getElementById("url").classList.contains("quote") && document.getElementById("url-copy-icon").getAttribute("href") === "#i-link"'), 'pastille d’adresse revenue');
+  check('… et « Share Quote » s’en va avec la sélection : l’hôte seul, le bouton lien revient', true);
 
   // Enregistrer la page.
   const saveAs = dialog.showSaveDialog;
