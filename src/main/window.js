@@ -301,9 +301,9 @@ function tabMemory() {
   return { total, of, real };
 }
 
-// Vignettes de la bascule ⌃Tab : elle ne montre que huit onglets, seules les
-// huit dernières vignettes prises sont donc gardées (23 Ko pièce).
-const THUMBS = 8;
+// Ctrl-Tab switcher thumbnails: it shows only five tabs, as in Arc, so only the
+// last five thumbnails taken are kept (23 KB each).
+const THUMBS = 5;
 const thumbIds = [];
 function keepThumb(rt, data) {
   rt.thumb = data;

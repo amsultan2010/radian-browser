@@ -528,12 +528,12 @@ module.exports = async function performancesTests(ctx) {
     }
     Object.assign(s, saved);
 
-    // Vignettes de la bascule ⌃Tab : huit au plus.
+    // Vignettes de la bascule ⌃Tab : cinq au plus, comme ses lignes.
     const many = Array.from({ length: win.thumbs.MAX + 3 }, (_, i) => w.newTab(page('Vignette ' + i), { background: true }));
     for (const x of many) win.thumbs.keep(win.live.get(x.id), 'image');
     win.thumbs.keep(win.live.get(many[3].id), 'image'); // reprise : elle redevient la plus récente
     const withThumb = many.filter((x) => win.live.get(x.id).thumb).map((x) => many.indexOf(x)).join();
-    check('vignettes de la bascule d’onglets : seules les huit dernières sont gardées', withThumb === '3,4,5,6,7,8,9,10', withThumb);
+    check('vignettes de la bascule d’onglets : seules les cinq dernières sont gardées', withThumb === '3,4,5,6,7', withThumb);
     for (const x of many) w.close(x.id, { silent: true, ask: false });
   }
   if (tmp) w.close(tmp.id, { silent: true, ask: false });
