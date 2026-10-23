@@ -48,8 +48,9 @@
     const back = button('ib mp-back', 'back15', 'media.back', () => act(p.id, 'back'));
     const fwd = button('ib mp-fwd', 'fwd15', 'media.forward', () => act(p.id, 'forward'));
     const next = button('ib mp-next', 'next', 'media.next', () => act(p.id, 'next'));
+    const pip = button('ib mp-pip', 'pip', 'media.pip', () => act(p.id, 'pip'));
     const mute = button('ib mp-mute', 'sound', 'media.mute', () => act(p.id, 'mute'));
-    ctl.append(prev, back, fwd, next, mute);
+    ctl.append(prev, back, fwd, next, pip, mute);
     const play = button('ib mp-play', 'pause', 'media.pause', () => act(p.id, 'toggle'));
     const x = button('mp-x', 'x', 'media.close', () => act(p.id, 'close'));
     const bar = document.createElement('div');
@@ -57,7 +58,7 @@
     const fill = document.createElement('i');
     bar.appendChild(fill);
     el.append(open, ctl, play, x, bar);
-    el._ = { art, title, inner, sub, prev, back, fwd, next, mute, play, bar, fill };
+    el._ = { art, title, inner, sub, prev, back, fwd, next, pip, mute, play, bar, fill };
     scrub(el, bar);
     el.addEventListener('pointerleave', () => replay(el));
     volume(el, mute);
@@ -228,7 +229,7 @@
       marquee(el);
     }
     // Rien n'est réécrit qui n'ait changé : un état reçu ne coûte aucune mise en page.
-    const key = [p.sub, p.playing, p.muted, p.prev, p.next, p.seek].join('\u0001');
+    const key = [p.sub, p.playing, p.muted, p.prev, p.next, p.seek, p.pip].join('\u0001');
     if (el._key !== key) {
       el._key = key;
       _.sub.textContent = p.sub || '';
@@ -242,6 +243,7 @@
       _.next.hidden = !p.next;
       _.back.hidden = !p.seek;
       _.fwd.hidden = !p.seek;
+      _.pip.hidden = !p.pip;
     }
     // Volume annoncé par la page — sauf pendant qu'on le règle ici (l'écho arrive après).
     if (el._vol !== p.volume && !(el._volAt && performance.now() - el._volAt < 1500)) level(el, typeof p.volume === 'number' ? p.volume : 1);
