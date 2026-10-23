@@ -1303,6 +1303,7 @@ const fr = {
   'appIcon.arcade': 'Arcade',
   'appIcon.sunset': 'Crépuscule',
   'appIcon.graphite': 'Graphite',
+  'appIcon.fluted': 'Verre cannelé',
 };
 
 const en = {
@@ -2586,6 +2587,7 @@ const en = {
   'appIcon.arcade': 'Arcade',
   'appIcon.sunset': 'Sunset',
   'appIcon.graphite': 'Graphite',
+  'appIcon.fluted': 'Fluted Glass',
 };
 
 module.exports = { fr, en };

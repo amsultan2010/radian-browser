@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const NAMES = ['original', 'midnight', 'ink', 'neon', 'sorbet', 'candy', 'glass', 'hologram', 'metal', 'schoolbook', 'arcade', 'sunset', 'graphite'];
+const NAMES = ['original', 'midnight', 'ink', 'neon', 'sorbet', 'candy', 'glass', 'hologram', 'metal', 'schoolbook', 'arcade', 'sunset', 'graphite', 'fluted'];
 const DIR = path.join(__dirname, '..', '..', 'assets', 'icons');
 let shown = '';
 let thumbs = null;
