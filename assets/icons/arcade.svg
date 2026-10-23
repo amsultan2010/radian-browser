@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <filter id="tile-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.3"/></filter>
+    <filter id="sticker-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.24"/></filter>
+    <clipPath id="tile"><path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z"/></clipPath>
+    <mask id="band" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><path d="M284.3 493A275 275 0 0 0 755.7 394" fill="none" stroke="#fff" stroke-width="128" stroke-linecap="round" stroke-linejoin="round"/></mask>
+    <clipPath id="left"><path d="M56.1 -523.3L1129.5 1623.3L56.1 2160L-1017.2 13.3Z"/></clipPath>
+    <clipPath id="right"><path d="M56.1 -523.3L1129.5 1623.3L2202.8 1086.6L1129.5 -1060Z"/></clipPath>
+    <clipPath id="stem"><rect x="306.3" y="0" width="128" height="1024"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="100" x2="0" y2="924" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#14245E"/><stop offset="1" stop-color="#060B26"/></linearGradient>
+    <pattern id="scanlines" patternUnits="userSpaceOnUse" width="1024" height="16"><rect y="12" width="1024" height="4" fill="#000" fill-opacity="0.22"/></pattern>
+    <!-- Pixel art: keep one sample per 32 px cell (a 1 px flood tiled every 32 px), make it opaque or empty, grow it back to a full cell,
+         then add a dark copy one cell down and right as the drop shadow.
+         Two 8 px dilations, because librsvg caps one at 10 px. -->
+    <filter id="pixels" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB">
+      <feFlood x="16" y="16" width="1" height="1" flood-color="#000" result="dot"/>
+      <feComposite in="dot" in2="dot" x="0" y="0" width="32" height="32" operator="over" result="cell"/>
+      <feTile in="cell" result="grid"/>
+      <feComposite in="SourceGraphic" in2="grid" operator="in" result="edge"/>
+      <feComponentTransfer in="edge" result="samples"><feFuncA type="discrete" tableValues="0 1"/></feComponentTransfer>
+      <feMorphology in="samples" operator="dilate" radius="8" result="half"/>
+      <feMorphology in="half" operator="dilate" radius="8" result="pix"/>
+      <feColorMatrix in="pix" type="matrix" values="0 0 0 0 0.03  0 0 0 0 0.02  0 0 0 0 0.12  0 0 0 0.9 0" result="dark"/>
+      <feOffset in="dark" dx="32" dy="32" result="shadow"/>
+      <feMerge><feMergeNode in="shadow"/><feMergeNode in="pix"/></feMerge>
+    </filter>
+  </defs>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="#0F1A45" filter="url(#tile-shadow)"/>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="url(#bg)"/>
+  <g fill="none" stroke-width="128" stroke-linecap="round" stroke-linejoin="round" filter="url(#pixels)">
+    <path d="M370.3 697V326" stroke="#FFD23F"/>
+    <path d="M370.3 559.8V697" stroke="#FF8A1F"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#FF4D8D" clip-path="url(#left)"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#8C6BFF" clip-path="url(#right)"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#E0306F" clip-path="url(#stem)"/>
+    <path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#FFD23F"/>
+    <path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#F2B200" mask="url(#band)"/>
+  </g>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="url(#scanlines)"/>
+</svg>

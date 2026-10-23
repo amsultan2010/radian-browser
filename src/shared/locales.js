@@ -1300,6 +1300,7 @@ const fr = {
   'appIcon.hologram': 'Hologramme',
   'appIcon.metal': 'Métal',
   'appIcon.schoolbook': 'Cahier',
+  'appIcon.arcade': 'Arcade',
 };
 
 const en = {
@@ -2580,6 +2581,7 @@ const en = {
   'appIcon.hologram': 'Hologram',
   'appIcon.metal': 'Metal',
   'appIcon.schoolbook': 'Schoolbook',
+  'appIcon.arcade': 'Arcade',
 };
 
 module.exports = { fr, en };
