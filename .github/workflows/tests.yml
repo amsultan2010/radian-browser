@@ -38,6 +38,9 @@ jobs:
       - name: Tab sleep rules
         run: node tests/veille.test.js
 
+      - name: Site search and link routing rules
+        run: node tests/liens.test.js
+
       # The default screen on Windows runners is too small for the window.
       - name: Screen at 1920 × 1080 (Windows)
         if: runner.os == 'Windows'
