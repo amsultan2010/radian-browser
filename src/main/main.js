@@ -1,5 +1,5 @@
 // Point d'entrée d'Orbe.
-const { app, ipcMain, BrowserWindow, nativeTheme, shell, webContents, dialog, net, session } = require('electron');
+const { app, ipcMain, BrowserWindow, nativeTheme, shell, webContents, dialog, net, session, systemPreferences } = require('electron');
 const { pathToFileURL } = require('url');
 const path = require('path');
 const os = require('os');
@@ -46,6 +46,11 @@ function testModeAllowed() {
 const pendingUrls = [];
 
 app.setName('Radian');
+// App Nap off, as Arc does (its defaults domain holds NSAppSleepDisabled = 1): timers of hidden
+// windows are not delayed, for a little more background energy. A user default like Arc's (the
+// Info.plist key LSAppNapIsDisabled is reported not to stick); it may only apply from the next
+// launch. Packaged app only: in development the defaults domain is Electron's.
+if (app.isPackaged) systemPreferences.setUserDefault('NSAppSleepDisabled', 'boolean', true);
 const SELFTEST = process.argv.includes('--selftest') && testModeAllowed();
 if (process.argv.includes('--selftest') && !SELFTEST) {
   console.error('[orbe] --selftest refusé : application fabriquée, sans --orbe-test ni ORBE_USER_DATA à part');
