@@ -1592,10 +1592,14 @@ function dropGeom() {
 
 // Affiche la destination : dossier mis en évidence, lignes écartées et place
 // libre, ou trait dans la grille des favoris.
+let feltAt = ''; // last drop place a haptic tap marked, as Arc taps on each new place
 function showTarget(t) {
   const same = t === target || (t && target && t.to === target.to && t.folderId === target.folderId && t.index === target.index && t.into === target.into && !t.pos && t.g === target.g);
   if (same) return;
   target = t;
+  const place = t ? `${t.to}|${t.folderId}|${t.index}|${t.into ? 1 : 0}` : '';
+  if (place && place !== feltAt) send('haptic', 'align');
+  feltAt = place;
   const into = (t && t.into) || null;
   if (into !== intoEl) {
     if (intoEl) intoEl.classList.remove('drop-into');

@@ -83,6 +83,8 @@ fs.copyFileSync(path.join(root, 'LICENSE'), path.join(target, 'LICENSE'));
 fs.mkdirSync(path.join(target, 'assets'));
 fs.copyFileSync(path.join(root, 'assets', 'blocklist.txt'), path.join(target, 'assets', 'blocklist.txt'));
 fs.copyFileSync(path.join(root, 'assets', 'radian.icns'), path.join(resources, 'radian.icns'));
+if (process.env.RADIAN_HAPTICS) fs.copyFileSync(process.env.RADIAN_HAPTICS, path.join(contents, 'MacOS', 'radian-haptics'));
+else console.log('No swiftc: building without trackpad haptics.');
 
 plutil('CFBundleName', '-string', 'Radian');
 plutil('CFBundleDisplayName', '-string', 'Radian');
@@ -128,6 +130,7 @@ function signApp() {
       if (e.isDirectory()) { walk(p); if (/\.(app|framework)$/.test(e.name)) items.push(p); } else if (isMachO(p)) items.push(p);
     }
   })(path.join(contents, 'Frameworks'));
+  for (const f of fs.readdirSync(path.join(contents, 'MacOS'))) if (f !== 'Radian') items.push(path.join(contents, 'MacOS', f));
   for (const p of items) sign(p);
   sign(appPath);
   run('codesign', ['--verify', '--deep', '--strict', appPath]);

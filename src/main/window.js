@@ -132,7 +132,7 @@ const INTERNAL_PAGES = new Set(['library.html', 'shortcuts.html', 'welcome.html'
 const webUrl = (u) => (/^https?:\/\//i.test(u || '') ? u : null);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 // Messages de l'interface qui ne sont pas un geste de l'utilisateur (aucun son ne les suit).
-const QUIET_ACTIONS = new Set(['ready', 'battery', 'themeGet', 'suggest', 'select', 'dragZone', 'dragZoneOver', 'sidebarWidth', 'splitResize']);
+const QUIET_ACTIONS = new Set(['ready', 'battery', 'themeGet', 'suggest', 'select', 'dragZone', 'dragZoneOver', 'sidebarWidth', 'splitResize', 'haptic']);
 // Ce que l'interface reçoit du thème d'un Espace (voir src/renderer/theme.js).
 const themeFields = (s) => ({ color: s.color, color2: s.color2 || '', color3: s.color3 || '', plain: !!s.plain, intensity: typeof s.intensity === 'number' ? s.intensity : 0.5, grain: s.grain || 0, texture: s.texture || 'grain', mode: s.mode || 'auto' });
 
@@ -4810,6 +4810,7 @@ class OrbeWindow {
       case 'ready': return this.sendState();
       case 'hoverTab': return this.prewake(a);
       case 'battery': return OrbeWindow.setBattery(a, this);
+      case 'haptic': return store.state.settings.haptics === false ? undefined : require('./haptics').perform(a);
       // Clic sur l'onglet déjà affiché : rien à faire, et surtout ne pas
       // reprendre le clavier (second clic d'un double-clic pour renommer).
       case 'activate': return a === this.activeId && live.has(a) && !this.peekState ? undefined : this.activate(a);

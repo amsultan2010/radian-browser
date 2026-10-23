@@ -457,7 +457,12 @@ $('theme-dial').addEventListener('pointerdown', (e) => {
     const r = dial.getBoundingClientRect();
     const a = (Math.atan2(ev.clientX - r.left - r.width / 2, r.top + r.height / 2 - ev.clientY) * 180) / Math.PI;
     const v = String(Math.round(Math.max(0, Math.min(1, (a + 135) / 270)) * 100));
-    if (v !== input.value) { input.value = v; input.dispatchEvent(new Event('input')); }
+    if (v === input.value) return;
+    // A tap on every tenth, and a firmer one at either end, like Arc's dial.
+    if (v === '0' || v === '100') send('haptic', 'level');
+    else if (Math.floor(v / 10) !== Math.floor(input.value / 10)) send('haptic', 'align');
+    input.value = v;
+    input.dispatchEvent(new Event('input'));
   };
   dial.setPointerCapture(e.pointerId);
   turn(e);
