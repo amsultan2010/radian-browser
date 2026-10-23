@@ -31,6 +31,30 @@ release.
 - Open-source project files: README, contributing guide, code of conduct,
   security policy, notice file, issue and pull request templates, and
   `.editorconfig`.
+- `npm run dist` builds `Radian.app`, then a drag-to-Applications DMG and a zip,
+  `Radian-<version>-mac-arm64.dmg` and `.zip`, in `~/.orbe-dev/dist`.
+- Optional Developer ID signing with the hardened runtime, and notarization of
+  the DMG, when `RADIAN_SIGN_IDENTITY` and `RADIAN_NOTARY_PROFILE` are set.
+  Builds are ad-hoc signed otherwise.
+- A release workflow: pushing a `v*` tag builds Radian on Apple Silicon and
+  attaches the DMG and the zip to a GitHub Release. Signing secrets are
+  optional.
+- Trackpad haptics like Arc's: a light tap when a dragged tab finds a new
+  place and on the theme dial, with Arc's on/off switch in Settings. A small
+  Swift helper plays them, since Electron has no haptics API.
+- App icon picker in Settings > Appearance: seven Radian icons for the Dock.
+- Every normal window comes back on relaunch with its size, Space and tabs,
+  not just one.
+- Background tabs that keep using a lot of CPU go to sleep, sooner in Battery
+  Saver.
+- The Command Bar learns which result you pick for what you type.
+- Your own Site Search shortcuts (keyword plus a `%s` URL template), and Air
+  Traffic Control rules for "URL contains" and "URL is equal to".
+- Share in the tab menu, Capture Full Page (Option for Portrait) in Site
+  Control Center, a "back to Picture in Picture" button on the sidebar video
+  player, and New Window in the Dock menu.
+- An English parity ledger, `docs/parity/status.md`, with the status of all 78
+  Arc features.
 
 ### Changed
 
@@ -44,5 +68,25 @@ release.
 - Sidebar and Space-switch animations retimed toward Arc's.
 - Docs reorganised under `docs/`: the plan, Arc parity specs, research, and
   Orbe's original French docs in `docs/orbe/`.
+- The README explains how to install the DMG and get past macOS's first-launch
+  warning.
+- The CI test workflow's step names and comments are in English.
+- Arc's defaults: links from other apps open in Little Radian, Little windows
+  archive after 6 hours, the Ctrl-Tab switcher shows 5 tabs, new folders are
+  "Untitled" and the address placeholder reads "Search or Enter URL…".
+- Secure sites show no lock, only a warning when a site is not secure.
+- Developer Mode looks like Arc's: a dashed yellow and black outline on the tab
+  and a blue bar with the full URL.
+
+### Fixed
+
+- The left-edge hover check ran 60 times a second in every window with a hidden
+  sidebar, even in the background. It now runs only in the focused window.
+- Copying links from the tab and folder menus kept tracking parameters.
+- Text on the accent colour (Command Bar selection, toasts), the "New Tab"
+  label and the Favorites hint now keep a 4.5:1 contrast.
+- Pressing Enter in the Command Bar before new suggestions arrived could run
+  the previous first row instead of what you typed.
+- A Space swipe forced a layout on every frame for nothing.
 
 [Unreleased]: https://github.com/amsultan2010/radian-browser/commits/main
