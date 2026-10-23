@@ -38,7 +38,7 @@ const DEFAULT_SETTINGS = {
   neverSleep: [],
   peekLinks: true,
   routes: [],
-  externalLinks: 'window',
+  externalLinks: 'little', // as in Arc, links from other apps open in Little Radian
   autoPip: true,
   batterySaver: true,
   pipOffSites: [],
@@ -54,7 +54,7 @@ const DEFAULT_SETTINGS = {
   peekShift: true,
   littleAltClick: true,
   littleShortcut: '',
-  littleArchiveHours: 0,
+  littleArchiveHours: 6, // as in Arc
   cookieBanners: false,
   themeData: true, // Arc always exposes the --arc-* theme variables to pages
   boostsEnabled: true,

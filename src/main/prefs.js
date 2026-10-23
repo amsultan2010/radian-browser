@@ -118,7 +118,7 @@ const SETTABLE = {
   haptics: bool, // REG-40, played by src/main/haptics.js
   peekShift: bool,
   littleAltClick: bool,
-  littleArchiveHours: (v) => ARCHIVE_HOURS.includes(v),
+  littleArchiveHours: (v) => v === 6 || ARCHIVE_HOURS.includes(v), // 6 h is Arc's delay for Little Arc
   cookieBanners: bool,
   themeData: bool,
   boostsEnabled: bool,

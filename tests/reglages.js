@@ -60,7 +60,7 @@ module.exports = async function reglagesTests(ctx) {
 
   await set({ littleArchiveHours: 5 });
   await set({ littleArchiveHours: '24' });
-  const badHours = s().littleArchiveHours === 0;
+  const badHours = s().littleArchiveHours === 6;
   await set({ littleArchiveHours: 24 });
   check('délai des petites fenêtres : seules les valeurs proposées sont acceptées', badHours && s().littleArchiveHours === 24);
   await set({ littleArchiveHours: 0 });
