@@ -2111,7 +2111,7 @@ class OrbeWindow {
   copyLinks(ids) {
     ids = this.checkIds(ids);
     if (!ids.length) return;
-    clipboard.writeText(ids.map((id) => this.data.tabs[id].url).join('\n'));
+    clipboard.writeText(ids.map((id) => cleanUrl(this.data.tabs[id].url)).join('\n'));
     this.toast(t('toast.linksCopied', { n: ids.length }));
   }
 
@@ -2431,7 +2431,7 @@ class OrbeWindow {
     if (!f || f.node.type !== 'folder') return;
     const tabs = [...walk(f.node.children)].map((tid) => this.data.tabs[tid]).filter(Boolean);
     if (!tabs.length) return;
-    clipboard.writeText(tabs.map((tab) => (markdown ? `- ${mdLink(tab.customTitle || tab.title, tab.url)}` : tab.url)).join('\n'));
+    clipboard.writeText(tabs.map((tab) => (markdown ? `- ${mdLink(tab.customTitle || tab.title, cleanUrl(tab.url))}` : cleanUrl(tab.url))).join('\n'));
     this.toast(t('toast.linksCopied', { n: tabs.length }));
   }
 
@@ -4351,8 +4351,8 @@ class OrbeWindow {
     const fav = loc.list === 'favorites';
     const others = this.data.spaces.filter((s) => s !== loc.space);
     const tpl = [
-      { label: t('tabs.copyLink'), click: () => clipboard.writeText(tab.url) },
-      { label: t('tabs.copyLinkMarkdown'), click: () => clipboard.writeText(mdLink(tab.customTitle || tab.title, tab.url)) },
+      { label: t('tabs.copyLink'), click: () => { clipboard.writeText(cleanUrl(tab.url)); this.toast(t('toast.urlCopied')); } },
+      { label: t('tabs.copyLinkMarkdown'), click: () => { clipboard.writeText(mdLink(tab.customTitle || tab.title, cleanUrl(tab.url))); this.toast(t('toast.markdownCopied')); } },
       { label: t('tabs.duplicate'), click: () => this.duplicate(id) },
       { label: t('tabs.rename'), visible: !fav, click: () => this.askRename(id) },
       { label: t('tabs.changeIcon'), click: () => this.openIcons('tab', id) },
