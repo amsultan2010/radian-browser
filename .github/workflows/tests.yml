@@ -29,6 +29,9 @@ jobs:
       - name: Extensions
         run: node --test tests/extensions.test.js
 
+      - name: App icons
+        run: node --test tests/app-icon.test.js
+
       # The default screen on Windows runners is too small for the window.
       - name: Screen at 1920 × 1080 (Windows)
         if: runner.os == 'Windows'
