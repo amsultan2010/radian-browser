@@ -66,6 +66,30 @@ const actionKey = (c) => (c.n === undefined ? (c.n = norm(c.title)) : c.n);
 const actionItem = (c) => ({ kind: 'command', command: c.command, arg: c.arg, title: c.title, subtitle: c.shortcut || c.sub || store.t('cmd.action'), shortcut: c.shortcut || '' });
 const ACTIONS_MAX = 60; // ⇥ sur une barre vide : les actions seules, en liste déroulante
 
+// Learning (Arc, Oct 2024): the bar remembers which page was picked for what was typed.
+// Stored on the history entry itself as `picks` ([typed, count, lastAt], most recent first),
+// so clearing or forgetting history clears it too, and nothing is learned outside history.
+const PICKS_PER_PAGE = 4;
+const PICK_BOOST = 50; // per pick, up to 3: three picks outrank any unlearned row (a prefix match tops out near 150)
+
+function learn(query, url) {
+  const q = norm(String(query || '').trim()).slice(0, 64);
+  const history = store.state.history;
+  const h = q && typeof url === 'string' && Object.hasOwn(history, url) ? history[url] : null;
+  if (!h) return false;
+  const old = (h.picks || []).find((p) => p[0] === q);
+  h.picks = [[q, old ? old[1] + 1 : 1, Date.now()], ...(h.picks || []).filter((p) => p !== old)].slice(0, PICKS_PER_PAGE);
+  store.saveHistory(); // also bumps historyRev, so the next search rescans with the new boost
+  return true;
+}
+
+// Picks made for `q` or for a shorter prefix of it.
+function learned(h, q) {
+  let n = 0;
+  for (const [k, c] of h.picks) if (q.startsWith(k)) n += c;
+  return PICK_BOOST * Math.min(n, 3);
+}
+
 // Recherche incrémentale : quand la saisie prolonge la précédente (« nav » puis
 // « navi »), seules les entrées d'historique déjà retenues peuvent encore
 // convenir ; les autres ne sont pas relues. `rev` change à chaque modification
@@ -107,9 +131,10 @@ function local(query, { tabs, commands, activeId, scope }) {
     else if (title.includes(q)) score = 30;
     if (!score) continue;
     kept.push(h);
-    score += Math.min(h.visits, 30) + Math.max(0, 20 - (now - h.last) / 864e5);
+    const boost = h.picks ? learned(h, q) : 0;
+    score += Math.min(h.visits, 30) + Math.max(0, 20 - (now - h.last) / 864e5) + boost;
     score -= Math.min(u.length, 80) / 8;
-    hist.push({ score, h, prefix: u.startsWith(q) });
+    hist.push({ score, h, prefix: u.startsWith(q), learned: boost > 0 });
   }
   last = { q, history, rev, kept };
   stats.scanned = pool.length;
@@ -117,19 +142,23 @@ function local(query, { tabs, commands, activeId, scope }) {
   hist.sort((a, b) => b.score - a.score);
 
   const best = hist[0];
+  const search = searchUrl(query.trim());
+  // First row after a typed address: the best page if it completes the typing (inline
+  // completion) or was picked for it before; a learned pick of this very search leaves the search first.
+  const top = !url && best && (best.learned ? best.h.url !== search : best.prefix) ? best : null;
   if (url) out.push({ kind: 'url', url, title: strip(url), subtitle: store.t('cmd.open') });
-  else if (best && best.prefix) {
-    out.push({ kind: 'history', url: best.h.url, title: best.h.title || strip(best.h.url), subtitle: strip(best.h.url), favicon: best.h.favicon, complete: strip(best.h.url), deletable: true });
+  else if (top) {
+    out.push({ kind: 'history', url: top.h.url, title: top.h.title || strip(top.h.url), subtitle: strip(top.h.url), favicon: top.h.favicon, ...(top.prefix ? { complete: strip(top.h.url) } : null), deletable: true });
     hist.shift();
   }
-  out.push({ kind: 'search', url: searchUrl(query.trim()), title: query.trim(), subtitle: store.t('cmd.search', null, { engine: engine().name }) });
+  out.push({ kind: 'search', url: search, title: query.trim(), subtitle: store.t('cmd.search', null, { engine: engine().name }) });
   // La saisie désigne un site (« youtube », « yt ») : ⇥ ou espace cherche dedans.
   const site = palette.siteHint(q);
   if (site) out.push(site);
 
   const seen = new Set(out.map((o) => o.url));
   const titles = new Set(); // « site + titre » déjà proposés (sites de DEDUP_HOSTS)
-  if (best && best.prefix && !url) { const k = dedupKey(fields(best.h)); if (k) titles.add(k); }
+  if (top) { const k = dedupKey(fields(top.h)); if (k) titles.add(k); }
   for (const t of tabs) {
     if (t.id === activeId) continue;
     const f = fields(t);
@@ -180,4 +209,4 @@ async function remote(query, signal) {
   }
 }
 
-module.exports = { DEDUP_HOSTS, ENGINES, resolve, toUrl, searchUrl, strip, local, remote, hooks, stats, forget: () => { last = null; } };
+module.exports = { DEDUP_HOSTS, ENGINES, resolve, toUrl, searchUrl, strip, local, remote, learn, hooks, stats, forget: () => { last = null; } };
