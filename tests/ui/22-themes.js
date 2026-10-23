@@ -97,8 +97,8 @@ module.exports = {
         grille: document.getElementById('theme-grid').width > 0,
         visible: (() => { const r = document.getElementById('theme').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && r.width > 200; })(),
       }));
-      // Premier Espace : le thème à deux couleurs relevé dans Arc, sur la dernière page de pastilles.
-      assert.deepEqual(m, { points: 2, modes: ['light', 'auto', 'dark'], pastilles: 9, choisie: 1, fleches: [false, true], reglages: [true, true], grille: true, visible: true });
+      // First Space: Arc's measured two-colour theme, which is not one of Arc's swatches, so page 1 opens with none chosen.
+      assert.deepEqual(m, { points: 2, modes: ['light', 'auto', 'dark'], pastilles: 9, choisie: 0, fleches: [true, false], reglages: [true, true], grille: true, visible: true });
     });
 
     await t.verifier('déplacer un point du nuancier à la souris change la couleur de l’Espace, tout de suite', async () => {
@@ -162,7 +162,8 @@ module.exports = {
     });
 
     await t.verifier('les flèches font défiler les pastilles ; une pastille s’applique d’un clic ; l’intensité renforce ou allège le fond', async () => {
-      await ctx.clic(modal, '#theme-prev');
+      await ctx.clic(modal, '#theme-next');
+      await jusqua(() => modal.evaluate(() => !document.getElementById('theme-prev').disabled), 'deuxième page');
       await ctx.clic(modal, '#theme-prev');
       await jusqua(() => modal.evaluate(() => document.getElementById('theme-prev').disabled), 'première page');
       await ctx.clic(modal, '#theme-presets .swatch >> nth=5');
@@ -204,6 +205,16 @@ module.exports = {
       await jusqua(async () => (await espace()).grain === 0 && !(await rendu()).grainy, 'grain retiré');
     });
 
+    await t.verifier('un clic sur la molette passe à la texture suivante, dans l’ordre d’Arc (grain, sand, denim, tweed)', async () => {
+      const avant = Theme.normalize(await espace()).texture;
+      const suivante = Theme.TEXTURES[(Theme.TEXTURES.indexOf(avant) + 1) % Theme.TEXTURES.length];
+      const grain = (await espace()).grain;
+      await ctx.clic(modal, '#theme-dial');
+      await jusqua(async () => (await espace()).texture === suivante, 'texture ' + suivante);
+      assert.equal((await espace()).grain, grain, 'un clic ne tourne pas la molette');
+      assert.match(await modal.evaluate(() => document.getElementById('theme-dial').style.getPropertyValue('--knob')), new RegExp(`textures/${suivante}\\.png`));
+    });
+
     await t.avecEcran('verifier', 'apparence de l’Espace (automatique, claire, sombre) : l’icône s’anime, la barre et les panneaux suivent', async () => {
       for (const [mode, anim] of [['dark', 'moon-rock'], ['light', 'rays-turn'], ['auto', 'star-twinkle']]) {
         await ctx.clic(modal, `#theme-modes .mode[data-mode=${mode}]`);
@@ -219,7 +230,7 @@ module.exports = {
       }
     });
 
-    await t.verifier('les pastilles de la première page et un dégradé de la dernière s’appliquent et restent lisibles, en clair comme en sombre', async () => {
+    await t.verifier('les pastilles de la première page et un dégradé de la deuxième s’appliquent et restent lisibles, en clair comme en sombre', async () => {
       const mini = [];
       const essayer = async (i, page) => {
         const colors = Theme.SWATCHES[page][i];
@@ -233,9 +244,8 @@ module.exports = {
       };
       for (let i = 0; i < 9; i++) await essayer(i, 0);
       await ctx.clic(modal, '#theme-next');
-      await ctx.clic(modal, '#theme-next');
-      await essayer(0, 2);
-      assert.equal((await rendu()).arrets.length, 2, 'dégradé à deux couleurs');
+      await essayer(3, 1);
+      assert.equal((await rendu()).arrets.length, 3, 'dégradé à trois couleurs');
       console.log(`    contraste le plus faible sur les 20 combinaisons : ${Math.min(...mini).toFixed(2)}`);
       await regler({ mode: 'auto' });
     });

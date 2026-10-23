@@ -1322,6 +1322,8 @@ const fr = {
   'media.cam': 'Activer ou couper la caméra',
   'share.instead': 'Partager cet onglet à la place',
   'share.instead.again': 'Partage à nouveau depuis cette page pour passer à « {tab} »',
+  // theme texture dial
+  'theme.cycleTexture': 'Changer de texture',
 };
 
 const en = {
@@ -2624,6 +2626,8 @@ const en = {
   'media.cam': 'Toggle Camera',
   'share.instead': 'Share this tab instead',
   'share.instead.again': 'Share again from this page to switch to “{tab}”',
+  // theme texture dial
+  'theme.cycleTexture': 'Cycle noise texture',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).
