@@ -417,6 +417,8 @@ module.exports = async function finitions2Tests(ctx) {
       await ui(`(() => { const el = document.getElementById('b-reload'); return !el.title && !el.dataset.tip && el.getAttribute('aria-label') === t(S.nav.loading ? 'view.stop' : 'side.reload'); })()`));
     check('Espaces du bas : infobulle maison au nom de l’Espace avec ⌃1…⌃9 (Arc : « Space 1 ⌃1 »), pas de « title »',
       await ui(`[...document.querySelectorAll('#spaces .sp')].every((b, i) => !b.title && b.dataset.tip === S.spaces[i].name && b.dataset.tipKeys === (i < 9 ? '⌃' + (i + 1) : undefined))`));
+    check('séparateur du jour : « ↓ Clear », une flèche vers le bas devant le mot (Arc)',
+      await ui(`document.querySelector('#b-clear use').getAttribute('href') === '#i-forward' && document.querySelector('#b-clear span').textContent === t('side.clear')`));
     check('« Nouvel onglet » : pas d’infobulle, son raccourci écrit au bout de la ligne (comme dans Arc)',
       await ui(`(() => { const el = document.getElementById('b-newtab'); return !el.dataset.tip && el.querySelector('kbd').textContent === KEYS.newTab; })()`));
     await over('b-sidebar');

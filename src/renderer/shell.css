@@ -448,7 +448,9 @@ body.parting #scroll .row, body.parting #divider { transform: translateY(0); tra
 /* Arc : rangée de 17 pt, trait d’un pixel (0,5 pt) à 7,5 pt de son haut, x 18–210. */
 #divider, .g-divider { display: flex; align-items: center; gap: 8px; height: 17px; margin-top: 3px; padding: 0 10px; flex: none; }
 #divider .rule, .g-divider .rule { flex: 1; height: 0.5px; align-self: flex-start; margin-top: 7.5px; background: var(--line); }
-#b-clear { font-size: 11px; font-weight: 600; color: var(--dim); opacity: 0; transition: opacity 120ms; padding: 2px 4px; border-radius: 5px; }
+#b-clear { font-size: 11px; font-weight: 600; color: var(--dim); opacity: 0; transition: opacity 120ms; padding: 2px 4px; border-radius: 5px; display: inline-flex; align-items: center; gap: 2px; }
+/* Arc: "↓ Clear". */
+#b-clear svg { width: 12px; height: 12px; stroke-width: 1.8; transform: rotate(90deg); }
 #b-clear:not(.can) { display: none; }
 #scroll:hover #b-clear.can { opacity: 1; }
 #b-clear:hover { color: var(--fg); background: var(--hover); }
