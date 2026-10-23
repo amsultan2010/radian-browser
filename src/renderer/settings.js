@@ -239,12 +239,36 @@ for (const f of SITE_FIELDS) el('site-' + f).addEventListener('keydown', (e) => 
 // Aiguillage des liens venus d'autres applications
 let routes = [];
 let spaceNames = [];
+// Rule kinds, as in Arc: '' names a site (stored without `kind`), 'contains' and 'equals' read the URL (prefs.js).
+const ROUTE_KINDS = { '': 'route.kindSite', contains: 'route.kindContains', equals: 'route.kindEquals' };
+const ROUTE_BAD = { '': 'route.bad', contains: 'route.badContains', equals: 'route.badEquals' };
+const ROUTE_PH = { '': 'route.placeholder', contains: 'route.placeholderContains', equals: 'route.placeholderEquals' };
+const withKind = (match, to, kind) => (kind ? { match, to, kind } : { match, to });
+function routeBad(kind, bad) {
+  const msg = el('route-msg');
+  msg.dataset.t = ROUTE_BAD[kind];
+  msg.textContent = t(msg.dataset.t);
+  msg.hidden = !bad;
+}
 function drawRoutes() {
   const box = el('routes');
   box.textContent = '';
   routes.forEach((r, i) => {
     const line = document.createElement('div');
     line.className = 'line';
+    // The kind of each rule can be changed in place: the text is put in the new kind's normal form, or the change is refused.
+    const kind = document.createElement('select');
+    for (const [k, label] of Object.entries(ROUTE_KINDS)) kind.append(new Option(t(label), k));
+    kind.value = r.kind || '';
+    kind.title = t('route.kind');
+    kind.onchange = async () => {
+      const match = await O.send('settings:routeText', { text: r.match, kind: kind.value });
+      routeBad(kind.value, !match);
+      if (!match) { kind.value = r.kind || ''; return; }
+      routes[i] = withKind(match, r.to, kind.value);
+      O.send('settings:set', { routes });
+      drawRoutes();
+    };
     const body = document.createElement('div');
     body.className = 'grow name';
     const dest = r.to === 'little' ? t('set.externalLittle') : ((spaceNames.find((x) => x.id === r.to) || {}).name || '?');
@@ -253,32 +277,40 @@ function drawRoutes() {
     del.className = 'btn';
     del.textContent = t('set.profileDelete');
     del.onclick = () => { routes.splice(i, 1); O.send('settings:set', { routes }); drawRoutes(); };
-    line.append(body, del);
+    line.append(kind, body, del);
     box.appendChild(line);
   });
   el('route-to').innerHTML = spaceNames.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('') + `<option value="little">${esc(t('set.externalLittle'))}</option>`;
   // Règle d'avant qui ne nomme pas un site (un mot, un bout de chemin) : elle n'aiguille plus rien, la ligne le dit.
-  const shown = routes.map((r) => r.match);
-  O.send('settings:routeCheck', shown).then((ok) => {
-    if (!Array.isArray(ok) || shown.join('\n') !== routes.map((r) => r.match).join('\n')) return;
+  const shown = JSON.stringify(routes);
+  O.send('settings:routeCheck', routes.map((r) => ({ match: r.match, kind: r.kind }))).then((ok) => {
+    if (!Array.isArray(ok) || shown !== JSON.stringify(routes)) return;
     [...box.children].forEach((line, i) => {
       if (ok[i] !== false || line.querySelector('.sub')) return;
       line.classList.add('bad-route');
       const note = document.createElement('div');
       note.className = 'sub danger';
       note.textContent = t('route.invalid');
-      line.firstChild.appendChild(note);
+      line.querySelector('.grow').appendChild(note);
     });
   });
 }
+el('route-kind').onchange = () => {
+  const input = el('route-match');
+  input.dataset.tPh = ROUTE_PH[el('route-kind').value];
+  input.placeholder = t(input.dataset.tPh);
+  el('route-msg').hidden = true;
+};
 el('route-add').onclick = async () => {
   const raw = el('route-match').value.trim();
   if (!raw) return;
   // La règle nomme un site (« figma.com », « github.com/orbe ») : mise sous sa forme normale, ou refusée.
-  const match = await O.send('settings:routeText', raw);
-  el('route-msg').hidden = !!match;
+  // Same for "URL contains" / "URL is equal to", in the normal form of that kind.
+  const kind = el('route-kind').value;
+  const match = await O.send('settings:routeText', { text: raw, kind });
+  routeBad(kind, !match);
   if (!match) return;
-  if (!routes.some((r) => r.match === match)) routes.push({ match, to: el('route-to').value });
+  if (!routes.some((r) => r.match === match && (r.kind || '') === kind)) routes.push(withKind(match, el('route-to').value, kind));
   O.send('settings:set', { routes });
   el('route-match').value = '';
   drawRoutes();

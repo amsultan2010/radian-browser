@@ -121,7 +121,7 @@
   <h2 data-t="route.title"></h2>
   <div class="card">
     <div id="routes"></div>
-    <div class="line"><input class="search" id="route-match" style="margin:0" spellcheck="false" data-t-ph="route.placeholder"><select id="route-to"></select><button class="btn primary" id="route-add" data-t="route.add"></button></div>
+    <div class="line"><select id="route-kind" data-t-title="route.kind"><option value="" data-t="route.kindSite"></option><option value="contains" data-t="route.kindContains"></option><option value="equals" data-t="route.kindEquals"></option></select><input class="search" id="route-match" style="margin:0" spellcheck="false" data-t-ph="route.placeholder"><select id="route-to"></select><button class="btn primary" id="route-add" data-t="route.add"></button></div>
   </div>
   <p class="muted note" id="route-msg" style="color:#e11d48" data-t="route.bad" hidden></p>
   <p class="muted note" data-t="route.hint"></p>
