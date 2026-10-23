@@ -8,7 +8,9 @@
 const fs = require('fs');
 
 const FUSE_SENTINEL = Buffer.from('dL7pKGdnNz796PbbjQWNKmHXBZaB9tsX');
-const FUSES_OFF = { 0: 'RunAsNode', 2: 'EnableNodeOptionsEnvironmentVariable', 3: 'EnableNodeCliInspectArguments' };
+// File pages (a document dropped from the Finder, Open With) get no more rights than in Chrome:
+// Radian's own pages come from orbe://, so nothing needs file:// to read other files.
+const FUSES_OFF = { 0: 'RunAsNode', 2: 'EnableNodeOptionsEnvironmentVariable', 3: 'EnableNodeCliInspectArguments', 7: 'GrantFileProtocolExtraPrivileges' };
 
 function fuseWires(buf) {
   const found = [];
