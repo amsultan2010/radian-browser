@@ -735,8 +735,9 @@ module.exports = async function lateraleTests(ctx) {
   check('… et les referme', true);
   w.run('console');
   await until(() => mwc.isDevToolsOpened(), 'console ouverte');
-  mwc.closeDevTools();
-  await until(() => !mwc.isDevToolsOpened(), 'console refermée');
+  // Arc's Toggle Console: a second press closes DevTools.
+  w.run('console');
+  await until(() => !mwc.isDevToolsOpened(), 'console refermée par un second appui');
   w.run('inspect');
   await until(() => mwc.isDevToolsOpened(), 'inspecteur ouvert');
   mwc.closeDevTools();
