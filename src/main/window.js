@@ -5253,7 +5253,7 @@ function archiveStale() {
   // d'office et mène au réglage du délai.
   if (count && store.state.window && !store.state.window.archiveNoticed) {
     store.state.window.archiveNoticed = true;
-    any.toast(t('toast.autoArchive', { n: count, hours: delay }), null, () => hooks.openSettings());
+    any.toast(t('toast.autoArchive', { n: count, hours: delay }), null, () => require('./commands').hooks.openSettings()); // window.js's own hook is never set
   }
   if (count) { store.save(); for (const w of windows.values()) w.layout(); OrbeWindow.pushAll(); }
 }
