@@ -350,6 +350,17 @@ body.peek-out #backdrop, body.peek-out #peek { animation: fade-out var(--peek-ms
 .pk:hover { background: color-mix(in srgb, #050625 82%, #fff); }
 .pk:active { transform: scale(0.9); transition: transform var(--press); }
 
+/* Little Radian's command window (⌥⌘N, little.js): the bar fills its borderless 490 × 329 pt window,
+   five 50 pt rows under the field. Arc 1.170 (live capture): #262227 in dark mode, a 26 × 26 ✕ on the right. */
+body.little #command { inset: 0; left: 0 !important; width: auto; transform: none; border: 0; border-radius: 0; box-shadow: none; }
+:root[data-scheme="dark"] body.little #command { --cb-bg: #262227; }
+@media (prefers-color-scheme: dark) { :root:not([data-scheme="light"]) body.little #command { --cb-bg: #262227; } }
+body.little #cmd-list { max-height: calc(100vh - 65px); }
+#cmd-close { display: none; }
+body.little #cmd-close { display: grid; flex: none; width: 26px; height: 26px; border-radius: 6px; place-items: center; background: var(--cb-chip); color: var(--cb-icon); }
+body.little #cmd-close:hover { color: var(--cb-text); }
+body.little #cmd-close svg { width: 15px; height: 15px; }
+
 /* ⌘L : la barre de commande s'ouvre sous la pastille d'adresse (sans mouvement, comme au centre). */
 #command.anchored { transform: none; }
 #command.anchored #cmd-field { height: 42px; }

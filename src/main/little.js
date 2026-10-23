@@ -1,10 +1,11 @@
 // Petite fenêtre (⌥⌘N) : une page seule, sans barre latérale, pour un coup
 // d'œil rapide. Un bouton l'envoie dans la fenêtre principale.
-const { BaseWindow, Menu, WebContentsView, clipboard, nativeTheme } = require('electron');
+const { BaseWindow, Menu, WebContentsView, clipboard, nativeTheme, screen } = require('electron');
 const platform = require('./platform');
 const { store } = require('./store');
 const sessions = require('./sessions');
 const suggest = require('./suggest');
+const palette = require('./palette');
 const { trusted, UI_PRELOAD, INTERNAL, isInternal, cleanUrl, motion, place, OrbeWindow } = require('./window');
 
 const BAR = 42;
@@ -361,4 +362,99 @@ class LittleWindow {
   }
 }
 
-module.exports = { LittleWindow, hooks, savedSize, OPEN, HINT, rememberedProfile, rememberProfile, siteOf, profileMap };
+// ⌥⌘N, as in Arc 1.170 (live capture, docs/parity/captures/live/chrome.md): a borderless 490 × 329 pt Command
+// Bar 20 pt from the right and 50 pt from the top of the display the pointer is on. It opens at once (no
+// motion); a result opens a full Little Radian window. Escape or ✕: the contents go blank, then after an
+// 80 ms hold the window fades out in 100 ms (motion.md). Same suggestions as the Command Bar (suggest.js).
+const COMMAND = { width: 490, height: 329, right: 20, top: 50, rows: 5, hold: 80, fade: 100 };
+let command = null; // the open command window
+
+// Empty bar: the last pages visited.
+const recent = () => Object.values(store.state.history).sort((a, b) => b.last - a.last).slice(0, COMMAND.rows)
+  .map((h) => ({ kind: 'history', url: h.url, title: h.title || suggest.strip(h.url), subtitle: suggest.strip(h.url), favicon: h.favicon, deletable: true }));
+
+class LittleCommand {
+  static ownerOf(wc) { return command && command.view.webContents === wc ? command : null; }
+  static open() {
+    if (command) { command.win.focus(); return command; }
+    return (command = new LittleCommand());
+  }
+
+  constructor() {
+    const { bounds } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    this.query = '';
+    this.win = new BaseWindow({
+      x: bounds.x + bounds.width - COMMAND.right - COMMAND.width, y: bounds.y + COMMAND.top, width: COMMAND.width, height: COMMAND.height,
+      frame: false, show: false, resizable: false, minimizable: false, maximizable: false, fullscreenable: false,
+      backgroundColor: nativeTheme.shouldUseDarkColors ? '#262227' : '#ffffff', // what shows once it goes blank (Arc's turns white)
+    });
+    this.view = new WebContentsView({ webPreferences: { preload: UI_PRELOAD, sandbox: true, contextIsolation: true } });
+    this.view.setBackgroundColor('#00000000');
+    const wc = this.view.webContents;
+    trusted.add(wc);
+    this.view.setBounds({ x: 0, y: 0, width: COMMAND.width, height: COMMAND.height });
+    this.win.contentView.addChildView(this.view);
+    this.win.on('closed', () => { if (command === this) command = null; if (!wc.isDestroyed()) wc.close(); });
+    // Shown once its suggestions are in: one cut, like Arc's.
+    wc.once('did-finish-load', () => {
+      if (this.win.isDestroyed()) return;
+      wc.send('overlay', { mode: 'command', value: '', items: recent(), sites: palette.siteKeys() });
+      showHere(this.win, () => this.win.show());
+      wc.focus();
+    });
+    wc.loadURL(INTERNAL + 'overlay.html#little');
+  }
+
+  suggest(a) {
+    const q = String((a && typeof a === 'object' ? a.q : a) || '');
+    const scope = a && typeof a === 'object' ? a.scope : null;
+    if (scope) return scope.site ? palette.siteItems(String(scope.site), q) : [];
+    this.query = q;
+    if (this.abort) this.abort.abort();
+    if (!q.trim()) return recent();
+    const items = suggest.local(q, { tabs: [], commands: [], activeId: null });
+    const ctrl = (this.abort = new AbortController());
+    suggest.remote(q, ctrl.signal).then((more) => {
+      const wc = this.view.webContents;
+      if (ctrl.signal.aborted || !more.length || wc.isDestroyed()) return;
+      const seen = new Set(items.map((i) => i.title.toLowerCase()));
+      wc.send('suggest-more', { q, items: more.filter((m) => !seen.has(m.title.toLowerCase())) });
+    });
+    return items;
+  }
+
+  run(item) {
+    const target = item && String(item.url || item.title || '');
+    if (!target || this.win.isDestroyed()) return;
+    if (this.query && item.url) suggest.learn(this.query, item.url);
+    LittleWindow.openOrFocus(target);
+    this.win.close();
+  }
+
+  close() {
+    if (this.closing || this.win.isDestroyed()) return;
+    this.closing = true;
+    this.view.setVisible(false);
+    const ms = motion(COMMAND.fade);
+    if (!ms) return void this.win.close();
+    setTimeout(() => {
+      const t0 = Date.now();
+      const timer = setInterval(() => {
+        const k = (Date.now() - t0) / ms;
+        if (this.win.isDestroyed() || k >= 1) { clearInterval(timer); if (!this.win.isDestroyed()) this.win.close(); return; }
+        this.win.setOpacity(1 - k);
+      }, OPEN.step);
+    }, COMMAND.hold);
+  }
+
+  handle(action, a) {
+    if (action === 'suggest') return this.suggest(a);
+    if (action === 'suggestDelete') return palette.forget(a);
+    if (action === 'run') return this.run(a && a.item);
+    if (action === 'closeOverlay') return this.close();
+    if (action === 'themeGet') return OrbeWindow.primary ? OrbeWindow.primary.themeNow() : null;
+    return undefined;
+  }
+}
+
+module.exports = { LittleWindow, LittleCommand, hooks, savedSize, OPEN, HINT, rememberedProfile, rememberProfile, siteOf, profileMap };

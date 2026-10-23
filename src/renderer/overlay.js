@@ -4,6 +4,8 @@ const $ = (id) => document.getElementById(id);
 const send = O.send;
 const panels = ['command', 'switcher', 'theme', 'space', 'icons', 'find', 'toast', 'peek', 'status', 'drop', 'swipe'];
 let mode = null;
+// Little Radian's command window (⌥⌘N, little.js): the Command Bar alone, filling its window.
+if (location.hash === '#little') document.body.classList.add('little');
 
 function show(name) {
   mode = name;
@@ -898,6 +900,7 @@ dropBox.addEventListener('drop', (e) => {
 
 // Clic sur un message : son action (aller à l'onglet…), ou simple disparition.
 $('toast').onclick = () => send('toastClick');
+$('cmd-close').onclick = () => send('closeOverlay');
 $('peek-close').onclick = () => send('peekClose');
 $('peek-expand').onclick = () => send('peekExpand');
 $('peek-split').onclick = () => send('peekSplit');

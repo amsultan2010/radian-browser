@@ -721,6 +721,28 @@ module.exports = async function fenetresTests(ctx) {
     const calls = [];
     const openInOrbe = little.hooks.openInOrbe;
 
+    // ⌥⌘N: Little Radian's own Command Bar, as in Arc 1.170 (docs/parity/captures/live/chrome.md)
+    {
+      const { screen } = require('electron');
+      commands.run(null, 'newLittle');
+      const bar = little.LittleCommand.open(); // already open: the same window comes forward
+      const barJs = (code) => bar.view.webContents.executeJavaScript(code);
+      await until(() => bar.win.isVisible() && barJs(`document.body.classList.contains('little') && !document.getElementById('command').hidden && document.activeElement === document.getElementById('cmd-input')`).catch(() => false), 'Little Radian command window');
+      const b = bar.win.getBounds();
+      const { bounds: d } = screen.getDisplayMatching(b);
+      check('⌥⌘N: a borderless 490 × 329 Command Bar, 20 pt from the right and 50 pt from the top of the display, no full window yet',
+        b.width === 490 && b.height === 329 && b.x + b.width === d.x + d.width - 20 && b.y === d.y + 50 && count() === 0 && await barJs(`getComputedStyle(document.getElementById('cmd-close')).display !== 'none'`), JSON.stringify([b, d]));
+      await barJs(`(() => { const i = document.getElementById('cmd-input'); i.value = ${JSON.stringify(base + '/p/barre')}; i.dispatchEvent(new Event('input')); i.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); })()`);
+      await until(() => count() === 1 && bar.win.isDestroyed(), 'result opened in a Little Radian window');
+      check('choosing a result: a full Little Radian window opens with it and the command window closes', LittleWindow.all[0].url === base + '/p/barre');
+      await closeAll();
+      const bar2 = little.LittleCommand.open();
+      await until(() => bar2.view.webContents.executeJavaScript(`!document.getElementById('command').hidden`).catch(() => false), 'command window again');
+      await bar2.view.webContents.executeJavaScript(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+      await until(() => bar2.win.isDestroyed(), 'command window closed by Escape');
+      check('Escape closes the command window without opening anything', count() === 0);
+    }
+
     // Liens venus d'autres applications
     settings.externalLinks = 'little';
     settings.routes = [];
