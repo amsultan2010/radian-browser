@@ -89,6 +89,8 @@ function configure(ses, { persist }) {
   downloads.attach(ses, { persist, hooks });
   swipe.attach(ses); // balayage à deux doigts : précédent / suivant
   require('./media').attach(ses); // lecteur miniature : piste précédente / suivante du site
+  // JSON documents drawn as a collapsible tree, as Arc's JSON Formatter does.
+  ses.registerPreloadScript({ type: 'frame', filePath: path.join(__dirname, '../preload/json.js'), id: 'orbe-json' });
   // Extensions installées : rechargées dans chaque profil à chaque démarrage.
   if (persist) {
     extApi.attach(ses); // API chrome.* manquantes, avant le premier chargement

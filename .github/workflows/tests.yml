@@ -35,6 +35,9 @@ jobs:
       - name: Site search and link routing rules
         run: node tests/liens.test.js
 
+      - name: JSON view
+        run: node tests/json.test.js
+
       - name: Screenshot folder
         run: |
           mkdir -p "$RUNNER_TEMP/captures"
