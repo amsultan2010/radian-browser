@@ -1,14 +1,56 @@
 // Réglages : chaque changement est appliqué immédiatement.
 // Tout champ listé ici (case à cocher ou liste dont l'id est la clé du réglage)
 // est rempli et enregistré automatiquement, quel que soit son volet.
-const FIELDS = ['lang', 'searchEngine', 'suggestions', 'archiveAfterHours', 'maxLiveTabs', 'sleepAfterHours', 'memoryBudget', 'appearance', 'translucent', 'externalLinks', 'autoPip', 'batterySaver', 'adblock', 'peekLinks', 'passwordSave', 'passwordFill', 'sounds', 'soundGestures', 'soundVolume',
-  'restoreSession', 'warnOnQuit', 'peekShift', 'littleAltClick', 'littleArchiveHours', 'tabKeysFavorites', 'tabKeysNinthLast', 'showToolbar', 'showFullUrl', 'cookieBanners', 'themeData', 'mediaControls', 'devLocalhost', 'boostsEnabled', 'boostsJs', 'downloadAsk', 'downloadOpenPdf', 'updateCheck', 'haptics', 'noteApp'];
-const NUMERIC = new Set(['archiveAfterHours', 'maxLiveTabs', 'sleepAfterHours', 'memoryBudget', 'littleArchiveHours', 'soundVolume']);
+// Search engine, suggestions, archive delay, document app and download location are set per profile (Profiles pane).
+const FIELDS = ['lang', 'maxLiveTabs', 'sleepAfterHours', 'memoryBudget', 'appearance', 'translucent', 'externalLinks', 'autoPip', 'batterySaver', 'adblock', 'peekLinks', 'passwordSave', 'passwordFill', 'sounds', 'soundGestures', 'soundVolume',
+  'restoreSession', 'warnOnQuit', 'peekShift', 'littleAltClick', 'littleArchiveHours', 'tabKeysFavorites', 'tabKeysNinthLast', 'showFullUrl', 'cookieBanners', 'themeData', 'mediaControls', 'devLocalhost', 'boostsEnabled', 'boostsJs', 'downloadOpenPdf', 'updateCheck', 'haptics'];
+const NUMERIC = new Set(['maxLiveTabs', 'sleepAfterHours', 'memoryBudget', 'littleArchiveHours', 'soundVolume']);
 const el = (id) => document.getElementById(id);
 const make = (tag, className, text) => { const n = document.createElement(tag); if (className) n.className = className; if (text != null) n.textContent = text; return n; };
 
 let DATA = null; // dernière réponse de « settings:get »
 let S = {}; // réglages en vigueur
+
+// Glyphs in the style of SF Symbols (24 × 24, drawn here, nothing taken from Arc). `.f` parts are filled.
+const ICONS = {
+  gear: '<circle cx="12" cy="12" r="8.4" stroke-width="3" stroke-dasharray="3.3 3.3"/><circle cx="12" cy="12" r="6.9"/><circle cx="12" cy="12" r="2.6"/>',
+  person: '<circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.9-3.7 3.7-5.7 7.2-5.7s6.3 2 7.2 5.7"/>',
+  windows: '<path d="M8 6V5.5A1.5 1.5 0 0 1 9.5 4h9A1.5 1.5 0 0 1 20 5.5v8a1.5 1.5 0 0 1-1.5 1.5H17"/><rect x="4" y="8" width="13" height="11" rx="1.6"/><path d="M4 11.2h13"/>',
+  keyboard: '<rect x="2.5" y="6" width="19" height="12" rx="2.4"/><path d="M6 9.6h.01M9.3 9.6h.01M12.6 9.6h.01M15.9 9.6h.01M18 9.6h.01M7.5 14.4h9"/>',
+  appicon: '<rect x="3.5" y="3.5" width="17" height="17" rx="4.6"/><path d="M8 16h8M8 16l5.2-6.6"/><path d="M11.4 16a3.4 3.4 0 0 0-1.4-2.7"/>',
+  sliders: '<path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/>',
+  heart: '<path class="f" d="M12 20.3 4.6 13a4.6 4.6 0 0 1 6.6-6.5l.8.8.8-.8a4.6 4.6 0 0 1 6.6 6.5z"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.1"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  minus: '<path d="M5 12h14"/>',
+  arrow: '<path d="M5 12h13M13 7l5 5-5 5"/>',
+  ellipsis: '<circle cx="5.5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="18.5" cy="12" r="1.8"/>',
+  smile: '<circle cx="9" cy="10" r=".6"/><circle cx="15" cy="10" r=".6"/><path d="M8 14.5a5 5 0 0 0 8 0"/>',
+  lock: '<rect x="5.5" y="10.5" width="13" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
+  key: '<circle cx="8" cy="12" r="3.6"/><path d="M11.6 12H20M17 12v3M20 12v2.4"/>',
+  trash: '<path d="M5 7h14M10 7V5h4v2M7 7l.8 12.2c.1.9.8 1.6 1.7 1.6h5c.9 0 1.6-.7 1.7-1.6L17 7"/>',
+  speaker: '<path class="f" d="M4 9.5h3l4.5-4v13L7 14.5H4z"/><path d="M15 9a4 4 0 0 1 0 6M17.6 6.6a7.4 7.4 0 0 1 0 10.8"/>',
+  hand: '<path d="M10 20v-9.5a1.6 1.6 0 0 1 3.2 0V14l3.3.6a2 2 0 0 1 1.6 2.3L17.6 20"/><path d="M7.6 8.6a4.2 4.2 0 0 1 8 0"/>',
+  window: '<rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 9h17"/>',
+  dots: '<rect x="3" y="7" width="18" height="10" rx="3"/><path d="M8 12h.01M12 12h.01M16 12h.01" stroke-width="2.4"/>',
+  doc: '<path d="M7 3.5h6.5L18 8v12.5H7z"/><path d="M13.5 3.5V8H18"/>',
+  play: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path class="f" d="M10 8.5v7l6-3.5z"/>',
+  player: '<rect x="3" y="5" width="18" height="14" rx="2"/><rect class="f" x="12" y="12" width="7" height="5" rx="1"/>',
+  palette: '<path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.3 0 1.8-.9 1.4-1.9-.5-1.2.2-2.4 1.6-2.4H17a3.5 3.5 0 0 0 3.5-3.5c0-5.1-3.8-9.2-8.5-9.2z"/><circle class="f" cx="8" cy="11" r="1.2"/><circle class="f" cx="11" cy="7.6" r="1.2"/><circle class="f" cx="15.2" cy="8.6" r="1.2"/>',
+  brush: '<path d="M19.5 4.5 11 13"/><path class="f" d="M10.4 13.2c-2-.4-3.9 1-4.1 3l-.3 2.3c-.1.6-.6 1-1.2 1H4c1.2 1.3 3 1.9 4.8 1.6 2.4-.4 3.9-2.7 3.3-5z"/>',
+  moon: '<path class="f" d="M15.8 15.4A7.4 7.4 0 0 1 8.6 5a7.4 7.4 0 1 0 10.4 8.9 7.4 7.4 0 0 1-3.2 1.5z"/>',
+  battery: '<rect x="3" y="8" width="16" height="8" rx="2"/><path d="M21 11v2"/><rect class="f" x="5" y="10" width="7" height="4" rx=".8"/>',
+  chip: '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9.5 3v3M14.5 3v3M9.5 18v3M14.5 18v3M3 9.5h3M3 14.5h3M18 9.5h3M18 14.5h3"/>',
+  stack: '<rect x="4" y="8" width="13" height="12" rx="2"/><path d="M8 5h10a2 2 0 0 1 2 2v9"/>',
+  sun: '<circle cx="12" cy="12" r="3.8"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',
+  code: '<path d="M8.5 7.5 4 12l4.5 4.5M15.5 7.5 20 12l-4.5 4.5M13.4 5.5l-2.8 13"/>',
+};
+for (const n of document.querySelectorAll('[data-icon]')) {
+  const svg = n.tagName === 'svg' ? n : n.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'svg'));
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.innerHTML = ICONS[n.dataset.icon] || '';
+}
 
 function fill(s) {
   S = s;
@@ -18,15 +60,15 @@ function fill(s) {
     if (input.type === 'checkbox') input.checked = !!s[f];
     else input.value = String(s[f]);
   }
-  document.title = t('set.title');
-  el('showFullUrl').disabled = !s.showToolbar;
   el('soundGestures').disabled = !s.sounds;
   el('soundVolume').disabled = !s.sounds;
-  drawDownloadDir();
+  el('externalLittle').checked = s.externalLinks === 'little';
+  titled();
   drawDev();
   drawSleep();
   drawAppIcons();
   drawSites();
+  drawProfile();
 }
 
 // --- Volets -------------------------------------------------------------------
@@ -34,23 +76,29 @@ const tabs = [...document.querySelectorAll('#tabs button')];
 const paneOf = (id) => el('pane-' + id);
 let current = '';
 
-// La fenêtre prend la hauteur du volet affiché (animée par le système sur macOS).
+// The window keeps Arc's size; it widens by the scroll bar's width when the pane is taller than it (panes.js).
 let fitQueued = false;
+let scrolls = null;
 function fit(instant) {
   if (fitQueued) return;
   fitQueued = true;
   requestAnimationFrame(() => {
     fitQueued = false;
-    const pane = paneOf(current);
-    if (!pane) return;
-    // Hauteurs réelles (fractions comprises) : un demi-pixel de trop ferait apparaître une barre de défilement.
-    const height = Math.ceil(el('bar').getBoundingClientRect().height + pane.getBoundingClientRect().height);
-    O.send('settings:layout', { height, instant: !!instant });
+    const p = el('panes');
+    const scroll = p.scrollHeight > p.clientHeight + 1;
+    if (scroll === scrolls) return;
+    scrolls = scroll;
+    O.send('settings:layout', { scroll, instant: !!instant });
   });
 }
 
+// As in Arc, the window is named after the pane it shows.
+function titled() {
+  if (current) document.title = el('title').textContent = t('pane.' + current);
+}
+
 function show(id, { focus = false, instant = false, remember = true } = {}) {
-  if (!paneOf(id)) id = 'general';
+  if (!paneOf(id) || el('tab-' + id).hidden) id = 'general';
   if (id !== current) stopRecording();
   current = id;
   for (const b of tabs) {
@@ -61,132 +109,150 @@ function show(id, { focus = false, instant = false, remember = true } = {}) {
     if (on && focus) b.focus();
   }
   el('panes').scrollTop = 0;
+  titled();
   if (remember) O.send('settings:pane', id);
   if (id === 'shortcuts') loadKeys();
   fit(instant);
 }
 
-tabs.forEach((b, i) => {
+tabs.forEach((b) => {
   b.id = 'tab-' + b.dataset.pane;
   b.setAttribute('aria-controls', 'pane-' + b.dataset.pane);
   paneOf(b.dataset.pane).setAttribute('aria-labelledby', b.id);
   b.addEventListener('click', () => show(b.dataset.pane));
   // Flèches : volet voisin, comme une barre d'onglets.
   b.addEventListener('keydown', (e) => {
+    const shown = tabs.filter((x) => !x.hidden);
+    const i = shown.indexOf(b);
     const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-    const to = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + step + tabs.length) % tabs.length;
+    const to = e.key === 'Home' ? 0 : e.key === 'End' ? shown.length - 1 : (i + step + shown.length) % shown.length;
     if (!step && e.key !== 'Home' && e.key !== 'End') return;
     e.preventDefault();
-    show(tabs[to].dataset.pane, { focus: true });
+    show(shown[to].dataset.pane, { focus: true });
   });
 });
 // Le contenu d'un volet change (liste, message) : la fenêtre suit.
 for (const p of document.querySelectorAll('.pane')) new ResizeObserver(() => { if (p.id === 'pane-' + current) fit(); }).observe(p);
 
-// --- Général --------------------------------------------------------------------
-function drawDefault() {
-  el('defaultState').textContent = t(DATA.isDefault ? 'set.defaultYes' : 'set.defaultNo');
-  el('makeDefault').hidden = !!DATA.isDefault;
+// --- Sheets -----------------------------------------------------------------------
+// A button with data-sheet="x" opens <dialog id="sheet-x">; Escape or Done closes it.
+function openSheet(id) {
+  const d = el('sheet-' + id);
+  if (!d || d.open) return;
+  if (id === 'extkeys') loadKeys();
+  d.showModal();
 }
+for (const b of document.querySelectorAll('[data-sheet]')) b.addEventListener('click', () => openSheet(b.dataset.sheet));
+for (const b of document.querySelectorAll('.sheet [data-close]')) b.addEventListener('click', () => b.closest('dialog').close());
+for (const d of document.querySelectorAll('dialog.sheet')) d.addEventListener('close', () => stopRecording());
 
-function drawDownloadDir() {
-  if (!DATA) return;
-  el('downloadDirPath').textContent = S.downloadDir || DATA.downloads;
-  el('downloadDirReset').hidden = !S.downloadDir;
+// --- General --------------------------------------------------------------------
+function drawDefault() {
+  el('default-banner').hidden = !!DATA.isDefault;
 }
-el('downloadDirChoose').onclick = async () => { await O.send('settings:chooseDir', {}); };
-el('downloadDirReset').onclick = () => O.send('settings:set', { downloadDir: '' });
 el('toProfiles').onclick = () => show('profiles', { focus: true });
 
-// --- Profils ----------------------------------------------------------------------
-// Nom modifiable ; suppression possible si aucun Espace n'utilise le profil.
-// Moteur, suggestions, archivage et dossier des téléchargements peuvent être
-// propres au profil ; sinon ils suivent le volet Général.
-const ARCHIVE_LABEL = { 0: 'set.never', 12: 'set.h12', 24: 'set.h24', 168: 'set.d7', 720: 'set.d30' };
-function profileSelect(p, key, options, generalLabel) {
-  const own = (S.profileSettings && S.profileSettings[p.id]) || {};
-  const sel = make('select');
-  sel.dataset.key = key;
-  sel.append(new Option(t('set.inherit', { value: generalLabel }), ''));
-  for (const [value, label] of options) sel.append(new Option(label, String(value)));
-  sel.value = Object.hasOwn(own, key) ? String(own[key]) : '';
-  sel.addEventListener('change', async () => {
-    let value = sel.value === '' ? null : sel.value;
-    if (value !== null && key === 'archiveAfterHours') value = Number(value);
-    if (value !== null && key === 'suggestions') value = value === 'true';
-    await O.send('settings:setProfile', { id: p.id, key, value });
-  });
-  return sel;
-}
+// --- Profiles ---------------------------------------------------------------------
+// Arc sets these per profile only: the selected profile's own value, or the old general value it still
+// falls back on (prefs.get), so nobody loses a setting made before profiles had their own.
+let profileId = 'default';
+const own = (id) => (S.profileSettings && S.profileSettings[id]) || {};
+const pval = (key) => (Object.hasOwn(own(profileId), key) ? own(profileId)[key] : S[key]);
+const setProfile = (key, value) => O.send('settings:setProfile', { id: profileId, key, value });
 
 function drawProfiles(list) {
   if (!DATA) return;
   DATA.profiles = list;
+  if (!list.some((p) => p.id === profileId)) profileId = 'default';
   const box = el('profiles');
-  const keep = document.activeElement && document.activeElement.closest ? document.activeElement.closest('.profile') : null;
-  const keepId = keep ? keep.dataset.id : '';
-  const keepKey = keep && document.activeElement.dataset ? document.activeElement.dataset.key : '';
+  const focused = box.contains(document.activeElement);
   box.textContent = '';
-  const engines = DATA.engines.map((e) => [e.id, e.name]);
-  const engineName = (DATA.engines.find((e) => e.id === S.searchEngine) || {}).name || '';
   for (const p of list) {
-    const card = make('div', 'card profile');
-    card.dataset.id = p.id;
-    const own = (S.profileSettings && S.profileSettings[p.id]) || {};
-    const row = (label, control, extra) => { const l = make('div', 'line'); l.append(make('span', 'grow', label), ...(extra || []), control); card.appendChild(l); return l; };
-
-    const head = make('div', 'line head');
-    const body = make('div', 'grow');
-    const name = make('input', 'pname');
-    name.value = p.name;
-    name.dataset.key = 'name';
-    name.spellcheck = false;
-    name.addEventListener('change', async () => drawProfiles(await O.send('settings:renameProfile', { id: p.id, name: name.value })));
-    name.addEventListener('keydown', (e) => { if (e.key === 'Enter') name.blur(); });
-    body.append(name, make('div', 'sub', p.spaces.join(' · ') || t('set.profileUnused')));
-    head.appendChild(body);
-    if (p.id !== 'default' && !p.spaces.length) {
-      const del = make('button', 'btn', t('set.profileDelete'));
-      del.onclick = async () => drawProfiles(await O.send('settings:deleteProfile', p.id));
-      head.appendChild(del);
-    }
-    card.appendChild(head);
-
-    row(t('set.search'), profileSelect(p, 'searchEngine', engines, engineName));
-    row(t('set.suggestionsShort'), profileSelect(p, 'suggestions', [[true, t('set.on')], [false, t('set.off')]], t(S.suggestions ? 'set.on' : 'set.off')));
-    row(t('set.archiveAfter'), profileSelect(p, 'archiveAfterHours', DATA.archiveHours.filter((h) => h).concat(0).map((h) => [h, t(ARCHIVE_LABEL[h])]), t(ARCHIVE_LABEL[S.archiveAfterHours] || 'set.never')));
-    const apps = [...el('noteApp').options].map((o) => [o.value, o.textContent]);
-    row(t('set.noteApp'), profileSelect(p, 'noteApp', apps, (apps.find(([v]) => v === S.noteApp) || apps[0])[1]));
-
-    const dl = make('div', 'line');
-    const dlBody = make('div', 'grow');
-    dlBody.append(make('div', '', t('set.downloadDir')), make('div', 'sub path', own.downloadDir || t('set.inherit', { value: S.downloadDir || DATA.downloads })));
-    dl.appendChild(dlBody);
-    if (own.downloadDir) {
-      const reset = make('button', 'btn', t('set.useDefault'));
-      reset.dataset.key = 'downloadDirReset';
-      reset.onclick = () => O.send('settings:setProfile', { id: p.id, key: 'downloadDir', value: null });
-      dl.appendChild(reset);
-    }
-    const choose = make('button', 'btn', t('set.choose'));
-    choose.dataset.key = 'downloadDir';
-    choose.onclick = () => O.send('settings:chooseDir', { id: p.id });
-    dl.appendChild(choose);
-    card.appendChild(dl);
-    box.appendChild(card);
+    const row = make('div', 'prow');
+    row.setAttribute('role', 'option');
+    row.dataset.id = p.id;
+    row.setAttribute('aria-selected', String(p.id === profileId));
+    row.tabIndex = p.id === profileId ? 0 : -1;
+    row.title = p.spaces.join(' · ');
+    row.append(make('span', 'pn', p.name), make('span', 'count', t(p.spaces.length === 1 ? 'set.spaceCountOne' : 'set.spaceCount', { n: p.spaces.length })));
+    row.onclick = () => pickProfile(p.id);
+    box.appendChild(row);
   }
-  // Le focus clavier reste sur le réglage qu'on vient de changer.
-  if (keepId && keepKey) {
-    const again = [...box.querySelectorAll('.profile')].find((c) => c.dataset.id === keepId);
-    const target = again && again.querySelector(`[data-key="${keepKey}"]`);
-    if (target) target.focus();
-  }
+  if (focused) box.querySelector('[aria-selected="true"]').focus();
+  drawProfile();
   const dest = el('import-profile');
   const chosen = dest.value;
   dest.textContent = '';
   for (const p of list) dest.append(new Option(p.name, p.id));
   dest.value = list.some((p) => p.id === chosen) ? chosen : 'default';
 }
+function pickProfile(id, focus) {
+  profileId = id;
+  drawProfiles(DATA.profiles);
+  if (focus) el('profiles').querySelector('[aria-selected="true"]').focus();
+}
+el('profiles').addEventListener('keydown', (e) => {
+  const step = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+  if (!step) return;
+  e.preventDefault();
+  const list = DATA.profiles;
+  const i = list.findIndex((p) => p.id === profileId);
+  pickProfile(list[Math.min(list.length - 1, Math.max(0, i + step))].id, true);
+});
+
+function drawProfile() {
+  const p = DATA && (DATA.profiles || []).find((x) => x.id === profileId);
+  if (!p) return;
+  const name = el('profile-name');
+  if (document.activeElement !== name) name.value = p.name;
+  name.setAttribute('aria-label', t('set.profileName'));
+  const del = el('profile-remove');
+  del.disabled = p.id === 'default' || p.spaces.length > 0;
+  del.title = t(p.id === 'default' ? 'set.profileDefaultLocked' : p.spaces.length ? 'set.profileInUse' : 'set.profileRemove');
+  el('p-searchEngine').value = pval('searchEngine');
+  el('p-suggestions').checked = !!pval('suggestions');
+  el('p-archiveAfterHours').value = String(pval('archiveAfterHours'));
+  el('p-noteApp').value = pval('noteApp');
+  drawDownload();
+}
+
+// Arc's download location popup: the chosen folder, Downloads, Other…, then Ask every time.
+const folderName = (dir) => dir.split('/').filter(Boolean).pop() || dir;
+function drawDownload() {
+  const sel = el('p-download');
+  const dir = pval('downloadDir') || '';
+  sel.textContent = '';
+  if (dir) sel.append(new Option(folderName(dir), 'dir'));
+  sel.append(new Option(t('set.dlDownloads'), ''), new Option(t('set.dlOther'), 'other'), make('hr'), new Option(t('set.dlAsk'), 'ask'));
+  sel.value = pval('downloadAsk') ? 'ask' : dir ? 'dir' : '';
+  sel.title = dir || DATA.downloads;
+}
+el('p-download').addEventListener('change', async () => {
+  const v = el('p-download').value;
+  if (v === 'other') {
+    if ((await O.send('settings:chooseDir', { id: profileId })).ok) await setProfile('downloadAsk', false);
+    else drawDownload();
+    return;
+  }
+  if (v === '') await setProfile('downloadDir', '');
+  await setProfile('downloadAsk', v === 'ask');
+});
+for (const [id, key, as] of [['p-searchEngine', 'searchEngine', String], ['p-archiveAfterHours', 'archiveAfterHours', Number], ['p-noteApp', 'noteApp', String]]) {
+  el(id).addEventListener('change', () => setProfile(key, as(el(id).value)));
+}
+el('p-suggestions').addEventListener('change', () => setProfile('suggestions', el('p-suggestions').checked));
+
+// + adds a profile and selects it, its name ready to type; − deletes the selected one (never Default, nor one a Space uses).
+el('profile-add').onclick = async () => {
+  const list = await O.send('settings:addProfile');
+  profileId = list[list.length - 1].id;
+  drawProfiles(list);
+  el('profile-name').focus();
+  el('profile-name').select();
+};
+el('profile-remove').onclick = async () => drawProfiles(await O.send('settings:deleteProfile', profileId));
+el('profile-name').addEventListener('change', async () => drawProfiles(await O.send('settings:renameProfile', { id: profileId, name: el('profile-name').value })));
+el('profile-name').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
 
 // --- Site Search ------------------------------------------------------------------
 // The user's own sites for the Command Bar: one row of inputs each, saved on change.
@@ -239,7 +305,7 @@ el('site-add').onclick = async () => {
 for (const f of SITE_FIELDS) el('site-' + f).addEventListener('keydown', (e) => { if (e.key === 'Enter') el('site-add').click(); });
 
 // --- Liens ------------------------------------------------------------------------
-// Aiguillage des liens venus d'autres applications
+// Aiguillage des liens venus d'autres applications (Air Traffic Control…)
 let routes = [];
 let spaceNames = [];
 // Rule kinds, as in Arc: '' names a site (stored without `kind`), 'contains' and 'equals' read the URL (prefs.js).
@@ -320,8 +386,8 @@ el('route-add').onclick = async () => {
 };
 el('route-match').addEventListener('keydown', (e) => { if (e.key === 'Enter') el('route-add').click(); });
 
-// « Ouvrir les liens des autres applications dans » : Espace affiché, petite
-// fenêtre, ou un Espace précis.
+// Default destination of links from other apps (Air Traffic Control's Default popup): the most
+// recent Space, Little Radian, or a given Space. The Links pane's switch is the Little Radian case.
 function drawExternal() {
   const sel = el('externalLinks');
   for (const o of [...sel.options]) if (o.value.startsWith('space:')) o.remove();
@@ -329,17 +395,22 @@ function drawExternal() {
   sel.value = String(S.externalLinks);
   if (sel.value !== String(S.externalLinks)) sel.value = 'window';
 }
+el('externalLittle').addEventListener('change', () => O.send('settings:set', { externalLinks: el('externalLittle').checked ? 'little' : 'window' }));
 
+// Global key for Little Radian: on is "a key is set"; turning it on records one in the Shortcuts pane.
 function drawLittleKeys() {
-  el('littleKeys').textContent = DATA.littleKeys || '';
-  el('littleKeysEdit').textContent = t(DATA.littleKeys ? 'set.edit' : 'keys.add');
+  const keys = DATA.littleKeys || '';
+  el('littleKeysLabel').textContent = keys ? t('set.littleKeys', { keys }) : t('set.littleKeysNone');
+  el('littleKeysOn').checked = !!keys;
 }
-el('littleKeysEdit').onclick = async () => {
+el('littleKeysOn').addEventListener('change', async () => {
+  if (!el('littleKeysOn').checked) { O.send('shortcuts:clear', '@little'); return; }
+  el('littleKeysOn').checked = false;
   show('shortcuts');
   await loadKeys();
-  const row = document.querySelector('.key-row[data-name="@little"] .key-btn');
-  if (row) { row.scrollIntoView({ block: 'nearest' }); row.focus(); startRecording(row.closest('.key-row')); }
-};
+  const row = rowOf('@little');
+  if (row) { row.scrollIntoView({ block: 'nearest' }); row.querySelector('.key-btn').focus(); startRecording(row); }
+});
 
 // --- Raccourcis ---------------------------------------------------------------------
 let KEYLIST = null;
@@ -359,10 +430,10 @@ function keyRow(item, { fixed = false } = {}) {
   row.dataset.name = item.name || '';
   row.dataset.find = fold(item.label + ' ' + item.keys + ' ' + (item.extra || ''));
   const label = make('span', 'grow label', item.label);
-  const btn = make('button', 'key-btn' + (item.keys ? '' : ' none'), item.keys || t('keys.add'));
+  const btn = make('button', 'key-btn' + (item.keys ? '' : ' none'), item.keys || '---');
   btn.setAttribute('aria-label', `${item.label} : ${item.keys || t('set.none')}`);
   row.append(label, btn);
-  if (fixed) { btn.disabled = true; if (!item.keys) btn.textContent = '—'; return row; }
+  if (fixed) { btn.disabled = true; return row; }
   btn.addEventListener('click', () => (recording === row ? stopRecording() : startRecording(row)));
   const clear = make('button', 'icon-btn key-clear' + (item.keys ? '' : ' ghost'), '×');
   clear.title = t('keys.clear');
@@ -376,39 +447,34 @@ function keyRow(item, { fixed = false } = {}) {
   return row;
 }
 
+// As in Arc: one alphabetical list ("Default Shortcuts"); extension commands are in their own sheet.
 function drawKeys() {
   if (!KEYLIST) return;
   const box = el('keys-list');
   const top = box.scrollTop;
   const q = fold(el('keys-search').value.trim());
+  const items = [...KEYLIST.groups.flatMap((g) => g.items), KEYLIST.global].sort((a, b) => a.label.localeCompare(b.label, lang));
+  const rows = items.map((i) => keyRow(i)).filter((r) => !q || r.dataset.find.includes(q));
   box.textContent = '';
-  let shown = 0;
-  const group = (title, rows, hint) => {
-    const visible = rows.filter((r) => !q || r.dataset.find.includes(q));
-    if (!visible.length) return;
-    shown += visible.length;
-    const card = make('div', 'card');
-    for (const r of visible) {
-      card.appendChild(r);
-      const name = r.dataset.name;
-      if (pending && pending.name === name) card.appendChild(conflictRow());
-      else if (keyError && keyError.name === name) card.appendChild(errorRow());
-    }
-    box.append(make('h3', '', title), card);
-    if (hint) box.appendChild(make('p', 'muted note', hint));
-  };
-  group(t('keys.global'), [keyRow(KEYLIST.global)]);
-  for (const g of KEYLIST.groups) group(g.title, g.items.map((i) => keyRow(i)));
-  group(t('keys.extensions'), KEYLIST.extensions.map((x) => keyRow(x)), t('keys.extensionsHint'));
-  if (!shown) box.appendChild(make('div', 'empty', t('keys.none')));
+  box.appendChild(make('h3', '', t('keys.defaults')));
+  for (const r of rows) { box.appendChild(r); keyMessage(box, r.dataset.name); }
+  if (!rows.length) box.appendChild(make('div', 'empty', t('keys.none')));
   box.scrollTop = top;
+  const ext = el('ext-keys-list');
+  ext.textContent = '';
+  for (const x of KEYLIST.extensions) { ext.appendChild(keyRow(x)); keyMessage(ext, x.name); }
+  if (!KEYLIST.extensions.length) ext.appendChild(make('div', 'empty', t('keys.none')));
   el('keys-reset-all').disabled = !KEYLIST.changed;
+}
+function keyMessage(box, name) {
+  if (pending && pending.name === name) box.appendChild(conflictRow());
+  else if (keyError && keyError.name === name) box.appendChild(errorRow());
 }
 
 function conflictRow() {
   const msg = make('div', 'key-msg conflict');
   msg.setAttribute('role', 'alert');
-  const yes = make('button', 'btn primary reassign', t('keys.reassign'));
+  const yes = make('button', 'btn blue reassign', t('keys.reassign'));
   const no = make('button', 'btn cancel', t('keys.cancel'));
   const p = pending;
   yes.onclick = () => (p.reset ? resetKey(p.name, true) : applyKeys(O.send('shortcuts:assign', { name: p.name, accel: p.accel, force: true }), p.name));
@@ -424,7 +490,7 @@ function errorRow() {
   return msg;
 }
 
-const rowOf = (name) => [...document.querySelectorAll('#keys-list .key-row')].find((r) => r.dataset.name === name);
+const rowOf = (name) => [...document.querySelectorAll('.key-row')].find((r) => r.dataset.name === name);
 function focusRow(name, flash) {
   const row = rowOf(name);
   if (!row) return;
@@ -445,7 +511,7 @@ async function applyKeys(promise, name, extra = {}) {
   if (r.conflict) pending = { name, accel: extra.accel, reset: !!extra.reset, keys: r.keys, label: r.label };
   else if (r.error) keyError = { name, text: t('keys.err.' + r.error) };
   drawKeys();
-  if (pending) { const b = document.querySelector('#keys-list .reassign'); if (b) { b.scrollIntoView({ block: 'nearest' }); b.focus(); } }
+  if (pending) { const b = document.querySelector('.key-msg .reassign'); if (b) { b.scrollIntoView({ block: 'nearest' }); b.focus(); } }
   else if (name) focusRow(name, !!r.ok);
   return r;
 }
@@ -455,7 +521,7 @@ function startRecording(row) {
   stopRecording();
   pending = null;
   keyError = null;
-  for (const m of document.querySelectorAll('#keys-list .key-msg')) m.remove();
+  for (const m of document.querySelectorAll('.key-msg')) m.remove();
   recording = row;
   const btn = row.querySelector('.key-btn');
   btn.dataset.before = btn.textContent;
@@ -509,8 +575,9 @@ window.addEventListener('keydown', (e) => {
     // Échap ferme la fenêtre (sauf dans un champ en cours de saisie, qu'il quitte d'abord).
     if (e.key === 'Escape' && !e.defaultPrevented) {
       const a = document.activeElement;
-      if (a && /^(INPUT|SELECT)$/.test(a.tagName) && a.type !== 'checkbox') { if (a.id === 'keys-search' && a.value) { a.value = ''; drawKeys(); } else a.blur(); return; }
-      if (pending || keyError) { const n = (pending || keyError).name; pending = null; keyError = null; drawKeys(); focusRow(n); return; }
+      if (a && /^(INPUT|SELECT)$/.test(a.tagName) && !/^(checkbox|radio)$/.test(a.type)) { if (a.id === 'keys-search' && a.value) { a.value = ''; drawKeys(); e.preventDefault(); } else a.blur(); return; }
+      if (pending || keyError) { const n = (pending || keyError).name; pending = null; keyError = null; drawKeys(); focusRow(n); e.preventDefault(); return; }
+      if (document.querySelector('dialog[open]')) return; // the open sheet closes itself
       O.send('settings:close');
     }
     return;
@@ -533,31 +600,45 @@ window.addEventListener('blur', () => stopRecording());
 el('keys-search').addEventListener('input', () => drawKeys());
 el('keys-reset-all').onclick = () => applyKeys(O.send('shortcuts:resetAll'), '');
 el('keys-essential').onclick = () => O.send('settings:showShortcuts');
+// "…": a native menu with Extension Shortcuts…, as in Arc.
+el('keys-more').onclick = async () => {
+  const r = el('keys-more').getBoundingClientRect();
+  if ((await O.send('settings:keysMenu', { x: Math.round(r.left), y: Math.round(r.bottom + 4) })) === 'extkeys') openSheet('extkeys');
+};
 
-// --- Appearance: app icon ---------------------------------------------------------------
-// Built once (rebuilding would lose keyboard focus at each settings broadcast), then only the pressed state follows.
+// --- Icon -----------------------------------------------------------------------------
+// Arc's list: radio, preview, name, "Current icon" under the chosen one. Built once (rebuilding would lose
+// keyboard focus at each settings broadcast), then only the checked state follows.
 function drawAppIcons() {
-  const grid = el('appIcons');
-  if (!grid.childElementCount) {
+  const list = el('appIcons');
+  list.setAttribute('aria-label', t('set.appIcon'));
+  if (!list.childElementCount) {
     for (const { name, src } of DATA.appIcons || []) {
-      const b = make('button', 'app-icon');
-      b.dataset.name = name;
+      const row = make('label', 'line icon-row');
+      const radio = make('input');
+      radio.type = 'radio';
+      radio.name = 'appIcon';
+      radio.value = name;
+      radio.onchange = () => O.send('settings:set', { appIcon: name });
       const img = make('img');
       img.src = src;
       img.alt = '';
-      const label = make('span', null, t('appIcon.' + name));
+      const body = make('span', 'grow');
+      const label = make('span', 'iname', t('appIcon.' + name));
       label.dataset.t = 'appIcon.' + name;
-      b.append(img, label);
-      b.onclick = () => O.send('settings:set', { appIcon: name });
-      grid.append(b);
+      const caption = make('span', 'caption', t('set.currentIcon'));
+      caption.dataset.t = 'set.currentIcon';
+      body.append(label, caption);
+      row.append(radio, img, body);
+      list.append(row);
     }
   }
-  for (const b of grid.children) b.setAttribute('aria-pressed', String(b.dataset.name === S.appIcon));
-  // No variants (artwork missing from the build): no section.
-  for (const n of [el('appIconTitle'), grid.parentElement, el('appIconHint')]) n.hidden = !grid.childElementCount;
+  for (const r of list.querySelectorAll('input')) r.checked = r.value === S.appIcon;
+  // No variants (artwork missing from the build): no Icon pane.
+  el('tab-icon').hidden = !list.childElementCount;
 }
 
-// --- Confidentialité ------------------------------------------------------------------
+// --- Privacy and Security ------------------------------------------------------------
 function listWithRemove(box, items, emptyKey, onRemove) {
   box.textContent = '';
   if (!items.length) { const l = make('div', 'line'); l.appendChild(make('span', 'grow muted', t(emptyKey))); box.appendChild(l); return; }
@@ -580,7 +661,6 @@ function drawExtensions(list) {
   for (const x of list || []) {
     const line = document.createElement('div');
     line.className = 'line';
-    line.style.borderTop = '0.5px solid var(--line)';
     const body = document.createElement('div');
     body.className = 'grow';
     const name = document.createElement('div');
@@ -693,7 +773,7 @@ el('dev-add').onclick = () => {
 };
 el('dev-host').addEventListener('keydown', (e) => { if (e.key === 'Enter') el('dev-add').click(); });
 
-// --- Onglets : veille automatique ---------------------------------------------------------------
+// --- Avancé : veille automatique ---------------------------------------------------------------
 // Part de la mémoire de la machine laissée aux onglets ; la valeur en Go est donnée en clair.
 const BUDGETS = [10, 15, 25, 35, 50];
 function drawSleep() {
@@ -724,8 +804,7 @@ function draw(data) {
   S = data.settings;
   routes = (data.settings.routes || []).slice();
   spaceNames = data.spaces;
-  el('searchEngine').innerHTML = data.engines.map((e) => `<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
-  el('version').textContent = `Radian ${data.version} · Chromium ${data.chrome}`;
+  el('p-searchEngine').innerHTML = data.engines.map((e) => `<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
   drawExternal();
   fill(data.settings);
   drawProfiles(data.profiles);
@@ -746,6 +825,8 @@ async function init() {
   const data = await O.send('settings:get');
   draw(data);
   show(data.pane, { instant: true, remember: false });
+  // Opened for a control that lives in a sheet (Manage Extensions…, an import).
+  if (data.sheet) openSheet(data.sheet);
 }
 
 for (const f of FIELDS) {
@@ -759,9 +840,9 @@ for (const f of FIELDS) {
 
 const flash = (btn) => { const old = btn.textContent; btn.textContent = '✓'; setTimeout(() => { btn.textContent = old; }, 1200); };
 el('passwordManage').onclick = () => O.send('pw:open');
-el('makeDefault').onclick = async (e) => { await O.send('settings:makeDefault'); flash(e.target); setTimeout(refresh, 1500); };
-el('resetPerms').onclick = async (e) => { await O.send('settings:resetPerms'); flash(e.target); };
-el('clearData').onclick = async (e) => { if (await O.send('settings:clearData')) flash(e.target); };
+el('makeDefault').onclick = async () => { await O.send('settings:makeDefault'); setTimeout(refresh, 1500); };
+el('resetPerms').onclick = async (e) => { await O.send('settings:resetPerms'); flash(e.currentTarget); };
+el('clearData').onclick = () => O.send('settings:clearData');
 
 // Un réglage a changé (ici, dans le menu ou dans une autre fenêtre) : tout suit.
 O.on('settings', (s) => {

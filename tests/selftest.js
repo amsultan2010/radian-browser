@@ -962,7 +962,7 @@ module.exports = async function selftest(ctx) {
 
   // Réglages
   const sw2 = openSettings();
-  await until(async () => (await sw2.webContents.executeJavaScript('document.querySelectorAll("#profiles .profile").length')) === w.data.profiles.length, 'réglages affichés');
+  await until(async () => (await sw2.webContents.executeJavaScript('document.querySelectorAll("#profiles .prow").length')) === w.data.profiles.length, 'réglages affichés');
   check('les réglages listent les profils', await sw2.webContents.executeJavaScript('document.getElementById("lang").value') === 'fr');
   if (shots) fs.writeFileSync(path.join(shots, 'reglages.png'), (await sw2.webContents.capturePage()).toPNG());
   sw2.close();

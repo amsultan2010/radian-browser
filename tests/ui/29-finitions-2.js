@@ -335,15 +335,15 @@ module.exports = {
     });
 
     // --- Économie de batterie ------------------------------------------------------------------
-    await t.verifier('Réglages → Onglets : « Économie de batterie », cochée par défaut ; un clic la coupe, sans que le volet ait besoin de défiler', async () => {
+    await t.verifier('Réglages → Avancé : « Économie de batterie », cochée par défaut ; un clic la coupe', async () => {
       await ctx.menu('Cmd+,');
       const r = await ctx.attendrePage('settings.html');
-      await ctx.clic(r, r.locator('#tabs [role=tab][data-pane=tabs]'));
+      await ctx.clic(r, r.locator('#tabs [role=tab][data-pane=advanced]'));
       const boite = r.locator('#batterySaver');
       await jusqua(() => boite.isVisible(), 'case « Économie de batterie »');
       assert.equal(await boite.isChecked(), true);
       assert.equal(await r.locator('.line', { has: boite }).locator('.grow > div').first().textContent(), await ctx.texte('set.batterySaver'));
-      await jusqua(() => r.evaluate(() => { const p = document.getElementById('panes'); return p.scrollHeight - p.clientHeight <= 0; }), 'fenêtre à la hauteur du volet');
+      await boite.scrollIntoViewIfNeeded(); // Advanced scrolls, as Arc's taller panes do
       await ctx.clic(r, boite);
       await jusqua(() => ctx.principal(({ store }) => store.state.settings.batterySaver === false), 'réglage coupé');
       await ctx.clic(r, boite);

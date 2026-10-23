@@ -29,6 +29,7 @@ const PROFILE_KEYS = {
   suggestions: bool,
   archiveAfterHours: (v) => ARCHIVE_HOURS.includes(v),
   downloadDir,
+  downloadAsk: bool, // Arc's "Ask every time" item of the profile's download location
   noteApp,
 };
 
@@ -180,7 +181,7 @@ const SETTABLE = {
   haptics: bool, // REG-40, played by src/main/haptics.js
   peekShift: bool,
   littleAltClick: bool,
-  littleArchiveHours: (v) => v === 6 || ARCHIVE_HOURS.includes(v), // 6 h is Arc's delay for Little Arc
+  littleArchiveHours: (v) => v === 1 || v === 6 || ARCHIVE_HOURS.includes(v), // Arc offers 1, 6 (its default) and 12 h for Little Arc
   cookieBanners: bool,
   themeData: bool,
   boostsEnabled: bool,

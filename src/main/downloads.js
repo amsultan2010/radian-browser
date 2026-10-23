@@ -328,7 +328,8 @@ function attach(ses, { persist, hooks }) {
     if (!mine && !env.gate(ses, wc, item)) { event.preventDefault(); return; }
     const name = safeName(item.getFilename());
     let target = uniquePath(downloadDir(ses), name);
-    if (store.state.settings.downloadAsk) {
+    const ask = !!require('./prefs').get('downloadAsk', profiles.get(ses) || 'default');
+    if (ask) {
       // Sans geste de l'utilisateur, une page n'ouvre pas deux fenêtres
       // d'enregistrement de suite (elles bloquent toute l'application).
       const who = wc && !wc.isDestroyed() ? wc.id : 0;
@@ -342,7 +343,7 @@ function attach(ses, { persist, hooks }) {
       if (!chosen || typeof chosen !== 'string' || !path.isAbsolute(chosen)) { event.preventDefault(); return; }
       target = chosen;
     }
-    const byUser = !!store.state.settings.downloadAsk; // emplacement choisi dans la fenêtre d'enregistrement
+    const byUser = ask; // emplacement choisi dans la fenêtre d'enregistrement
     item.setSavePath(target);
     const d = {
       id: uid(), name: path.basename(target), path: target, url: item.getURL(), total: item.getTotalBytes(), received: 0, state: 'progressing', at: Date.now(),

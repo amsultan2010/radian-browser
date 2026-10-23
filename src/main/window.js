@@ -109,7 +109,7 @@ const hooks = {
 
 const t = (key, vars) => store.t(key, null, vars);
 // Ce qu'une première fenêtre reprend de la session précédente : l'Espace affiché
-// et l'onglet actif de chaque Espace. Réglage coupé : premier Espace, aucun onglet actif.
+// et l'onglet actif de chaque Espace. `on` false: first Space, no active tab.
 // `taken`: tabs already active in another window (a tab is live in one window only).
 function resumed(saved, spaces, on, taken = new Set()) {
   if (!on) return { spaceId: spaces[0].id, activeBySpace: {} };
@@ -403,7 +403,8 @@ class OrbeWindow {
     if (incognito) require('./trace').discard(OrbeWindow.focused || OrbeWindow.primary);
     this.session = incognito ? sessions.incognitoSession() : sessions.mainSession();
     const taken = new Set(OrbeWindow.all.flatMap((w) => (w.shared ? Object.values(w.activeBySpace) : [])));
-    const resume = resumed(saved, this.data.spaces, restore && store.state.settings.restoreSession !== false, taken);
+    // As in Arc, the first window always comes back on its Space and tab; `restoreSession` only brings back the others (see `reopening`).
+    const resume = resumed(saved, this.data.spaces, restore, taken);
     this.spaceId = resume.spaceId;
     this.activeBySpace = resume.activeBySpace;
     this.closed = [];
