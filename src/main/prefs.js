@@ -61,10 +61,49 @@ function routeRule(text) {
   return { host: m[1], port: m[2] || '', path: dir };
 }
 
+// Arc's other rule kinds, stored as `kind` ('contains', 'equals'); a rule without `kind` names a site.
+// Both read the URL as the engine parsed it: host (no trailing dot), port, path, and the query only
+// when asked. Never the user name or the fragment, so "https://github.com@evil.tld/" and
+// "https://evil.tld/#github.com" never match "github.com". "contains" stays spoofable through the
+// path ("https://evil.tld/github.com"): the settings hint says so.
+const ROUTE_KINDS = ['contains', 'equals'];
+const webUrl = (text) => { try { const u = new URL(text); return /^https?:$/.test(u.protocol) ? u : null; } catch { return null; } };
+const siteOf = (u) => u.hostname.replace(/\.$/, '') + (u.port ? ':' + u.port : '');
+const equalsKey = (u) => siteOf(u) + u.pathname.replace(/\/+$/, '') + u.search;
+
+// "URL contains": lowercased text without scheme or fragment; the query is read only if the text has a "?".
+// shortcut: compares against the percent-encoded path, so non-ASCII text never matches; decode both sides if users ask.
+function containsText(text) {
+  if (typeof text !== 'string') return '';
+  const s = text.trim().toLowerCase().replace(/^[a-z][a-z0-9+.-]*:\/\//, '').replace(/#.*$/, '');
+  return s.length <= 200 && !/\s/.test(s) ? s : '';
+}
+// "URL is equal to": one http(s) URL, written without scheme, fragment or trailing slash ("github.com/radian?tab=1").
+function equalsText(text) {
+  if (typeof text !== 'string' || /\s/.test(text.trim())) return '';
+  const u = webUrl(/^[a-z][a-z0-9+.-]*:\/\//i.test(text.trim()) ? text.trim() : 'https://' + text.trim());
+  const key = u && u.hostname && !u.username && !u.password ? equalsKey(u) : '';
+  return key.length <= 200 ? key : '';
+}
+
 // Écriture normale d'une règle (« https://www.GitHub.com/Orbe/ » -> « github.com/orbe ») ; '' si elle ne nomme pas un site.
-function routeText(text) {
+// With `kind`, the normal form of that kind of rule; '' if the text does not fit it.
+function routeText(text, kind) {
+  if (kind === 'contains') return containsText(text);
+  if (kind === 'equals') return equalsText(text);
+  if (kind) return '';
   const r = routeRule(text);
   return r ? r.host + (r.port ? ':' + r.port : '') + r.path : '';
+}
+
+// Does this stored rule ({ match, to, kind? }) cover this URL?
+function routeHit(rule, url) {
+  if (!rule.kind) return routeMatches(rule.match, url);
+  const u = webUrl(url);
+  const want = u ? routeText(rule.match, rule.kind) : '';
+  if (!want) return false;
+  if (rule.kind === 'equals') return equalsKey(u) === want;
+  return (siteOf(u) + u.pathname + (want.includes('?') ? u.search : '')).toLowerCase().includes(want);
 }
 
 function routeMatches(rule, url) {
@@ -83,7 +122,7 @@ function routeMatches(rule, url) {
 
 // Destination de la première règle qui vaut pour cette adresse (identifiant d'Espace, « little »), ou null.
 function routeFor(url, routes = store.state.settings.routes) {
-  const rule = (Array.isArray(routes) ? routes : []).find((r) => r && typeof r.to === 'string' && routeMatches(r.match, url));
+  const rule = (Array.isArray(routes) ? routes : []).find((r) => r && typeof r.to === 'string' && routeHit(r, url));
   return rule ? rule.to : null;
 }
 
@@ -91,11 +130,13 @@ function routeFor(url, routes = store.state.settings.routes) {
 // nomment un site (adresse entière, « www. », majuscules). Les autres (un mot, un bout
 // de chemin) ne peuvent plus rien aiguiller : elles restent dans la liste, signalées
 // dans les réglages, pour que l'utilisateur les corrige ou les retire.
+// They are not turned into "URL contains" rules on their own: that kind can be spoofed,
+// so the user opts in per rule in the settings. Rules with a `kind` keep it; an unknown kind is kept as is.
 function migrateRoutes(settings = store.state.settings) {
   if (!Array.isArray(settings.routes)) { settings.routes = []; return false; }
   let changed = false;
   settings.routes = settings.routes.filter((r) => r && typeof r.match === 'string' && typeof r.to === 'string').map((r) => {
-    const text = routeText(r.match);
+    const text = routeText(r.match, r.kind);
     if (!text || text === r.match) return r;
     changed = true;
     return { ...r, match: text };
@@ -104,10 +145,13 @@ function migrateRoutes(settings = store.state.settings) {
 }
 
 // Réglage « routes » reçu de l'interface : chaque règle nomme un site, ou figurait déjà telle quelle.
+// A "contains" or "equals" rule is in the normal form of its kind; a known rule keeps its kind.
+const routeKey = (r) => (r.kind || '') + '\n' + r.match;
 function routes(v) {
-  const known = new Set((store.state.settings.routes || []).map((r) => r && r.match));
+  const known = new Set((store.state.settings.routes || []).filter(Boolean).map(routeKey));
   return Array.isArray(v) && v.length <= 100 && v.every((r) => r && typeof r.match === 'string' && r.match.length <= 200 && typeof r.to === 'string' && r.to.length <= 40
-    && (routeText(r.match) === r.match || known.has(r.match)));
+    && (r.kind === undefined || ROUTE_KINDS.includes(r.kind))
+    && (routeText(r.match, r.kind) === r.match || known.has(routeKey(r))));
 }
 
 // Site Search: the user's own sites for the Command Bar, [{ name, keyword, url }].
