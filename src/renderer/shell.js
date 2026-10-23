@@ -1833,6 +1833,8 @@ function overDocument(e) {
 }
 document.addEventListener('dragover', overDocument, true);
 document.addEventListener('dragenter', overDocument, true);
+// Arc taps the trackpad when a drag is dropped; a drop only fires here once a handler accepted it.
+addEventListener('drop', () => send('haptic', 'align'), true);
 document.addEventListener('drop', (e) => {
   if (!overPage(e)) return;
   e.preventDefault();
