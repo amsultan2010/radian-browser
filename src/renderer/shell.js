@@ -423,6 +423,8 @@ function render(s) {
   $('b-sidebar').dataset.tip = sbTip;
   $('b-sidebar').setAttribute('aria-label', t(sbTip));
   $('b-reload').setAttribute('aria-label', t(s.nav.loading ? 'view.stop' : 'side.reload'));
+  $('b-reload-more').hidden = !s.devMode;
+  $('b-reload-more').setAttribute('aria-label', t('side.reloadOptions'));
 
   if (editing !== s.space.id) $('space-name').textContent = s.space.name;
   $('space-icon').textContent = s.space.icon;
@@ -874,6 +876,7 @@ $('b-clear').onclick = () => send('command', 'clearToday');
 // Library open: its icon closes it, as in Arc.
 $('b-library').onclick = () => send('command', S && S.downloads && !S.library ? 'downloads' : 'library');
 $('b-plus').onclick = () => send('sidebarMenu', 'plus');
+$('b-reload-more').onclick = () => send('reloadMenu', 'dev');
 $('url-copy').onclick = () => send('command', 'copyUrl');
 $('quote-note').onclick = () => send('command', 'copyUrlQuote');
 const LONG_PRESS = 500; // appui long sur précédent / suivant (ms)

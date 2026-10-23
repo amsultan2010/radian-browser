@@ -485,6 +485,10 @@ module.exports = async function lateraleTests(ctx) {
   check('menus des boutons : suivant (deux pages), précédent (rien à montrer, pas de menu), actualiser',
     popups.length === 2 && labels(popups[0]).join() === 'P2,P3'
     && labels(popups[1]).join('|') === ['view.reload', 'view.forceReload', 'view.clearCookies', 'view.clearCache'].map((k) => T(k)).join('|'), JSON.stringify(popups.map(labels)));
+  w.handle('reloadMenu', 'dev');
+  check('mode développeur : le chevron à droite d’« actualiser » ouvre Reload, Refresh (Ignore Cache), Clear Cookies and Refresh, avec les raccourcis (Arc)',
+    popups.length === 3 && labels(popups[2]).join('|') === ['side.devReload', 'side.devForceReload', 'view.clearCookies'].map((k) => T(k)).join('|')
+    && popups[2][0].accelerator === 'Cmd+R' && popups[2][1].accelerator === 'Shift+Cmd+R', JSON.stringify(popups.map(labels)));
   w.popup = popup0;
   const n0 = space.today.length;
   w.handle('navNew', 1);

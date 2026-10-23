@@ -2030,14 +2030,16 @@ class OrbeWindow {
   }
 
   // Bouton actualiser, clic droit : ses variantes.
-  reloadMenuTemplate() {
+  // `dev`: the Developer Mode chevron beside it, with Arc's labels and shortcuts and no cache item.
+  reloadMenuTemplate(dev) {
     const on = !!this.activeWc;
+    const keys = (name) => (dev ? { accelerator: require('./shortcuts').accelOf(name), registerAccelerator: false } : {});
     return [
-      { label: t('view.reload'), enabled: on, click: () => this.reload(false) },
-      { label: t('view.forceReload'), enabled: on, click: () => this.reload(true) },
+      { label: t(dev ? 'side.devReload' : 'view.reload'), enabled: on, ...keys('reload'), click: () => this.reload(false) },
+      { label: t(dev ? 'side.devForceReload' : 'view.forceReload'), enabled: on, ...keys('forceReload'), click: () => this.reload(true) },
       { type: 'separator' },
       { label: t('view.clearCookies'), enabled: on, click: () => this.clearAndReload('cookies') },
-      { label: t('view.clearCache'), enabled: on, click: () => this.clearAndReload('cache') },
+      { label: t('view.clearCache'), enabled: on, visible: !dev, click: () => this.clearAndReload('cache') },
     ];
   }
 
@@ -5077,7 +5079,7 @@ class OrbeWindow {
       case 'favHintOff': return require('./commands').setSetting('favHintOff', true);
       case 'navMenu': return this.navMenu(Number(a));
       case 'navNew': return this.navNew(Number(a));
-      case 'reloadMenu': return this.popup(this.reloadMenuTemplate());
+      case 'reloadMenu': return this.popup(this.reloadMenuTemplate(a === 'dev'));
       case 'resetPinnedAside': return this.resetPinnedAside(a);
       case 'moveSpace': return a && typeof a === 'object' ? this.moveSpace(String(a.id), Number(a.index)) : undefined;
       case 'moveToSpace': {

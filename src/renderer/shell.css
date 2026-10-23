@@ -90,6 +90,9 @@ body.fullscreen #top { padding-left: 0; }
 svg.i.tb { width: 20px; height: 20px; }
 /* Arc centre ses icônes un demi-point sous le milieu du bouton. */
 #top svg.i.tb { position: relative; top: 0.5px; }
+/* Developer Mode: Arc's 8 pt ⌄ right of reload, which opens the reload menu. */
+#b-reload-more { width: 16px; margin-left: -2px; }
+#b-reload-more svg { transform: rotate(90deg); }
 
 /* Arc : la pastille d’adresse occupe toute la largeur (x 8–220, y 46–82) ; les témoins
    (cadenas, extensions épinglées, copier le lien, fenêtres bloquées, capture, bouclier) se posent dans son bout droit. */

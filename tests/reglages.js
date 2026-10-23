@@ -297,10 +297,13 @@ module.exports = async function reglagesTests(ctx) {
     const noStripe = await stripe();
     await set({ devLocalhost: true });
     await until(async () => (await stripe()) === 'true|true', 'liseré du mode développeur');
+    check('mode développeur : le chevron ⌄ du menu d’actualisation paraît à droite d’« actualiser » (Arc)',
+      await ui('(() => { const m = document.getElementById("b-reload-more").getBoundingClientRect(); return m.width > 0 && m.left >= document.getElementById("b-reload").getBoundingClientRect().right; })()'));
     check('site local : mode développeur automatique — barre d’outils, adresse entière et liseré jaune et noir, sans que le site soit noté',
       noStripe === 'false|false' && prefs2.devMode(base + '/') && prefs2.devAuto(base + '/') && w.toolbarShown && !s().devSites.length && w.contentRect().y > yBefore);
     commands.run(w, 'toggleDevMode');
     await until(async () => (await stripe()) === 'false|false', 'liseré retiré');
+    check('… et s’en va avec lui', await ui('document.getElementById("b-reload-more").hidden'));
     const offLocal = s().devOff.join() === hostDev && !s().devSites.length && !w.toolbarShown;
     commands.run(w, 'toggleDevMode');
     await sleep(60);

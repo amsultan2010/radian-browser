@@ -1331,6 +1331,9 @@ const fr = {
   // sidebar chrome (Arc 1.170 live capture)
   'side.hideSidebar': 'Masquer la barre latérale',
   'side.lockSidebar': 'Verrouiller la barre latérale',
+  'side.reloadOptions': 'Options d’actualisation',
+  'side.devReload': 'Actualiser',
+  'side.devForceReload': 'Actualiser (sans le cache)',
 };
 
 const en = {
@@ -2642,6 +2645,9 @@ const en = {
   // sidebar chrome (Arc 1.170 live capture)
   'side.hideSidebar': 'Hide sidebar',
   'side.lockSidebar': 'Lock sidebar',
+  'side.reloadOptions': 'Reload options',
+  'side.devReload': 'Reload',
+  'side.devForceReload': 'Refresh (Ignore Cache)',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).
