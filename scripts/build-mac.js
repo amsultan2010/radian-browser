@@ -1,14 +1,13 @@
 #!/usr/bin/env node
-// Fabrique Orbe.app pour macOS, sans dépendance : copie le moteur Electron,
-// le renomme, y place le code d'Orbe et signe le tout localement.
+// Builds Radian.app for macOS with no dependencies: copies the Electron engine,
+// renames it, puts Radian's code inside and signs it locally.
 //
 //   npm run build               -> ~/.orbe-dev/dist/Radian.app
-//   npm run build -- --install  -> copie aussi dans /Applications
-//   npm run build -- --icon     -> régénère d'abord l'icône depuis le SVG
-//   npm run build -- --fuses    -> relit seulement les fusibles de l'application fabriquée
+//   npm run build -- --install  -> also copies it to /Applications
+//   npm run build -- --icon     -> regenerates the icon from the SVG first
+//   npm run build -- --fuses    -> only re-checks the fuses of the built app
 //
-// La fabrication se fait sur le disque local : une application ne peut pas
-// être signée ni lancée depuis un disque réseau.
+// Build on a local disk: an app can't be signed or run from a network drive.
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -43,13 +42,13 @@ function makeIcon(cli) {
   run('iconutil', ['-c', 'icns', set, '-o', path.join(tmp, 'radian.icns')]);
   fs.copyFileSync(tmpPng, png);
   fs.copyFileSync(path.join(tmp, 'radian.icns'), path.join(root, 'assets', 'radian.icns'));
-  console.log('Icône régénérée.');
+  console.log('Icon regenerated.');
 }
 
-// Fusibles d'Electron (scripts/fuses.js) : coupés avant la signature.
+// Electron fuses (scripts/fuses.js): cut before signing.
 const framework = path.join(contents, 'Frameworks', 'Electron Framework.framework', 'Versions', 'A', 'Electron Framework');
 if (args.includes('--fuses')) {
-  // Relecture seule de l'application déjà fabriquée.
+  // Only re-reads the app that is already built.
   checkFuses(framework);
   process.exit(0);
 }
@@ -60,13 +59,13 @@ if (args.includes('--icon') || !fs.existsSync(path.join(root, 'assets', 'radian.
 const electronApp = path.join(dev.runtime, 'node_modules', 'electron', 'dist', 'Electron.app');
 if (!fs.existsSync(electronApp)) run(process.execPath, [cli, '--version']);
 
-console.log('Copie du moteur…');
+console.log('Copying the engine…');
 fs.rmSync(appPath, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 run('ditto', [electronApp, appPath]);
 fs.renameSync(path.join(contents, 'MacOS', 'Electron'), path.join(contents, 'MacOS', 'Radian'));
 
-console.log('Installation du code d’Orbe…');
+console.log('Installing Radian’s code…');
 const resources = path.join(contents, 'Resources');
 fs.rmSync(path.join(resources, 'default_app.asar'), { force: true });
 fs.rmSync(path.join(resources, 'electron.icns'), { force: true });
@@ -91,30 +90,30 @@ plutil('NSHumanReadableCopyright', '-string', 'Free software — MIT license. Ba
 plutil('NSCameraUsageDescription', '-string', 'A website open in Radian wants to use your camera.');
 plutil('NSMicrophoneUsageDescription', '-string', 'A website open in Radian wants to use your microphone.');
 plutil('NSLocationUsageDescription', '-string', 'A website open in Radian wants to know your location.');
-// Déclare Orbe comme navigateur web (liens http/https et fichiers HTML).
+// Declares Radian as a web browser (http/https links and HTML files).
 plutil('CFBundleURLTypes', '-json', JSON.stringify([{ CFBundleURLName: 'Web', CFBundleTypeRole: 'Viewer', CFBundleURLSchemes: ['http', 'https'] }]));
-// Handoff : reprendre ici une page ouverte sur un autre appareil (événement « continue-activity »).
+// Handoff: continue here a page opened on another device ("continue-activity" event).
 plutil('NSUserActivityTypes', '-json', JSON.stringify(['NSUserActivityTypeBrowsingWeb']));
 plutil('CFBundleDocumentTypes', '-json', JSON.stringify([{ CFBundleTypeName: 'HTML Document', CFBundleTypeRole: 'Viewer', LSItemContentTypes: ['public.html', 'public.xhtml'] }]));
 
 cutFuses(framework);
 
-console.log('Signature locale…');
+console.log('Signing locally…');
 run('xattr', ['-cr', appPath]);
-// Moteur avec Widevine : la signature VMP (compte EVS de castlabs) se fait
-// après toute modification de l'application et avant la signature de code.
-// Sans elle, les flux de test se lisent mais les services commerciaux refusent.
+// Engine with Widevine: VMP signing (castLabs EVS account) comes after every
+// change to the app and before code signing. Without it, test streams play but
+// commercial services refuse.
 if (dev.drm && process.env.ORBE_EVS) {
-  console.log('Signature VMP (EVS)…');
+  console.log('VMP signing (EVS)…');
   run('python3', ['-m', 'castlabs_evs.vmp', 'sign-pkg', out]);
 }
 run('codesign', ['--force', '--deep', '--sign', '-', appPath]);
 checkFuses(framework);
-console.log('Application prête : ' + appPath);
+console.log('App ready: ' + appPath);
 
 if (args.includes('--install')) {
   const dest = '/Applications/Radian.app';
   fs.rmSync(dest, { recursive: true, force: true });
   run('ditto', [appPath, dest]);
-  console.log('Installée dans ' + dest);
+  console.log('Installed in ' + dest);
 }
