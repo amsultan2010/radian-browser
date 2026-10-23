@@ -51,16 +51,16 @@ module.exports = {
     const ligne = (id) => r.locator(`#import-browsers .imp-row[data-browser="${id}"]`);
 
     // --- Import depuis un navigateur installé --------------------------------------------
-    await t.verifier('volet Import : les navigateurs installés sont listés, avec leurs profils', async () => {
+    await t.verifier('Avancé → « Importer depuis un autre navigateur… » : les navigateurs installés sont listés, avec leurs profils', async () => {
       await ctx.menu('Cmd+,');
       r = await ctx.attendrePage('settings.html');
-      await r.click('#tab-import');
-      await jusqua(async () => (await volet()) === 'import', 'volet Import');
+      await r.click('#tab-advanced');
+      await jusqua(async () => (await volet()) === 'advanced', 'volet Avancé');
+      await r.click('[data-sheet="import"]');
+      await jusqua(() => r.evaluate(() => document.getElementById('sheet-import').open), 'feuille Import');
       await jusqua(async () => (await r.locator('#import-browsers .imp-row').count()) === 5, 'navigateurs listés');
       assert.deepEqual(await r.locator('#import-browsers .imp-name').allTextContents(), ['Google Chrome', 'Brave', 'Opera', 'Firefox', 'Safari']);
       assert.deepEqual(await ligne('chrome').locator('.imp-profile option').allTextContents(), ['Amadou', 'Travail']);
-      // La fenêtre a pris la hauteur du volet : la dernière ligne est visible sans défiler.
-      await jusqua(() => r.evaluate(() => { const p = document.getElementById('panes'); return p.scrollHeight - p.clientHeight <= 0; }), 'volet à sa hauteur');
     });
 
     await t.verifier('« Aperçu… » compte les signets sans rien importer ; « Annuler » revient en arrière', async () => {
@@ -116,9 +116,9 @@ module.exports = {
     // --- Mises à jour --------------------------------------------------------------------
     await t.verifier('menu « Rechercher les mises à jour… » : la carte annonce la version et ses notes, comme du texte', async () => {
       await ctx.menu('app.checkUpdates');
-      await jusqua(async () => (await volet()) === 'advanced', 'volet Avancé').catch(async () => { r = await ctx.attendrePage('settings.html'); });
+      await jusqua(async () => (await volet()) === 'general', 'volet Général').catch(async () => { r = await ctx.attendrePage('settings.html'); });
       r = await ctx.attendrePage('settings.html');
-      await jusqua(async () => (await volet()) === 'advanced' && (await r.locator('#update-new').isVisible()), 'carte de la nouvelle version');
+      await jusqua(async () => (await volet()) === 'general' && (await r.locator('#update-new').isVisible()), 'carte de la nouvelle version');
       assert.equal(await r.textContent('#update-version'), 'Radian 0.12.0');
       assert.equal(await r.textContent('#update-state'), 'Radian 9.1.0 est disponible');
       assert.match(await r.textContent('#update-notes'), /Import depuis Chrome, Firefox et Safari\n<b>pas du HTML<\/b>/);

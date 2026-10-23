@@ -186,7 +186,7 @@ module.exports = async function majTests(ctx) {
   // --- Réglages : carte des mises à jour --------------------------------------------
   reply = json(release());
   await updates.check({ manual: true });
-  const sw = openSettings('advanced');
+  const sw = openSettings('general');
   const js = (code) => sw.webContents.executeJavaScript(code);
   await until(() => sw.isVisible(), 'réglages affichés');
   await until(() => js('!document.getElementById("update-new").hidden'), 'carte de la nouvelle version');
@@ -306,7 +306,7 @@ module.exports = async function majTests(ctx) {
   const walk = (m) => { for (const it of m.items) { labels.push(it.label); if (it.submenu) walk(it.submenu); } };
   walk(Menu.getApplicationMenu());
   check('barre de menus : « Rechercher les mises à jour… »', labels.includes('Rechercher les mises à jour…'));
-  check('volet des réglages retenu : Avancé', panes.window === sw && store.state.window.settingsPane === 'advanced');
+  check('volet des réglages retenu : Général, où est la carte des mises à jour', panes.window === sw && store.state.window.settingsPane === 'general');
 
   sw.close();
   store.state.window.settingsPane = 'general';

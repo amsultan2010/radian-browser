@@ -38,6 +38,9 @@ jobs:
       - name: JSON view
         run: node tests/json.test.js
 
+      - name: Settings model
+        run: node --test tests/reglages.test.js
+
       - name: Screenshot folder
         run: |
           mkdir -p "$RUNNER_TEMP/captures"
