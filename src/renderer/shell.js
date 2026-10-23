@@ -78,6 +78,8 @@ function tabRow(el, it) {
     for (const p of it.partners || []) el._more.appendChild(p.icon ? emojiEl(p.icon) : faviconEl(S && S.incognito ? '' : (p.favicon || guessIcon(p.url)), p.title));
   }
   if (el._m !== it.muted) { el._m = it.muted; el._snd.setAttribute('href', it.muted ? '#i-mute' : '#i-sound'); }
+  // Redrawn while a dragged tab is held on it for a split (see splitTarget): it keeps the mark.
+  if (el === intoEl) el.classList.add('drop-into', ...(target.before ? [] : ['right']));
   setIcon(el, it);
   keepRow(el, it);
 }
@@ -1574,7 +1576,7 @@ function dropGeom() {
 // libre, ou trait dans la grille des favoris.
 let feltAt = ''; // last drop place a haptic tap marked, as Arc taps on each new place
 function showTarget(t) {
-  const same = t === target || (t && target && t.to === target.to && t.folderId === target.folderId && t.index === target.index && t.into === target.into && !t.pos && t.g === target.g);
+  const same = t === target || (t && target && t.to === target.to && t.folderId === target.folderId && t.index === target.index && t.into === target.into && !t.pos && t.g === target.g && t.before === target.before);
   if (same) return;
   target = t;
   const place = t ? `${t.to}|${t.folderId}|${t.index}|${t.into ? 1 : 0}` : '';
@@ -1582,10 +1584,11 @@ function showTarget(t) {
   feltAt = place;
   const into = (t && t.into) || null;
   if (into !== intoEl) {
-    if (intoEl) intoEl.classList.remove('drop-into');
+    if (intoEl) intoEl.classList.remove('drop-into', 'right');
     if (into) into.classList.add('drop-into');
     intoEl = into;
   }
+  if (into) into.classList.toggle('right', !!t.split && !t.before);
   if (geom) part(t && t.g != null ? t.g : null, t ? t.room : 0);
   if (t && t.slot) placeSlot();
   else if (t && t.pos) {
@@ -1619,6 +1622,7 @@ scroller.addEventListener('scroll', offViewSoon, { passive: true });
 function endDrag() {
   if (!drag) return;
   clearTimeout(drag.timer);
+  clearHold();
   const settled = drag.settling;
   if (!settled && !drag.space && !drag.ext) send('dragZone', false);
   zoneOn = false;
@@ -1786,6 +1790,8 @@ function spaceTarget(e) {
 // Calcule la destination sous le pointeur : liste, position et repère visuel.
 function dropTarget(e) {
   if (drag.space) return spaceTarget(e);
+  const split = splitTarget(e);
+  if (split) return split;
   // Onglet au-dessus de la pastille d'un autre Espace : il y sera déplacé.
   const dot = e.target.closest('#spaces [data-space]');
   if (dot) return drag.folder || drag.ext || dot.dataset.space === S.space.id ? null : { toSpace: dot.dataset.space, into: dot, g: null };
@@ -1796,6 +1802,39 @@ function dropTarget(e) {
   if (!e.target.closest('#scroll')) return null;
   if (!geom) measure();
   return listTarget(e.clientY - geom.top + geom.scroll);
+}
+
+// Arc 1.27: a tab held a moment on another tab's row makes a split with it; the half of the row
+// under the pointer is the side the dropped tab takes (Arc 1.28). Reordering passes over rows
+// without resting on one, so it is unchanged; once the hold is reached the rows close up (the
+// row under the pointer never moves when they do: it is the one row left at rest).
+const SPLIT_HOLD = 450; // guessed: Arc also waits (splitDropTargetDelaySatisfied), for a time it does not publish
+let hold = null; // tab row the dragged tab rests on: { id, row, x, y, on, timer }
+function clearHold() {
+  if (hold) clearTimeout(hold.timer);
+  hold = null;
+}
+function splitTarget(e) {
+  const row = drag.folder || drag.ids || drag.ext ? null : e.target.closest('#scroll .row.tab[data-id]');
+  if (!row || row.dataset.id === drag.id) return clearHold();
+  if (!hold || hold.row !== row) {
+    clearHold();
+    hold = { id: row.dataset.id, row, on: false };
+    hold.timer = setTimeout(() => {
+      // Still under the pointer (a row parting away under a still pointer does not count).
+      const el = drag && !drag.settling && hold && document.elementFromPoint(hold.x, hold.y);
+      if (!el || el.closest('.row.tab') !== hold.row) return clearHold();
+      hold.on = true;
+      showTarget(splitAt());
+    }, SPLIT_HOLD);
+  }
+  hold.x = e.clientX;
+  hold.y = e.clientY;
+  return hold.on ? splitAt() : null;
+}
+function splitAt() {
+  const r = hold.row.getBoundingClientRect();
+  return { split: hold.id, into: hold.row, before: hold.x < r.left + r.width / 2, g: null };
 }
 
 // Au-dessus de la page : lâcher l'onglet crée une vue scindée. Pendant un
@@ -1828,6 +1867,7 @@ function overDocument(e) {
   if (!overPage(e)) return setZone(false);
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
+  clearHold();
   showTarget(null);
   return setZone(true, e);
 }
@@ -1875,7 +1915,7 @@ function overSidebar(e) {
   e.dataTransfer.dropEffect = drag.ext || copying(e, t) ? 'copy' : 'move';
 }
 // ⌥glisser un onglet : il est dupliqué à l'endroit du dépôt (ni dossier, ni autre Espace).
-const copying = (e, t) => e.altKey && !drag.folder && !drag.space && !t.toSpace;
+const copying = (e, t) => e.altKey && !drag.folder && !drag.space && !t.toSpace && !t.split;
 sidebar.addEventListener('dragover', overSidebar);
 sidebar.addEventListener('dragenter', overSidebar);
 // A Finder drag that leaves the window, or is let go where nothing takes it, sends no dragend
@@ -1920,6 +1960,7 @@ sidebar.addEventListener('drop', (e) => {
   if (!t) return endDrag();
   if (drag.space) { send('moveSpace', { id: drag.space, index: t.index }); return endDrag(); }
   if (t.toSpace) { send('moveToSpace', { ...(drag.ids ? { ids: drag.ids } : { id: drag.id }), spaceId: t.toSpace }); return endDrag(); }
+  if (t.split) { send('splitOnTab', { id: drag.id, target: t.split, before: t.before }); return endDrag(); }
   showTarget(t);
   if (t.into) dropPulse(t.into);
   send('move', { ...(drag.ids ? { ids: drag.ids } : { id: drag.id }), to: t.to, folderId: t.folderId, index: t.index, ...(copying(e, t) ? { copy: true } : {}) });
