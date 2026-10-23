@@ -106,6 +106,8 @@ module.exports = {
       await ctx.menu('Cmd+,');
       const r = await ctx.attendrePage('settings.html');
       await r.click('#tab-shortcuts');
+      // As in Arc, extension shortcuts are behind "…" → Extension Shortcuts… (a native menu, opened here directly).
+      await r.evaluate(() => openSheet('extkeys'));
       const ligne = r.locator(`.key-row[data-name="ext:${id}/essai"]`);
       await jusqua(async () => (await ligne.count()) === 1, 'ligne de la commande d’extension');
       await ligne.scrollIntoViewIfNeeded();
@@ -121,7 +123,9 @@ module.exports = {
       await nouvelle.locator('.key-reset').click();
       await jusqua(async () => (await r.locator(`.key-row[data-name="ext:${id}/essai"] .key-btn`).textContent()).trim() === (mac ? '⌥⇧Y' : 'Alt+Shift+Y'), 'raccourci proposé par l’extension rétabli');
       assert.deepEqual(await ctx.principal(({ store }) => store.state.settings.extShortcuts), {});
-      // Échap ferme la fenêtre : la page disparaît pendant la frappe.
+      // Échap ferme la feuille, puis la fenêtre : la page disparaît pendant la seconde frappe.
+      await r.keyboard.press('Escape');
+      await jusqua(() => r.evaluate(() => !document.getElementById('sheet-extkeys').open), 'feuille refermée');
       await r.keyboard.press('Escape').catch(() => {});
       await jusqua(() => !ctx.page('settings.html'), 'réglages refermés');
     });

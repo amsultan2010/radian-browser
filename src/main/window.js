@@ -109,7 +109,7 @@ const hooks = {
 
 const t = (key, vars) => store.t(key, null, vars);
 // Ce qu'une première fenêtre reprend de la session précédente : l'Espace affiché
-// et l'onglet actif de chaque Espace. Réglage coupé : premier Espace, aucun onglet actif.
+// et l'onglet actif de chaque Espace. `on` false: first Space, no active tab.
 // `taken`: tabs already active in another window (a tab is live in one window only).
 function resumed(saved, spaces, on, taken = new Set()) {
   if (!on) return { spaceId: spaces[0].id, activeBySpace: {} };
@@ -403,7 +403,8 @@ class OrbeWindow {
     if (incognito) require('./trace').discard(OrbeWindow.focused || OrbeWindow.primary);
     this.session = incognito ? sessions.incognitoSession() : sessions.mainSession();
     const taken = new Set(OrbeWindow.all.flatMap((w) => (w.shared ? Object.values(w.activeBySpace) : [])));
-    const resume = resumed(saved, this.data.spaces, restore && store.state.settings.restoreSession !== false, taken);
+    // As in Arc, the first window always comes back on its Space and tab; `restoreSession` only brings back the others (see `reopening`).
+    const resume = resumed(saved, this.data.spaces, restore, taken);
     this.spaceId = resume.spaceId;
     this.activeBySpace = resume.activeBySpace;
     this.closed = [];
@@ -1070,7 +1071,7 @@ class OrbeWindow {
   }
 
   pollPeek() {
-    if (this.sidebarVisible || this.win.isDestroyed() || !this.win.isFocused() || this.modalMode || this.menuOpen) return;
+    if (this.sidebarVisible || this.win.isDestroyed() || !this.win.isFocused() || this.modalMode || this.menuOpen || this.peekHeld) return;
     const pt = screen.getCursorScreenPoint();
     const b = this.win.getContentBounds();
     const x = pt.x - b.x;
@@ -2030,17 +2031,26 @@ class OrbeWindow {
   }
 
   // Bouton actualiser, clic droit : ses variantes.
-  // `dev`: the Developer Mode chevron beside it, with Arc's labels and shortcuts and no cache item.
-  reloadMenuTemplate(dev) {
+  reloadMenuTemplate() {
     const on = !!this.activeWc;
-    const keys = (name) => (dev ? { accelerator: require('./shortcuts').accelOf(name), registerAccelerator: false } : {});
     return [
-      { label: t(dev ? 'side.devReload' : 'view.reload'), enabled: on, ...keys('reload'), click: () => this.reload(false) },
-      { label: t(dev ? 'side.devForceReload' : 'view.forceReload'), enabled: on, ...keys('forceReload'), click: () => this.reload(true) },
+      { label: t('view.reload'), enabled: on, click: () => this.reload(false) },
+      { label: t('view.forceReload'), enabled: on, click: () => this.reload(true) },
       { type: 'separator' },
       { label: t('view.clearCookies'), enabled: on, click: () => this.clearAndReload('cookies') },
-      { label: t('view.clearCache'), enabled: on, visible: !dev, click: () => this.clearAndReload('cache') },
+      { label: t('view.clearCache'), enabled: on, click: () => this.clearAndReload('cache') },
     ];
+  }
+
+  // The chevron next to reload in Developer Mode: Arc's three items, under the chevron.
+  devReloadMenu(a) {
+    const on = !!this.activeWc;
+    this.popup([
+      { label: t('side.reload'), enabled: on, click: () => this.reload(false) },
+      { label: t('dev.ignoreCache'), enabled: on, click: () => this.reload(true) },
+      { type: 'separator' },
+      { label: t('view.clearCookies'), enabled: on, click: () => this.clearAndReload('cookies') },
+    ], Number.isFinite(a.x) && Number.isFinite(a.y) ? { x: Math.round(a.x), y: Math.round(a.y) } : undefined);
   }
 
   toggleMute(id = this.activeId) {
@@ -4572,10 +4582,38 @@ class OrbeWindow {
   }
 
   // --- Menus contextuels ----------------------------------------------------
-  popup(template) {
+  // `at`: { x, y } in the window, or nothing for the pointer.
+  popup(template, at) {
     this.menuOpen = true;
     const menu = Menu.buildFromTemplate(template);
-    menu.popup({ window: this.win, callback: () => { this.menuOpen = false; } });
+    menu.popup({ window: this.win, ...at, callback: () => { this.menuOpen = false; } });
+  }
+
+  // Developer Mode bar's menus (Arc): Extensions Menu (add, manage, then the pinned extensions)
+  // and Split View Menu (the four sides).
+  devMenu(a) {
+    const at = a && Number.isFinite(a.x) && Number.isFinite(a.y) ? { x: Math.round(a.x), y: Math.round(a.y) } : undefined;
+    if (a && a.which === 'split') {
+      const side = (k) => ({ label: t('view.addSplit.' + k), click: () => this.addSplit(k) });
+      return this.popup([side('right'), side('left'), { type: 'separator' }, side('top'), side('bottom')], at);
+    }
+    let exts = [];
+    try { exts = (require('./ext-host').actionsFor(this) || []).filter((x) => !(store.state.settings.extHidden || []).includes(x.id)); } catch {}
+    return this.popup([
+      // Both open the Extensions settings, as the Extensions menu of the menu bar does.
+      { label: t('ext.add'), click: () => this.run('manageExtensions') },
+      { label: t('ext.manage'), click: () => this.run('manageExtensions') },
+      ...(exts.length ? [{ type: 'separator' }] : []),
+      ...exts.map((x) => ({ label: String(x.title || x.id).slice(0, 80), enabled: x.enabled !== false, click: () => require('./ext-host').openPopup(this, x.id) })),
+    ], at);
+  }
+
+  // Site Settings in the Developer Mode bar: a hidden sidebar comes out and stays while `until` is pending.
+  holdPeek(until) {
+    if (this.sidebarVisible) return;
+    this.setPeek(true);
+    this.peekHeld = true;
+    until.then(() => { this.peekHeld = false; });
   }
 
   tabMenu(id, ids) {
@@ -5067,7 +5105,7 @@ class OrbeWindow {
       case 'favHintOff': return require('./commands').setSetting('favHintOff', true);
       case 'navMenu': return this.navMenu(Number(a));
       case 'navNew': return this.navNew(Number(a));
-      case 'reloadMenu': return this.popup(this.reloadMenuTemplate(a === 'dev'));
+      case 'reloadMenu': return a && a.dev ? this.devReloadMenu(a) : this.popup(this.reloadMenuTemplate());
       case 'resetPinnedAside': return this.resetPinnedAside(a);
       case 'moveSpace': return a && typeof a === 'object' ? this.moveSpace(String(a.id), Number(a.index)) : undefined;
       case 'moveToSpace': {
@@ -5075,7 +5113,9 @@ class OrbeWindow {
         return Array.isArray(a.ids) ? this.moveManyToSpace(a.ids, String(a.spaceId)) : this.moveToSpace(String(a.id), String(a.spaceId));
       }
       // Clic sur le bouclier : le centre de contrôle du site (feuille d'Orbe) ; à défaut (page interne, pas d'onglet), le menu.
-      case 'siteControl': return hooks.action(this, 'siteControl') ? undefined : this.shieldMenu();
+      // 'reveal' (Site Settings in the Developer Mode bar): with the sidebar out, as in Arc.
+      case 'siteControl': return hooks.action(this, 'siteControl', a === 'reveal' ? a : undefined) ? undefined : this.shieldMenu();
+      case 'devMenu': return this.devMenu(a);
       case 'shieldMenu': return this.shieldMenu();
       case 'toolbarMenu': return this.popup(this.toolbarMenuTemplate());
       case 'toastClick': return this.toastClick();
@@ -5202,7 +5242,7 @@ function archiveStale() {
   // d'office et mène au réglage du délai.
   if (count && store.state.window && !store.state.window.archiveNoticed) {
     store.state.window.archiveNoticed = true;
-    any.toast(t('toast.autoArchive', { n: count, hours: delay }), null, () => hooks.openSettings());
+    any.toast(t('toast.autoArchive', { n: count, hours: delay }), null, () => require('./commands').hooks.openSettings()); // window.js's own hook is never set
   }
   if (count) { store.save(); for (const w of windows.values()) w.layout(); OrbeWindow.pushAll(); }
 }

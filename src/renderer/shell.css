@@ -59,6 +59,10 @@ body.ready #sidebar { animation: side-in 90ms var(--ease-out); }
   -webkit-app-region: drag;
 }
 body.fullscreen #top { padding-left: 0; }
+/* Developer Mode (Arc): an 8 pt chevron just right of reload, for Reload / Refresh (Ignore Cache) / Clear Cookies and Refresh. */
+#b-reload-more { display: none; width: 14px; margin-left: -8px; }
+body.dev-site #b-reload-more { display: grid; }
+#b-reload-more svg.i { width: 10px; height: 10px; stroke-width: 2; transform: rotate(90deg); }
 
 .ib {
   width: 32px;
@@ -90,9 +94,6 @@ body.fullscreen #top { padding-left: 0; }
 svg.i.tb { width: 20px; height: 20px; }
 /* Arc centre ses icônes un demi-point sous le milieu du bouton. */
 #top svg.i.tb { position: relative; top: 0.5px; }
-/* Developer Mode: Arc's 8 pt ⌄ right of reload, which opens the reload menu. */
-#b-reload-more { width: 16px; margin-left: -2px; }
-#b-reload-more svg { transform: rotate(90deg); }
 
 /* Arc : la pastille d’adresse occupe toute la largeur (x 8–220, y 46–82) ; les témoins
    (cadenas, extensions épinglées, copier le lien, fenêtres bloquées, capture, bouclier) se posent dans son bout droit. */
@@ -617,28 +618,45 @@ body.fullscreen #page-drag, .floating #page-drag { display: none; }
   transition: transform 140ms var(--ease);
 }
 
-/* Developer Mode, as observed in Arc 1.170: the tab's row gets a yellow and black dashed
-   outline, and the toolbar becomes a blue bar with the full URL in a monospaced font. */
+/* Developer Mode, as observed in Arc 1.170: the tab's row gets a caution-tape outline (yellow #F8D849
+   and near-black dashes of ≈ 6 pt, 2 pt stroke, following its corners; measured on tabrow-zoom.png) and
+   a second line with host:port in grey. The tape is a dashed border over a dark fill, masked to the ring. */
+.row .host { display: none; }
 body.dev-site .row.tab.active::after {
   content: '';
   position: absolute;
   inset: 0;
-  padding: 1.5px;
+  border: 2px dashed #f8d849;
   border-radius: inherit;
-  background: repeating-linear-gradient(-45deg, #facc15 0 5px, #18181b 5px 10px);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  background: #322b0f;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
 }
-body.dev-site #toolbar::before { opacity: 1; background: #464dd3; }
-body.dev-site #toolbar, body.dev-site #toolbar.tinted.on-dark { --fg: #fff; --dim: rgba(255, 255, 255, 0.72); --faint: rgba(255, 255, 255, 0.45); --hover: rgba(255, 255, 255, 0.14); --pill: rgba(255, 255, 255, 0.12); color: var(--fg); }
-body.dev-site #tb-url { font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
-/* Its buttons, right of the URL, in Arc's groups: copy and capture | console, network, picker | extensions. */
-#tb-dev { display: none; align-items: center; gap: 2px; flex: none; margin-left: 4px; }
-body.dev-site #tb-dev { display: flex; }
-#tb-dev .ib { width: 28px; height: 28px; }
-.tb-sep, #tb-dev:has(+ #tb-exts:not(:empty))::after { content: ''; width: 1px; height: 16px; margin: 0 4px; background: var(--faint); }
+body.dev-site .row.tab.active .title { align-self: flex-start; margin-top: 3px; line-height: 17px; }
+body.dev-site .row.tab.active .host { display: block; position: absolute; left: 36px; right: 10px; top: 19px; font-size: 11.5px; line-height: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+/* The bar itself (live capture, docs/parity/captures/live/devmode.md): 40 pt across the top of the page
+   card, 45° stripes of rgba(76, 84, 251, 0.81) laid over the page's own colour (light bands ≈ 21 pt and
+   dark ≈ 24 pt measured across), a 1 px lighter bottom line, white glyphs, the URL in SF Mono. */
+body.dev-site #toolbar { top: 10px; height: 40px; gap: 0; padding: 0 5px 0 8px; border-radius: 6px 6px 0 0; box-shadow: inset 0 -1px rgba(255, 255, 255, 0.12); }
+body.dev-site.toolbar:not(.docked):not(.fullscreen) #toolbar { padding-left: 8px; }
+body.dev-site #toolbar::before { opacity: 1; inset: 0 0 -12px 0; border-radius: 6px 6px 0 0; background: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02) 0 15px, transparent 15px 32px), linear-gradient(rgba(76, 84, 251, 0.81) 0 0), var(--page, #fff); }
+body.dev-site #toolbar, body.dev-site #toolbar.tinted.on-dark { --fg: #fff; --dim: #fff; --faint: rgba(255, 255, 255, 0.45); --hover: rgba(255, 255, 255, 0.14); --pill: rgba(255, 255, 255, 0.12); color: var(--fg); }
+body.dev-site #toolbar svg.i { width: 20px; height: 20px; stroke-width: 1.2; }
+body.dev-site.toolbar #card { top: 10px; }
+/* Arc's control set: Site Settings, the URL, then #tb-dev; no navigation buttons, and the pinned
+   extensions stay in the sidebar's address pill (and the Extensions menu). */
+#tb-site, #tb-dev { display: none; }
+body.dev-site #tb-site { display: grid; }
+body.dev-site #tb-back, body.dev-site #tb-forward, body.dev-site #tb-reload { display: none; }
+body.dev-site #tb-url { height: 28px; margin: 0 7px 0 4px; padding: 0; border-radius: 0; background: none; font: 500 13px ui-monospace, 'SF Mono', Menlo, monospace; }
+body.dev-site #tb-url > svg { display: none; }
+body.dev-site #tb-dev { display: flex; align-items: center; flex: none; }
+#tb-site, #tb-dev .ib { width: 28px; height: 28px; }
+/* Faint 1 × 20 pt dividers between the groups, as measured. */
+.tb-sep { width: 1px; height: 20px; margin: 0 8px; background: rgba(255, 255, 255, 0.025); }
+.tb-sep:first-of-type { margin: 0 13px 0 14px; }
 
 /* Barre d'outils optionnelle (⇧⌘D), au-dessus de la page. */
 #toolbar {

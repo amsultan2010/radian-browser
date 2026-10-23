@@ -90,10 +90,11 @@ const COMMANDS = [
   { name: 'zoomOut', label: 'view.zoomOut', accel: 'Cmd+-', keys: '⌘-', run: (w) => w.zoom(-0.5) },
   { name: 'source', label: 'view.source', accel: 'Alt+Cmd+U', keys: '⌥⌘U', run: (w) => wc(w) && w.newTab('view-source:' + wc(w).getURL()) },
   { name: 'devtools', label: 'view.devtools', accel: 'Alt+Cmd+I', keys: '⌥⌘I', run: (w) => wc(w) && wc(w).toggleDevTools() },
-  { name: 'inspect', label: 'view.inspect', accel: 'Alt+Cmd+C', keys: '⌥⌘C', palette: false, run: (w) => devTools(wc(w), 'enterInspectElementMode()', 'right') },
+  { name: 'inspect', label: 'view.inspect', accel: 'Alt+Cmd+C', keys: '⌥⌘C', palette: false, run: (w) => devTools(wc(w), 'enterInspectElementMode()') },
   // « Network Inspector » d'Arc : les outils de développement, sur l'onglet Réseau.
-  { name: 'network', label: 'view.network', palette: false, run: (w) => devTools(wc(w), 'showPanel("network")') },
-  { name: 'console', label: 'view.console', accel: 'Alt+Cmd+J', keys: '⌥⌘J', palette: false, run: (w) => devTools(wc(w), 'showPanel("console")') },
+  // Like Arc's Toggle Network Panel / Toggle Console: pressed again on the same panel, DevTools close.
+  { name: 'network', label: 'view.network', palette: false, run: (w) => devTools(wc(w), 'showPanel("network")', true) },
+  { name: 'console', label: 'view.console', accel: 'Alt+Cmd+J', keys: '⌥⌘J', palette: false, run: (w) => devTools(wc(w), 'showPanel("console")', true) },
   // Mode développeur du site affiché (⌃D dans Arc) : barre d'outils et adresse entière.
   { name: 'toggleDevMode', label: 'view.devMode', accel: 'Ctrl+D', keys: '⌃D', run: (w) => w.toggleDevMode() },
   { name: 'fullscreen', label: 'view.fullscreen', accel: 'Ctrl+Cmd+F', keys: '⌃⌘F', run: (w) => w.win.setFullScreen(!w.win.isFullScreen()) },
@@ -292,13 +293,17 @@ function minimizeAll() {
 }
 
 // DevTools on a given panel or in element-picking mode, even when they last showed
-// another panel: `call` is a method of the DevTools front end's DevToolsAPI.
-function devTools(page, call, mode = 'bottom') {
+// another panel: `call` is a method of the DevTools front end's DevToolsAPI. Docked
+// right, as in Arc. `toggle`: open on that same panel already, they close instead.
+const devCall = new WeakMap();
+function devTools(page, call, toggle = false) {
   if (!page) return;
+  if (toggle && page.isDevToolsOpened() && devCall.get(page) === call) return page.closeDevTools();
+  devCall.set(page, call);
   const show = () => { const d = page.devToolsWebContents; if (d && !d.isDestroyed()) d.executeJavaScript('DevToolsAPI.' + call).catch(() => {}); };
   if (page.isDevToolsOpened()) return show();
   page.once('devtools-opened', () => setTimeout(show, 300));
-  page.openDevTools({ mode, activate: true });
+  page.openDevTools({ mode: 'right', activate: true });
 }
 
 // Trace de Chromium (src/main/trace.js) : premier appel, la question est posée puis

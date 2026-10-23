@@ -1,6 +1,8 @@
 // JSON view, after the JSON Formatter extension that Arc installs with Developer Mode:
 // a JSON document (served as JSON, or plain text holding an object or array) is shown
-// as a collapsible tree, with Raw and Parsed buttons to switch back and forth.
+// as a collapsible tree. Its switch looks like Chromium's own JSON viewer, which Arc 1.170
+// shows (docs/parity/captures/live/devmode.md): a thin strip with a "Pretty-print" checkbox,
+// checked for the tree, unchecked for the raw text.
 //
 // Isolated world, top frame of web pages only. The text is read with JSON.parse, never
 // run; every key and value is escaped before it reaches the page; the tree's listeners
@@ -64,11 +66,10 @@ function render(value) {
 const CSS = `
 :root { color-scheme: light dark; }
 body { margin: 0; }
-.jv-bar { position: fixed; top: 8px; right: 12px; z-index: 1; display: flex; padding: 2px; border-radius: 8px; background: Canvas; box-shadow: 0 0 0 1px rgba(127, 127, 127, 0.25), 0 2px 8px rgba(0, 0, 0, 0.12); font: 12px system-ui, sans-serif; user-select: none; }
-.jv-bar button { padding: 4px 12px; border: 0; border-radius: 6px; background: none; color: inherit; font: inherit; opacity: 0.7; }
-.jv-bar button[aria-pressed="true"] { background: rgba(127, 127, 127, 0.2); opacity: 1; }
+.jv-bar { display: flex; align-items: center; gap: 3px; height: 19px; padding: 0 2px; background: #f0f0f0; border-bottom: 1px solid #bbb; font: 13px ui-monospace, 'SF Mono', Menlo, monospace; user-select: none; }
+.jv-bar input { margin: 0; }
 .jv { padding: 8px 120px 16px 28px; font: 13px/1.5 ui-monospace, 'SF Mono', Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; color: #444; }
-body > pre { margin: 0; padding: 40px 12px 12px; }
+body > pre { margin: 0; padding: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
 body > [hidden] { display: none !important; }
 .jv .en { position: relative; }
 .jv .in { margin-left: 3px; padding-left: 24px; border-left: 1px dotted rgba(127, 127, 127, 0.45); }
@@ -84,6 +85,7 @@ body > [hidden] { display: none !important; }
 .jv a { color: inherit; text-decoration: none; }
 .jv a:hover { text-decoration: underline; }
 @media (prefers-color-scheme: dark) {
+  .jv-bar { background: #3c3c3c; }
   .jv { color: #b6b6b6; }
   .jv .k { color: #f2f2f2; }
   .jv .s { color: #4ade80; }
@@ -122,23 +124,17 @@ function start() {
         b.setAttribute('aria-expanded', String(!shut));
       }
     });
-    const bar = document.createElement('div');
+    const bar = document.createElement('label');
     bar.className = 'jv-bar';
-    const show = (view) => {
-      tree.hidden = view === 'raw';
-      pre.hidden = view !== 'raw';
-      for (const b of bar.children) b.setAttribute('aria-pressed', String(b.dataset.view === view));
-    };
-    for (const view of ['raw', 'parsed']) {
-      const b = document.createElement('button');
-      b.textContent = labels[view];
-      b.dataset.view = view;
-      b.onclick = () => show(view);
-      bar.append(b);
-    }
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.checked = true;
+    const show = () => { tree.hidden = !box.checked; pre.hidden = box.checked; };
+    box.onchange = show;
+    bar.append(labels.pretty, box);
     for (const el of kids) el.hidden = true; // Chrome's own pretty-print box goes too
     document.body.prepend(bar, tree);
-    show('parsed');
+    show();
   }, { once: true });
 }
 

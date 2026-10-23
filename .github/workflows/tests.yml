@@ -48,6 +48,8 @@ jobs:
 
       - name: Library tabs from older versions
         run: node tests/library.test.js
+      - name: Settings model
+        run: node --test tests/reglages.test.js
 
       - name: Screenshot folder
         run: |
