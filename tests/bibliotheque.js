@@ -106,12 +106,18 @@ module.exports = async function bibliothequeTests(ctx) {
   ];
   const tabs0 = Object.keys(d.tabs).length;
   const active0 = w.activeId;
+  const card0 = w.contentRect();
   w.openLibrary('archive');
   const page = () => w.libraryView.webContents;
   const js = (code) => page().executeJavaScript(code);
   check('la Bibliothèque s’ouvre dans son panneau, par-dessus les pages : aucun onglet créé, l’onglet affiché le reste',
     w.libraryShown && w.win.contentView.children.includes(w.libraryView) && Object.keys(d.tabs).length === tabs0 && w.activeId === active0
     && !Object.values(d.tabs).some((x) => (x.url || '').includes('library.html')) && w.openInternal('library.html#history') === undefined);
+  const [W0, H0] = w.win.getContentSize();
+  const panel0 = w.libraryView.getBounds();
+  check('comme dans Arc : un panneau de 417 pt à gauche, sur toute la hauteur, à la place de la barre latérale ; la page est poussée à sa droite sans rétrécir',
+    panel0.x === 0 && panel0.y === 0 && panel0.width === Math.min(W0, 417) && panel0.height === H0 && w.contentRect().x === 417 && w.contentRect().width === card0.width, JSON.stringify({ panel0, card: w.contentRect(), card0 }));
+  await until(() => ui('document.body.classList.contains("library") && getComputedStyle(document.getElementById("sidebar")).visibility === "hidden"'), 'barre latérale cachée sous le panneau');
   await until(() => js('document.querySelectorAll("#list .line").length === 3'), 'archive affichée');
   const fixed = new Date(2026, 9, 14, 15, 0).getTime(); // mercredi 14 octobre 2026
   const labels = await js(`[0, 1, 2, 3, 9, 12, 13, 14, 40, 400].map((n) => period(${fixed} - n * 864e5, ${fixed}))`);
@@ -162,7 +168,7 @@ module.exports = async function bibliothequeTests(ctx) {
   await until(() => page().getURL().endsWith('library.html#downloads'), 'section rouverte');
   check('⇧⌘L rouvre la Bibliothèque sur cette section, sans onglet', w.libraryShown && w.activeId === shownTab && Object.keys(d.tabs).length === tabs0);
   page().emit('before-input-event', { preventDefault() {} }, { type: 'keyDown', key: 'Escape' });
-  check('Échap ferme la Bibliothèque', !w.libraryShown);
+  check('Échap ferme la Bibliothèque ; la page reprend sa place', !w.libraryShown && w.contentRect().x === card0.x);
   w.run('library');
   w.run('closeTab');
   check('⌘W, Bibliothèque ouverte : elle se ferme, sans fermer l’onglet dessous', !w.libraryShown && w.activeId === shownTab && Object.keys(d.tabs).length === tabs0);
@@ -180,6 +186,7 @@ module.exports = async function bibliothequeTests(ctx) {
   // --- Espaces --------------------------------------------------------------------------
   w.run('librarySpaces');
   const page2 = page;
+  check('section Espaces : le panneau s’élargit à 744 pt, la page le suit', w.libraryView.getBounds().width === Math.min(w.win.getContentSize()[0], 744) && w.contentRect().x === 744);
   await until(() => page2().executeJavaScript(`location.hash === '#spaces' && document.querySelectorAll('#list .line').length === ${d.spaces.length}`), 'section Espaces');
   got = await lib('lib:get', {});
   const row = got.spaces.find((s) => s.id === space.id);

@@ -643,9 +643,9 @@ body.dev-site #tb-dev { display: flex; }
   gap: 2px;
   -webkit-app-region: drag;
   /* Le bord gauche suit celui de la page : mêmes durées, même courbe (MOTION.sidebarOut / sidebarIn). */
-  transition: left var(--sidebar-out);
+  transition: left var(--sidebar-out), translate var(--library-slide);
 }
-body.docked #toolbar, body.docked #empty { transition: left var(--sidebar-in); }
+body.docked #toolbar, body.docked #empty { transition: left var(--sidebar-in), translate var(--library-slide); }
 body.no-anim #toolbar, body.no-anim #empty { transition: none; }
 body.toolbar #toolbar { display: flex; }
 /* Teintée par la couleur de thème de la page : la barre prolonge la page vers le haut
@@ -683,7 +683,7 @@ body.toolbar:not(.docked):not(.fullscreen) #toolbar { padding-left: 70px; }
   color: var(--dim);
   /* Arc : sans onglet, pas de carte ; la place de la page montre le fond de la fenêtre. */
   border-radius: 6px;
-  transition: left var(--sidebar-out);
+  transition: left var(--sidebar-out), translate var(--library-slide);
   -webkit-app-region: drag;
 }
 body.no-tab #empty { display: flex; }
@@ -693,10 +693,15 @@ body.toolbar #empty { top: 50px; }
 #empty p { margin: 0; font-size: 13.5px; color: var(--faint); }
 /* Ombre de la carte, relevée dans Arc : noir à 25 %, flou de 6, 1 pt vers le bas ; coins de 6 pt
    (window.js, RADIUS). Elle suit le bord gauche de la page comme #empty. */
-#card { position: absolute; inset: 10px; border-radius: 6px; pointer-events: none; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25); transition: left var(--sidebar-out); }
-body.docked #card { left: var(--sw); transition: left var(--sidebar-in); }
+#card { position: absolute; inset: 10px; border-radius: 6px; pointer-events: none; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25); transition: left var(--sidebar-out), translate var(--library-slide); }
+body.docked #card { left: var(--sw); transition: left var(--sidebar-in), translate var(--library-slide); }
 body.no-anim #card { transition: none; }
 body.toolbar #card { top: 50px; }
+/* Library open: its panel takes the sidebar's place (the sidebar hides under it) and the card is pushed
+   right of it, keeping its width (window.js, `contentRect`); --lib-dx is set by shell.js. */
+body.library #sidebar { visibility: hidden; }
+body.library :is(#card, #toolbar, #empty, #glow) { translate: var(--lib-dx) 0; }
+body.toolbar.library:not(.docked):not(.fullscreen) #toolbar { padding-left: 0; }
 body.no-tab #card { box-shadow: none; }
 /* Fenêtre à l'arrière-plan (thème sombre) : tout le cadre s'assombrit de ≈ 24 niveaux, la carte non. */
 html[data-family="dark"] body.blurred #card { box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25), 0 0 0 200vmax rgba(0, 0, 0, 0.45); }

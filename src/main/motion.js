@@ -8,7 +8,8 @@ const { systemPreferences } = require('electron');
 // que quatre courbes : ease-out en 50 et 60 ms est le plus proche de ces trajets (8 pt d'écart
 // moyen). Barre flottante : elle repart en 90 ms (--sidebar-reveal-out de base.css). Vue
 // scindée par dépôt d'un onglet : la page s'écarte en 200 ms. Aperçu : ouverture 200 ms, fermeture 150 ms.
-const MOTION = { sidebarIn: 50, sidebarOut: 60, revealOut: 90, split: 200, peekIn: 200, peekOut: 150, peekExpand: 220, peekBack: 180 };
+// Library: the page card slides past its panel in 200 ms (not measured in Arc; --library-slide in base.css).
+const MOTION = { sidebarIn: 50, sidebarOut: 60, revealOut: 90, split: 200, peekIn: 200, peekOut: 150, peekExpand: 220, peekBack: 180, library: 200 };
 const stats = { animated: 0, direct: 0 }; // appels à setBounds, pour les mesures
 let nativeAnim = true;
 

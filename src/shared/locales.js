@@ -1705,7 +1705,7 @@ const en = {
   'side.forward': 'Go forward',
   'side.reload': 'Reload',
   'side.toggle': 'Sidebar (⌘S)',
-  'side.library': 'Library',
+  'side.library': 'View Library',
   'side.sidebar': 'Sidebar',
   'side.plus': 'New…',
   'side.newSpace': 'New Space',
