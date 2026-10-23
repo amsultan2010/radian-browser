@@ -1,8 +1,9 @@
 // App icon chosen in Settings > Appearance, like Arc's Icon pane: the Dock icon changes at once
 // and the choice (setting `appIcon`) is applied again at every launch. Artwork: assets/icons.
 // shortcut: only the Dock icon changes; Finder, and the Dock tile while Radian is not running, keep the
-// bundle's original icon, because rewriting Radian.app's icon would break its code signature. Upgrade if
-// macOS offers a signed way to swap a bundle's icon (Arc's own variants have the same limit).
+// bundle's original icon. Arc also covers those with a Dock tile plug-in (NSDockTilePlugIn) and NSWorkspace;
+// writing an icon into Radian.app would break its signature. Upgrade with a Dock tile plug-in built next to
+// native/haptics.swift.
 const fs = require('fs');
 const path = require('path');
 

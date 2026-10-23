@@ -1336,6 +1336,11 @@ const fr = {
   'side.devForceReload': 'Actualiser (sans le cache)',
   'side.copyCurrentUrl': 'Copier l’URL actuelle',
   'side.siteControl': 'Centre de contrôle du site',
+  // theme editor as Arc's popover
+  'theme.autoAppearance': 'Apparence automatique',
+  'theme.lightAppearance': 'Apparence claire',
+  'theme.darkAppearance': 'Apparence sombre',
+  'theme.tapToPick': 'Cliquez pour choisir une couleur pour cet Espace',
 };
 
 const en = {
@@ -2652,6 +2657,11 @@ const en = {
   'side.devForceReload': 'Refresh (Ignore Cache)',
   'side.copyCurrentUrl': 'Copy Current URL',
   'side.siteControl': 'Site Control Center',
+  // theme editor as Arc's popover
+  'theme.autoAppearance': 'Automatic Appearance',
+  'theme.lightAppearance': 'Light Appearance',
+  'theme.darkAppearance': 'Dark Appearance',
+  'theme.tapToPick': 'Tap to pick a color for this space',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).

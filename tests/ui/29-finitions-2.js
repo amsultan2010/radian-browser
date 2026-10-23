@@ -275,7 +275,7 @@ module.exports = {
       await shell.mouse.move(600, 500);
       const r = await ctx.centre(shell.locator('#b-reload'));
       await shell.mouse.move(r.x, r.y, { steps: 4 });
-      await new Promise((ok) => setTimeout(ok, 900));
+      await new Promise((ok) => setTimeout(ok, 1400)); // past the 1 s tooltip delay
       assert.equal(await tip.evaluate((el) => el.hidden), true, 'aucune infobulle sur « actualiser »');
       assert.equal(await shell.locator('#b-reload').getAttribute('title'), null);
       const b = await ctx.centre(shell.locator('#b-sidebar'));
