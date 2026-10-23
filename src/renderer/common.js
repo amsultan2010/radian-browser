@@ -25,6 +25,8 @@ function applyI18n(root = document) {
   for (const el of root.querySelectorAll('[data-t-title]')) el.title = t(el.dataset.tTitle);
   // Bouton à infobulle maison : pas de `title` (deux infobulles se suivraient), mais un nom lisible par les aides techniques.
   for (const el of root.querySelectorAll('[data-tip]')) el.setAttribute('aria-label', t(el.dataset.tip));
+  // A name for assistive tech only, no tooltip at all (Arc's Developer Mode bar).
+  for (const el of root.querySelectorAll('[data-t-aria]')) el.setAttribute('aria-label', t(el.dataset.tAria));
   for (const el of root.querySelectorAll('[data-t-ph]')) el.placeholder = t(el.dataset.tPh);
   // Raccourci d'une commande, dans la notation du système.
   // A shortcut the user removed empties its label; a command with no default keeps the page's text.

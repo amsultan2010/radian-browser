@@ -1070,7 +1070,7 @@ class OrbeWindow {
   }
 
   pollPeek() {
-    if (this.sidebarVisible || this.win.isDestroyed() || !this.win.isFocused() || this.modalMode || this.menuOpen) return;
+    if (this.sidebarVisible || this.win.isDestroyed() || !this.win.isFocused() || this.modalMode || this.menuOpen || this.peekHeld) return;
     const pt = screen.getCursorScreenPoint();
     const b = this.win.getContentBounds();
     const x = pt.x - b.x;
@@ -4570,10 +4570,38 @@ class OrbeWindow {
   }
 
   // --- Menus contextuels ----------------------------------------------------
-  popup(template) {
+  // `at`: { x, y } in the window, or nothing for the pointer.
+  popup(template, at) {
     this.menuOpen = true;
     const menu = Menu.buildFromTemplate(template);
-    menu.popup({ window: this.win, callback: () => { this.menuOpen = false; } });
+    menu.popup({ window: this.win, ...at, callback: () => { this.menuOpen = false; } });
+  }
+
+  // Developer Mode bar's menus (Arc): Extensions Menu (add, manage, then the pinned extensions)
+  // and Split View Menu (the four sides).
+  devMenu(a) {
+    const at = a && Number.isFinite(a.x) && Number.isFinite(a.y) ? { x: Math.round(a.x), y: Math.round(a.y) } : undefined;
+    if (a && a.which === 'split') {
+      const side = (k) => ({ label: t('view.addSplit.' + k), click: () => this.addSplit(k) });
+      return this.popup([side('right'), side('left'), { type: 'separator' }, side('top'), side('bottom')], at);
+    }
+    let exts = [];
+    try { exts = (require('./ext-host').actionsFor(this) || []).filter((x) => !(store.state.settings.extHidden || []).includes(x.id)); } catch {}
+    return this.popup([
+      // Both open the Extensions settings, as the Extensions menu of the menu bar does.
+      { label: t('ext.add'), click: () => this.run('manageExtensions') },
+      { label: t('ext.manage'), click: () => this.run('manageExtensions') },
+      ...(exts.length ? [{ type: 'separator' }] : []),
+      ...exts.map((x) => ({ label: String(x.title || x.id).slice(0, 80), enabled: x.enabled !== false, click: () => require('./ext-host').openPopup(this, x.id) })),
+    ], at);
+  }
+
+  // Site Settings in the Developer Mode bar: a hidden sidebar comes out and stays while `until` is pending.
+  holdPeek(until) {
+    if (this.sidebarVisible) return;
+    this.setPeek(true);
+    this.peekHeld = true;
+    until.then(() => { this.peekHeld = false; });
   }
 
   tabMenu(id, ids) {
@@ -5085,7 +5113,9 @@ class OrbeWindow {
         return Array.isArray(a.ids) ? this.moveManyToSpace(a.ids, String(a.spaceId)) : this.moveToSpace(String(a.id), String(a.spaceId));
       }
       // Clic sur le bouclier : le centre de contrôle du site (feuille d'Orbe) ; à défaut (page interne, pas d'onglet), le menu.
-      case 'siteControl': return hooks.action(this, 'siteControl') ? undefined : this.shieldMenu();
+      // 'reveal' (Site Settings in the Developer Mode bar): with the sidebar out, as in Arc.
+      case 'siteControl': return hooks.action(this, 'siteControl', a === 'reveal' ? a : undefined) ? undefined : this.shieldMenu();
+      case 'devMenu': return this.devMenu(a);
       case 'shieldMenu': return this.shieldMenu();
       case 'toolbarMenu': return this.popup(this.toolbarMenuTemplate());
       case 'toastClick': return this.toastClick();

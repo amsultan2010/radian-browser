@@ -861,7 +861,16 @@ $('lock').onclick = () => send('siteInfo');
 $('popup-note').onclick = () => send('popupMenu');
 $('capture-note').onclick = () => send('captureMenu');
 $('tb-url').onclick = () => send('openCommand', 'edit');
-$('tb-dev').onclick = (e) => { const b = e.target.closest('[data-cmd]'); if (b) send('command', b.dataset.cmd); };
+$('tb-dev').onclick = (e) => {
+  const b = e.target.closest('[data-cmd], [data-menu]');
+  if (!b) return;
+  if (b.dataset.cmd) return send('command', b.dataset.cmd);
+  // Extensions and split view menus open under their button.
+  const r = b.getBoundingClientRect();
+  send('devMenu', { which: b.dataset.menu, x: Math.round(r.left), y: Math.round(r.bottom + 4) });
+};
+// Site Settings (Arc): the sidebar comes out if hidden, with the Site Control Center.
+$('tb-site').onclick = () => send('siteControl', 'reveal');
 // Clic droit sur la barre d'outils : adresse entière, copie, capture, partage.
 $('toolbar').addEventListener('contextmenu', (e) => { e.preventDefault(); send('toolbarMenu'); });
 $('b-newtab').onclick = () => send('openCommand', 'new');

@@ -270,7 +270,11 @@ function setup({ win, sessions, test = false }) {
   };
   hooks.action = (w, action, a) => {
     if (action === 'siteInfo') { siteInfo(w); return true; }
-    if (action === 'siteControl') return !!siteControl(w);
+    if (action === 'siteControl') {
+      const sheet = siteControl(w);
+      if (sheet && a === 'reveal') w.holdPeek(sheet.result);
+      return !!sheet;
+    }
     // Autorisations du site affiché, dans la mémoire de SA session (profil, navigation privée).
     if (action === 'resetSitePerms') {
       const rt = w.activeRt;

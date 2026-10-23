@@ -1327,7 +1327,14 @@ const fr = {
   // Library panel
   'lib.exit': 'Quitter la Bibliothèque',
   // battery saver
-  'toast.batterySaverOff': 'Mode économie de batterie désactivé',
+  'toast.batterySaverOff': 'Mode économie de batterie désactivé',  // Developer Mode bar
+  'dev.siteSettings': 'Réglages du site',
+  'dev.captureWindow': 'Capturer la fenêtre',
+  'dev.console': 'Afficher ou masquer la console',
+  'dev.network': 'Afficher ou masquer le panneau Réseau',
+  'dev.inspect': 'Inspecter l’élément',
+  'dev.extensions': 'Menu des extensions',
+  'dev.split': 'Menu de la vue scindée',
 };
 
 const en = {
@@ -2635,7 +2642,14 @@ const en = {
   // Library panel
   'lib.exit': 'Exit the Library',
   // battery saver
-  'toast.batterySaverOff': 'Battery Saver Mode Deactivated',
+  'toast.batterySaverOff': 'Battery Saver Mode Deactivated',  // Developer Mode bar
+  'dev.siteSettings': 'Site Settings',
+  'dev.captureWindow': 'Capture Window',
+  'dev.console': 'Toggle Console',
+  'dev.network': 'Toggle Network Panel',
+  'dev.inspect': 'Inspect Element',
+  'dev.extensions': 'Extensions Menu',
+  'dev.split': 'Split View Menu',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).

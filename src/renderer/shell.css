@@ -622,14 +622,27 @@ body.dev-site .row.tab.active::after {
   mask-composite: exclude;
   pointer-events: none;
 }
-body.dev-site #toolbar::before { opacity: 1; background: #464dd3; }
-body.dev-site #toolbar, body.dev-site #toolbar.tinted.on-dark { --fg: #fff; --dim: rgba(255, 255, 255, 0.72); --faint: rgba(255, 255, 255, 0.45); --hover: rgba(255, 255, 255, 0.14); --pill: rgba(255, 255, 255, 0.12); color: var(--fg); }
-body.dev-site #tb-url { font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
-/* Its buttons, right of the URL, in Arc's groups: copy and capture | console, network, picker | extensions. */
-#tb-dev { display: none; align-items: center; gap: 2px; flex: none; margin-left: 4px; }
-body.dev-site #tb-dev { display: flex; }
+/* The bar itself (live capture, docs/parity/captures/live/devmode.md): 40 pt across the top of the page
+   card, 45° stripes of rgba(76, 84, 251, 0.81) laid over the page's own colour (light bands ≈ 21 pt and
+   dark ≈ 24 pt measured across), a 1 px lighter bottom line, white glyphs, the URL in SF Mono. */
+body.dev-site #toolbar { top: 10px; height: 40px; gap: 0; padding: 0 5px 0 8px; border-radius: 6px 6px 0 0; box-shadow: inset 0 -1px rgba(255, 255, 255, 0.12); }
+body.dev-site.toolbar:not(.docked):not(.fullscreen) #toolbar { padding-left: 8px; }
+body.dev-site #toolbar::before { opacity: 1; inset: 0 0 -12px 0; border-radius: 6px 6px 0 0; background: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02) 0 15px, transparent 15px 32px), linear-gradient(rgba(76, 84, 251, 0.81) 0 0), var(--page, #fff); }
+body.dev-site #toolbar, body.dev-site #toolbar.tinted.on-dark { --fg: #fff; --dim: #fff; --faint: rgba(255, 255, 255, 0.45); --hover: rgba(255, 255, 255, 0.14); --pill: rgba(255, 255, 255, 0.12); color: var(--fg); }
+body.dev-site #toolbar svg.i { width: 20px; height: 20px; stroke-width: 1.2; }
+body.dev-site.toolbar #card { top: 10px; }
+/* Arc's control set: Site Settings, the URL, then #tb-dev; no navigation buttons, and the pinned
+   extensions move into the Extensions menu. */
+#tb-site, #tb-dev { display: none; }
+body.dev-site #tb-site { display: grid; }
+body.dev-site #tb-back, body.dev-site #tb-forward, body.dev-site #tb-reload, body.dev-site #tb-exts { display: none; }
+body.dev-site #tb-url { height: 28px; margin: 0 7px 0 4px; padding: 0; border-radius: 0; background: none; font: 500 13px ui-monospace, 'SF Mono', Menlo, monospace; }
+body.dev-site #tb-url > svg { display: none; }
+body.dev-site #tb-dev { display: flex; align-items: center; flex: none; }
 #tb-dev .ib { width: 28px; height: 28px; }
-.tb-sep, #tb-dev:has(+ #tb-exts:not(:empty))::after { content: ''; width: 1px; height: 16px; margin: 0 4px; background: var(--faint); }
+/* Faint 1 × 20 pt dividers between the groups, as measured. */
+.tb-sep { width: 1px; height: 20px; margin: 0 8px; background: rgba(255, 255, 255, 0.025); }
+.tb-sep:first-of-type { margin: 0 13px 0 14px; }
 
 /* Barre d'outils optionnelle (⇧⌘D), au-dessus de la page. */
 #toolbar {
