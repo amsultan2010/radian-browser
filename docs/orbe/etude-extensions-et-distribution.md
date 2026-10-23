@@ -102,7 +102,7 @@ publication sur GitHub Releases et mise à jour automatique.
 À adapter : le fond translucide (`backgroundMaterial` au lieu de `vibrancy`),
 les boutons de fenêtre (à droite, via `titleBarOverlay`), les raccourcis
 (Ctrl à la place de ⌘), le script de fabrication et l'import depuis Arc.
-C'est fait : voir [windows.md](windows.md).
+C'est fait dans Orbe (Radian, lui, est réservé au Mac).
 
 ## Ordre proposé
 

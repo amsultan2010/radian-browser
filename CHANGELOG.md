@@ -8,6 +8,11 @@ Radian's first release is 0.16.0; its version number carries on from Orbe 0.15.5
 
 ## [Unreleased]
 
+### Removed
+
+- Windows support: the Windows build, its tests and its CI job. Radian is a
+  Mac app; there are no Windows or Linux builds.
+
 ## [0.16.0] - 2026-10-23
 
 ### Added

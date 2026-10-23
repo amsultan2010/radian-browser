@@ -127,9 +127,8 @@ plan, its phases and the rules the project follows are in
 - Next: measuring the rest of Arc before it shuts down on 2026-12-22, then
   visual and motion parity surface by surface, then the remaining feature gaps.
   Signed and notarized builds once the project has an Apple Developer account.
-- Not planned for now: accounts, sync, AI features, Windows. Orbe's Windows
-  build is still in the code and in CI, but Radian only targets macOS (Apple
-  Silicon first).
+- Not planned for now: accounts, sync, AI features. Radian is a Mac app
+  (Apple Silicon first); there is no Windows or Linux version.
 
 ## Development
 

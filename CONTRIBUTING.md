@@ -36,7 +36,8 @@ places to start. In order of priority:
 3. **Missing Arc features**, P0 first, then P1, then P2.
 4. **Performance**: memory, battery and speed.
 
-Out of scope for now: accounts, sync, AI features and Windows support.
+Out of scope for now: accounts, sync and AI features. Radian is Mac only, so
+Windows and Linux support are out of scope too.
 
 **Before a big change**, open an issue first so we can agree on the approach.
 Small fixes (a typo, a one-line bug, a wrong colour) can go straight to a pull
@@ -94,7 +95,7 @@ newer. There are no npm dependencies to install and no build step.
 8. **Open a pull request** on GitHub against `main`. The description comes
    pre-filled with a short template: fill it in, delete what doesn't apply.
 
-9. **What happens next.** GitHub runs the full test suite on macOS and Windows
+9. **What happens next.** GitHub runs the full test suite on macOS
    (it takes about 6 minutes). A maintainer reviews your pull request and may
    ask for changes: push new commits to the same branch and the pull request
    updates itself. Once it's approved and the tests pass, it's merged with a
@@ -198,7 +199,7 @@ node tests/liens.test.js            # site search and link routing rules
   so you can keep working while they run. `ORBE_TEST_VISIBLE=1` shows them.
   A few tests type into pages and only pass with visible windows; GitHub's
   run (which shows them) is the one that counts.
-- GitHub runs everything on macOS and Windows for every push
+- GitHub runs everything on macOS for every push
   ([.github/workflows/tests.yml](.github/workflows/tests.yml)).
 - **A bug fix comes with a test** that fails before the fix and passes after.
   **A new feature comes with tests** for what it does. The suites are in
