@@ -29,6 +29,7 @@ const PROFILE_KEYS = {
   suggestions: bool,
   archiveAfterHours: (v) => ARCHIVE_HOURS.includes(v),
   downloadDir,
+  downloadAsk: bool, // Arc's "Ask every time" item of the profile's download location
   noteApp,
 };
 
