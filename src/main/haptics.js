@@ -1,5 +1,5 @@
-// Trackpad haptics, as Arc plays them while reordering tabs and turning the theme
-// dial. Electron has no haptics API, so a small helper (native/haptics.swift) plays
+// Trackpad haptics, as Arc plays them while reordering tabs, on drops, on page swipes
+// and on the theme dial. Electron has no haptics API, so a small helper (native/haptics.swift) plays
 // them: started on first use, one line on its stdin per tap.
 const { spawn } = require('child_process');
 const fs = require('fs');
