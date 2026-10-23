@@ -326,7 +326,7 @@ module.exports = async function extApiTest({ first: w, OrbeWindow, win, extApi, 
   await barePage.loadURL(bare.url + 'page.html');
   check('sans l’autorisation, ni sidePanel ni debugger ni identity ni tabGroups n’existent', await barePage.webContents.executeJavaScript('typeof chrome.permissions === "object" && typeof chrome.sidePanel === "undefined" && typeof chrome.debugger === "undefined" && typeof chrome.identity === "undefined" && typeof chrome.tabGroups === "undefined"'));
   const refused = await Promise.all([['sidePanel.open', [{ windowId: w.win.id }]], ['debugger.attach', [{ tabId: rtA.wc.id }, '1.3']], ['identity.launchWebAuthFlow', [{ url: base + '/auth' }]], ['tabGroups.query', [{}]], ['downloads.download', [{ url: base + '/fichier.txt' }]]].map(([n, args]) => extApi.call(ses, bare.id, n, args)));
-  check('…et un appel forcé est refusé par le processus principal', refused.every((r) => /autorisation/.test(r.error || '')) && !panel.shownIn(w) && extHost.debug.sessions.size === 0, refused);
+  check('…et un appel forcé est refusé par le processus principal', refused.every((r) => /permission/.test(r.error || '')) && !panel.shownIn(w) && extHost.debug.sessions.size === 0, refused);
 
   // « activeTab » : l'extension n'a accès à aucun site ; un clic sur son bouton
   // lui ouvre l'onglet en cours, après accord de l'utilisateur (ext-access.js).
@@ -370,7 +370,7 @@ module.exports = async function extApiTest({ first: w, OrbeWindow, win, extApi, 
   check('debugger.getTargets', (await call('debugger.getTargets')).some((t) => t.tabId === rtA.wc.id && t.attached === true && t.type === 'page'));
   check('un second attachement est refusé', await call('debugger.attach', target, '1.3').then(() => false, (e) => /already attached/.test(e.message)));
   const denied = await Promise.all([['Target.getTargets', {}], ['Browser.getVersion', {}], ['Page.navigate', { url: 'file:///etc/hosts' }], ['Page.navigate', { url: 'orbe://app/settings.html' }]].map(([m, p]) => call('debugger.sendCommand', target, m, p).then(() => 'accepté', (e) => e.message)));
-  check('les commandes qui sortent de l’onglet sont refusées', denied.every((m) => /refusée/.test(m)), denied);
+  check('les commandes qui sortent de l’onglet sont refusées', denied.every((m) => /refused/.test(m)), denied);
   const protoErr = await call('debugger.sendCommand', target, 'Runtime.inexistante').then(() => '', (e) => e.message);
   check('une erreur du protocole revient à l’extension', protoErr.length > 0 && !/refusée/.test(protoErr), protoErr);
   await call('debugger.detach', target);
