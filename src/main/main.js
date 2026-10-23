@@ -523,7 +523,7 @@ app.whenReady().then(async () => {
   app.setAboutPanelOptions({ applicationName: 'Radian', applicationVersion: app.getVersion(), copyright: 'Free software — MIT license. Based on Orbe.', credits: `Chromium ${process.versions.chrome}` });
   menu.build();
 
-  const first = newWindow();
+  const [first] = OrbeWindow.reopening().map((opts) => newWindow(opts));
   if (firstRun && !SELFTEST && !process.env.ORBE_NO_WELCOME) { store.state.window.welcomed = true; require('./starter').seed(first); first.openInternal('welcome.html'); }
   for (const url of pendingUrls.splice(0)) openUrl(url);
 

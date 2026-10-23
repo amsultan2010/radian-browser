@@ -109,9 +109,10 @@ const hooks = {
 const t = (key, vars) => store.t(key, null, vars);
 // Ce qu'une première fenêtre reprend de la session précédente : l'Espace affiché
 // et l'onglet actif de chaque Espace. Réglage coupé : premier Espace, aucun onglet actif.
-function resumed(saved, spaces, on) {
+// `taken`: tabs already active in another window (a tab is live in one window only).
+function resumed(saved, spaces, on, taken = new Set()) {
   if (!on) return { spaceId: spaces[0].id, activeBySpace: {} };
-  return { spaceId: spaces.some((s) => s.id === saved.spaceId) ? saved.spaceId : spaces[0].id, activeBySpace: { ...(saved.activeBySpace || {}) } };
+  return { spaceId: spaces.some((s) => s.id === saved.spaceId) ? saved.spaceId : spaces[0].id, activeBySpace: Object.fromEntries(Object.entries(saved.activeBySpace || {}).filter(([, id]) => !taken.has(id))) };
 }
 // What a normal window keeps of itself across launches (global flags stay in state.window).
 function keep(into, w) {
@@ -119,6 +120,15 @@ function keep(into, w) {
   into.spaceId = w.spaceId;
   into.activeBySpace = w.activeBySpace;
   into.sidebarVisible = w.sidebarVisible;
+}
+// Saved bounds brought back onto a connected display (one unplugged since, say).
+// Unreadable bounds (hand-edited file): none, the window opens at its default size.
+function onScreen(b) {
+  if (!b || ![b.x, b.y, b.width, b.height].every((v) => Number.isInteger(v) && Math.abs(v) < 1e5)) return {};
+  const area = screen.getDisplayMatching(b).workArea;
+  const width = Math.min(b.width, area.width);
+  const height = Math.min(b.height, area.height);
+  return { x: clamp(b.x, area.x, area.x + area.width - width), y: clamp(b.y, area.y, area.y + area.height - height), width, height };
 }
 // Nom d'un Espace dans un menu. Quand son profil n'est pas celui de l'Espace d'où l'on
 // part (`from`), il est rappelé à la suite (pastille de profil d'Arc) : déplacer un onglet
@@ -361,22 +371,24 @@ class OrbeWindow {
   // onglets, que rien n'enregistre dans la barre latérale des autres fenêtres, mais
   // garde la session ordinaire (cookies, historique), à la différence de la navigation
   // privée. Ses onglets fermés ne rejoignent pas l'archive (voir `archives`).
-  constructor({ incognito = false, blank = false } = {}) {
+  // `saved`: an entry of state.windows reopened at startup (see `reopening`).
+  constructor({ incognito = false, blank = false, saved = null } = {}) {
     this.incognito = incognito;
     this.blank = !incognito && !!blank;
     const apart = incognito || this.blank;
-    const saved = apart ? {} : store.state.window;
     const first = !OrbeWindow.all.some((w) => w.shared);
     // This window's entry in state.windows (see `remember`).
-    this.entry = apart ? undefined : {};
+    this.entry = apart ? undefined : saved || {};
+    const restore = !apart && (!!saved || first);
+    saved = saved || (apart ? {} : store.state.window);
     this.data = apart
       ? { spaces: [incognito ? store.makeSpace(t('incognito.title'), '🕶️', '#52525b') : store.makeSpace(t('blank.title'), '◻️', '#71717a')], tabs: {}, favs: { default: [] }, profiles: [{ id: 'default', name: '' }] }
       : store.state;
     // Une trace de Chromium en cours porterait sur cette fenêtre aussi : elle est arrêtée et jetée.
     if (incognito) require('./trace').discard(OrbeWindow.focused || OrbeWindow.primary);
     this.session = incognito ? sessions.incognitoSession() : sessions.mainSession();
-    const restore = !apart && first;
-    const resume = resumed(saved, this.data.spaces, restore && store.state.settings.restoreSession !== false);
+    const taken = new Set(OrbeWindow.all.flatMap((w) => (w.shared ? Object.values(w.activeBySpace) : [])));
+    const resume = resumed(saved, this.data.spaces, restore && store.state.settings.restoreSession !== false, taken);
     this.spaceId = resume.spaceId;
     this.activeBySpace = resume.activeBySpace;
     this.closed = [];
@@ -391,8 +403,8 @@ class OrbeWindow {
     this.findOpen = false;
     this.switcher = null;
 
-    const b = (restore && saved.bounds) || {};
-    const offset = first ? 0 : 28 * (OrbeWindow.all.length % 6);
+    const b = onScreen((restore && saved.bounds) || {});
+    const offset = restore ? 0 : 28 * (OrbeWindow.all.length % 6);
     this.win = new BaseWindow({
       width: b.width || 1360,
       height: b.height || 860,
@@ -654,6 +666,14 @@ class OrbeWindow {
     const w = new OrbeWindow(opts);
     if (full) hooks.enterFullScreen(w.win);
     return w;
+  }
+
+  // Windows to open at startup (options for `open`). Like Arc, every normal window open at
+  // quit comes back, in order (state.windows). Without that list (state saved by an older
+  // Orbe) or with the setting off: a single window, from state.window, as before.
+  static reopening(state = store.state) {
+    const list = state.settings.restoreSession !== false ? state.windows || [] : [];
+    return list.length ? list.map((saved) => ({ saved })) : [{}];
   }
 
   // La plus ancienne fenêtre normale encore ouverte mémorise son état.
