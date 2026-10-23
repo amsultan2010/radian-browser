@@ -116,7 +116,7 @@ module.exports = async function lateraleTests(ctx) {
   w.activate(A);
   let tpl = w.tabMenuTemplate(C);
   check('menu d’un onglet du jour : lien, lien Markdown, dupliquer, renommer, épingler, favoris, vue scindée, son, déplacer, archiver (celui-ci, en dessous, au-dessus, les autres)',
-    labels(tpl).join('|') === ['tabs.copyLink', 'tabs.copyLinkMarkdown', 'tabs.duplicate', 'tabs.rename', 'tabs.changeIcon', 'tabs.pin', 'tabs.addFavorite', 'tabs.openSplit', 'tabs.mute', 'tabs.moveTo', 'tabs.close', 'tabs.closeOthers', 'tabs.closeAbove', 'tabs.closeAllOthers'].map((k) => T(k)).join('|'), labels(tpl).join('|'));
+    labels(tpl).join('|') === ['tabs.copyLink', 'tabs.copyLinkMarkdown', ...(process.platform === 'darwin' ? ['tb.share'] : []), 'tabs.duplicate', 'tabs.rename', 'tabs.changeIcon', 'tabs.pin', 'tabs.addFavorite', 'tabs.openSplit', 'tabs.mute', 'tabs.moveTo', 'tabs.close', 'tabs.closeOthers', 'tabs.closeAbove', 'tabs.closeAllOthers'].map((k) => T(k)).join('|'), labels(tpl).join('|'));
   pick(tpl, 'tabs.copyLink').click();
   await until(async () => (await clipboard.readText()) === dead('C'), 'lien copié');
   check('menu : « Copier le lien »', true);
