@@ -994,23 +994,6 @@ function slideSet(x) {
   scroller.style.transform = `translateX(${-x}px)`;
   if (slide.ghost) slide.ghost.style.transform = `translateX(${slide.dir * W - x}px)`;
   tintEl.style.opacity = slide.ghost ? String(slide.cut ? 1 : Math.min(1, Math.abs(x) / W)) : '0';
-  followDots(slide.ghost ? Math.min(1, Math.abs(x) / W) : 0);
-}
-
-// Pastilles du bas : pendant le balayage, la largeur passe de la pastille courante à
-// celle de l'Espace qui arrive, au pas des doigts (comme dans Arc). À 0, elles sont
-// rendues au CSS, qui les mène au ressort à leur place (geste abandonné ou Espace changé).
-function followDots(p) {
-  const box = $('spaces');
-  const from = p && slide && slide.targetId ? box.querySelector('.sp.active') : null;
-  const to = from ? box.querySelector(`.sp[data-space="${CSS.escape(slide.targetId)}"]`) : null;
-  const pair = !!to && from !== to;
-  for (const el of box.children) if (!(pair && (el === from || el === to)) && el.style.width) { el.style.width = ''; el.style.transition = ''; }
-  if (!pair) return;
-  const [big, small] = slide.dots || (slide.dots = [from.offsetWidth, to.offsetWidth]);
-  from.style.transition = to.style.transition = 'none';
-  from.style.width = big - (big - small) * p + 'px';
-  to.style.width = small + (big - small) * p + 'px';
 }
 
 // Pastille « + » du bout de la rangée : `p` de 0 (absente) à 1 (nouvel Espace).
@@ -1103,7 +1086,6 @@ function slideFly(to, done) {
   // Vitesse des doigts, en parts du trajet restant par seconde.
   const v0 = Math.abs(dist) > 1 ? Math.max(0, Math.min(40, (slide.v * 1000) / dist)) : 0;
   const timing = springTiming(v0, slide.cut ? PAGER.cut : PAGER.response);
-  followDots(0);
   const opts = { duration: timing.duration, easing: timing.easing, fill: 'forwards' };
   slide.phase = 'settle';
   slide.fly = { from, to, t0: performance.now(), timing };
@@ -1139,7 +1121,6 @@ function slideEnd() {
   if (ghost) ghost.remove();
   scroller.style.transform = '';
   tintEl.style.opacity = '';
-  followDots(0);
   pagerEl.classList.remove('sliding');
   const next = pending || other;
   if (next) render(next);
