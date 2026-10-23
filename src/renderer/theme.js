@@ -14,7 +14,8 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, () => {
   const HEX = /^#[0-9a-f]{6}$/i;
   const DEFAULT_COLOR = '#7c6cf0';
-  const TEXTURES = ['grain', 'sand', 'tweed', 'denim'];
+  // Arc's order (its string table lists grain, sand, denim, tweed): the grain dial cycles through them.
+  const TEXTURES = ['grain', 'sand', 'denim', 'tweed'];
   const MODES = ['auto', 'light', 'dark'];
   const MAX_COLORS = 3;
   const MIN_CONTRAST = 4.5;
