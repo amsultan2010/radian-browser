@@ -110,6 +110,19 @@ function routes(v) {
     && (routeText(r.match) === r.match || known.has(r.match)));
 }
 
+// Site Search: the user's own sites for the Command Bar, [{ name, keyword, url }].
+// The template must start with http(s):// so the query (put in place of %s) can never change the scheme.
+function siteTemplate(u) {
+  if (typeof u !== 'string' || u.length > 500 || !u.includes('%s') || !/^https?:\/\/\S+$/i.test(u)) return false;
+  try { return /^https?:$/.test(new URL(u.replaceAll('%s', 'x')).protocol); } catch { return false; }
+}
+const siteSearch = (v) => Array.isArray(v) && v.length <= 50
+  && v.every((e) => e && typeof e === 'object' && Object.keys(e).length === 3
+    && typeof e.name === 'string' && e.name.length <= 40 && !!e.name && e.name === e.name.trim() && !/[\u0000-\u001f]/.test(e.name)
+    && typeof e.keyword === 'string' && /^[^\s\u0000-\u001f]{1,30}$/.test(e.keyword) && e.keyword === e.keyword.toLowerCase()
+    && siteTemplate(e.url))
+  && new Set(v.map((e) => e.keyword)).size === v.length;
+
 const SETTABLE = {
   showToolbar: bool,
   showFullUrl: bool,
@@ -140,6 +153,7 @@ const SETTABLE = {
   downloadAsk: bool,
   downloadOpenPdf: bool,
   updateCheck: bool,
+  siteSearch,
   profileSettings,
   shortcuts: (v) => require('./shortcuts').validMap(v),
 };
@@ -194,4 +208,4 @@ function isLocal(url) {
 const devAuto = (url) => store.state.settings.devLocalhost !== false && isLocal(url) && !(store.state.settings.devOff || []).includes(hostOf(url));
 const devMode = (url) => { const h = hostOf(url); return !!h && ((store.state.settings.devSites || []).includes(h) || devAuto(url)); };
 
-module.exports = { routeRule, routeText, routeMatches, routeFor, migrateRoutes, routes, SETTABLE, PROFILE_KEYS, ARCHIVE_HOURS, externalLinks, get, setForProfile, forgetProfile, downloadDirFor, hostOf, devMode, devAuto, isLocal };
+module.exports = { routeRule, routeText, routeMatches, routeFor, migrateRoutes, routes, siteSearch, SETTABLE, PROFILE_KEYS, ARCHIVE_HOURS, externalLinks, get, setForProfile, forgetProfile, downloadDirFor, hostOf, devMode, devAuto, isLocal };
