@@ -1,12 +1,12 @@
+<!--
+Thanks for contributing! Fill in each section, and delete any that don't apply.
+New here? The contributing guide walks through a pull request step by step:
+https://github.com/amsultan2010/radian-browser/blob/main/CONTRIBUTING.md
+-->
+
 ## What this changes
 
-<!-- What does this pull request do, and why? -->
-
-
-
-## Related issue
-
-<!-- Link the issue this addresses. For anything bigger than a small fix, open an issue first. -->
+<!-- One or two sentences: what's different for someone using Radian, and why. -->
 
 Fixes #
 
@@ -15,32 +15,32 @@ Fixes #
 - [ ] Bug fix
 - [ ] Arc parity (Radian now matches Arc more closely)
 - [ ] New feature
-- [ ] Security fix (undisclosed vulnerabilities go to [Security Advisories](https://github.com/amsultan2010/radian-browser/security/advisories/new) first, not a public pull request)
-- [ ] Documentation
-- [ ] Tests
+- [ ] Documentation or tests only
 - [ ] Refactor (no behaviour change)
 
-## How to test
+<!-- Security fixes for undisclosed vulnerabilities go to Security Advisories first, not a public pull request:
+https://github.com/amsultan2010/radian-browser/security/advisories/new -->
 
-<!-- Steps a reviewer can follow to see the change working. -->
+## How to see it working
+
+<!-- Steps a reviewer can follow, starting from `npm start`. -->
 
 1.
 2.
 
+## Screenshots or recording
+
+<!-- For anything visible: Radian before and after, ideally next to Arc doing the same thing. -->
+
 ## Arc reference
 
-<!-- For Arc-parity changes: what Arc does, and how you observed it (screenshots, recordings, measurements, help pages). Delete this section otherwise. -->
+<!-- For Arc parity: what Arc does and how you observed it (screenshot, recording, measurement, help page). -->
 
 ## Checklist
 
-- [ ] I've read the [contributing guide](https://github.com/amsultan2010/radian-browser/blob/main/CONTRIBUTING.md).
-- [ ] This follows the Arc-parity rule: behaviour comes from observing Arc, and no Arc code or assets are used.
-- [ ] Commits are small, in lowercase imperative, and each one builds on its own.
-- [ ] `npm test` passes, and `npm run test:ui` too if the interface changed.
-- [ ] I added or updated tests for this change, or explained why none are needed.
-- [ ] I updated the docs (`README.md`, `docs/`) if behaviour or setup changed.
+- [ ] One topic, on a branch from `main`.
+- [ ] Commit messages are lowercase and imperative, like `fix folder drag onto the pinned section`.
+- [ ] `npm test` passes on my Mac (and `npm run test:ui` if the interface changed).
+- [ ] I added or updated tests, or said above why none are needed.
 - [ ] New interface text is in `src/shared/locales.js`, in English and French.
-
-## Screenshots or recordings
-
-<!-- For visual or motion changes: Radian before and after, ideally next to Arc. -->
+- [ ] No Arc code or assets: behaviour comes from observing Arc.

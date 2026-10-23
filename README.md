@@ -91,7 +91,7 @@ npm run build -- --install   # or: builds Radian.app and copies it to /Applicati
 `npm run dist` writes `Radian.app`, `Radian-<version>-mac-arm64.dmg` and
 `Radian-<version>-mac-arm64.zip` to `~/.orbe-dev/dist`. Builds are ad-hoc
 signed unless you set up a Developer ID, as described under
-[Release process](CONTRIBUTING.md#release-process). An app you build yourself
+[Release process](CONTRIBUTING.md#release-process-maintainers). An app you build yourself
 opens without the first-launch steps above.
 
 ## Features
@@ -208,6 +208,8 @@ differently from Arc. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. One rule
 matters above the others: **behaviour comes from observing Arc, never from its
 code or assets.**
 
+- Want to change something? Follow [your first pull request, step by step](CONTRIBUTING.md#your-first-pull-request-step-by-step); it covers branch names, commit messages and what to put in the pull request.
+- Looking for something to work on? The "Partial" rows in [docs/parity/status.md](docs/parity/status.md) are what Radian still lacks.
 - Found a bug? [Open a bug report](https://github.com/amsultan2010/radian-browser/issues/new?template=bug_report.yml).
 - Radian differs from Arc? [Report an Arc difference](https://github.com/amsultan2010/radian-browser/issues/new?template=arc_parity.yml).
 - Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
