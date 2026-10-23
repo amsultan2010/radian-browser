@@ -61,6 +61,7 @@ body.float #float:not(:has(> :not([hidden]))) { padding: 0; }
 #coach button { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 5px; color: rgba(255, 255, 255, 0.8); }
 #coach button:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
 #edge { display: flex; flex-direction: column; gap: 10px; }
+#edge[hidden] { display: none; }
 .pk { width: 34px; height: 33px; border-radius: 50%; display: grid; place-items: center; background: #050625; color: #fff; }
 .pk:hover { background: #10123a; }
 .pk svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
