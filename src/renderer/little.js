@@ -43,6 +43,7 @@ O.on('state', (s) => {
   document.getElementById('coach-title').replaceChildren(lead, brand, tail);
   document.getElementById('coach').hidden = !s.hint;
   document.getElementById('edge').hidden = !s.edge;
+  if (FLOAT) fitFloat();
   const was = !!spaces;
   spaces = Array.isArray(s.spaces) ? s.spaces : null;
   document.body.classList.toggle('menu', !!spaces);
@@ -65,10 +66,16 @@ document.getElementById('edge-close').onclick = () => O.send('closeWindow');
 document.getElementById('edge-full').onclick = () => O.send('openInOrbe');
 document.getElementById('space-close').onclick = () => O.send('closeMenu');
 // The float view takes the size of what it shows; nothing shown, it goes away (little.js `placeFloat`).
-if (FLOAT) {
+// Measured right away too: a hidden view does not render, so its ResizeObserver would never fire.
+let floatSent = '';
+function fitFloat() {
   const box = document.getElementById('float');
-  new ResizeObserver(() => O.send('floatSize', { width: box.offsetWidth, height: box.offsetHeight })).observe(box);
+  const size = { width: box.offsetWidth, height: box.offsetHeight };
+  if (floatSent === size.width + 'x' + size.height) return;
+  floatSent = size.width + 'x' + size.height;
+  O.send('floatSize', size);
 }
+if (FLOAT) new ResizeObserver(fitFloat).observe(document.getElementById('float'));
 document.getElementById('open-in').onclick = () => O.send('openInMenu');
 // The menu and the popups open under the button, right-aligned to it.
 exts.onclick = () => {
