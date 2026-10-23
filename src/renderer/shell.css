@@ -640,10 +640,10 @@ body.dev-site #toolbar, body.dev-site #toolbar.tinted.on-dark { --fg: #fff; --di
 body.dev-site #toolbar svg.i { width: 20px; height: 20px; stroke-width: 1.2; }
 body.dev-site.toolbar #card { top: 10px; }
 /* Arc's control set: Site Settings, the URL, then #tb-dev; no navigation buttons, and the pinned
-   extensions move into the Extensions menu. */
+   extensions stay in the sidebar's address pill (and the Extensions menu). */
 #tb-site, #tb-dev { display: none; }
 body.dev-site #tb-site { display: grid; }
-body.dev-site #tb-back, body.dev-site #tb-forward, body.dev-site #tb-reload, body.dev-site #tb-exts { display: none; }
+body.dev-site #tb-back, body.dev-site #tb-forward, body.dev-site #tb-reload { display: none; }
 body.dev-site #tb-url { height: 28px; margin: 0 7px 0 4px; padding: 0; border-radius: 0; background: none; font: 500 13px ui-monospace, 'SF Mono', Menlo, monospace; }
 body.dev-site #tb-url > svg { display: none; }
 body.dev-site #tb-dev { display: flex; align-items: center; flex: none; }

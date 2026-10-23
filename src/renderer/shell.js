@@ -442,7 +442,8 @@ function render(s) {
 
   // Boutons des extensions : icône, pastille, clic = fenêtre de l'extension.
   // In the address pill, revealed on hover (shell.css); with the toolbar shown they sit at its right, always visible (Arc).
-  const exts = s.toolbar && !FLOATING ? $('tb-exts') : $('exts');
+  // Arc's Developer Mode bar has none (they are in its Extensions menu): they stay in the pill.
+  const exts = s.toolbar && !s.devMode && !FLOATING ? $('tb-exts') : $('exts');
   const extSig = JSON.stringify(s.extensions || []);
   if (exts._sig !== extSig) {
     exts._sig = extSig;
