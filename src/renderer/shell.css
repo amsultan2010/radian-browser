@@ -132,6 +132,8 @@ svg.i.tb { width: 20px; height: 20px; }
 /* The shared tab (or the page sharing a screen or a window): outlined in yellow, as in Arc. */
 .row.tab.sharing { box-shadow: inset 0 0 0 1.5px #facc15; background: color-mix(in srgb, #facc15 16%, transparent); }
 .row.tab.sharing.active { background: color-mix(in srgb, #facc15 16%, var(--active)); }
+/* While a tab shares, hovering another web tab offers "Share this tab instead" (Arc 1.28). */
+.share-on .row.tab.live.web:not(.sharing):hover .act.inst { display: grid; }
 #shield:hover { color: var(--fg); }
 #shield:active { transform: scale(0.94); transition: transform var(--press); }
 #shield.on { color: var(--accent-text, color-mix(in srgb, var(--accent) 55%, var(--fg))); }

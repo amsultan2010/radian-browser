@@ -48,6 +48,7 @@ function tabRow(el, it) {
       + `<button class="act reset" data-act="reset">${icon('reset')}</button>`
       + `<button class="act cap" data-act="capture">${icon('screen')}</button>`
       + `<button class="act snd" data-act="mute">${icon('sound')}</button>`
+      + `<button class="act inst" data-act="instead" title="${t('share.instead')}" data-t-title="share.instead">${icon('share-tab')}</button>`
       // Au survol : « × » pour un onglet du jour, « − » pour un épinglé (il est déchargé, pas fermé), comme dans Arc.
       + `<button class="act x" data-act="close">${icon('close', 'i cl')}${icon('minus', 'i mi')}</button>`;
     el._ic = el.firstChild;
@@ -59,7 +60,7 @@ function tabRow(el, it) {
   }
   el.className = 'row tab' + (it.active ? ' active' : '') + (it.shown ? ' shown' : '') + (it.live ? ' live' : '')
     + (it.audible ? ' audible' : '') + (it.muted ? ' muted' : '') + (it.changed ? ' changed' : '') + (it.partners ? ' split' : '') + (it.grouped ? ' grouped' : '')
-    + (it.capture && it.capture.length ? ' capturing' : '') + (it.shared ? ' sharing' : '')
+    + (it.capture && it.capture.length ? ' capturing' : '') + (it.shared ? ' sharing' : '') + (/^https?:/i.test(it.url) ? ' web' : '')
     + (sel.has(it.id) ? ' sel' : '') + (flashId === it.id ? ' flash' : '');
   // Témoin de capture : écran, caméra ou micro (le premier de la liste).
   const cap = (it.capture && it.capture[0]) || '';
@@ -354,6 +355,7 @@ function render(s) {
   b.classList.toggle('docked', s.sidebar.visible);
   b.classList.toggle('translucent', s.translucent);
   b.classList.toggle('incognito', s.incognito);
+  b.classList.toggle('share-on', !!s.nav.sharing);
   b.classList.toggle('blank-window', !!s.blank);
   b.classList.toggle('toolbar', s.toolbar);
   b.classList.toggle('dev-site', !!s.devMode); // liseré jaune et noir sous l'adresse (mode développeur du site)
@@ -747,6 +749,7 @@ sidebar.addEventListener('click', (e) => {
     if (act.dataset.act === 'close') send('close', id);
     else if (act.dataset.act === 'mute') send('toggleMute', id);
     else if (act.dataset.act === 'capture') send('captureMenu', id);
+    else if (act.dataset.act === 'instead') send('shareInstead', id);
     else if (act.dataset.act === 'reset') send('resetPinned', id);
     // Clic sur l'icône d'un épinglé sorti de son adresse : retour à celle-ci.
     // ⌘clic : la page qu'il affichait part dans un nouvel onglet.

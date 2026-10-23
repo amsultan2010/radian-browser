@@ -1299,6 +1299,8 @@ const fr = {
   // Video calls: the player's microphone and camera
   'media.mic': 'Activer ou couper le micro',
   'media.cam': 'Activer ou couper la caméra',
+  'share.instead': 'Partager cet onglet à la place',
+  'share.instead.again': 'Partage à nouveau depuis cette page pour passer à « {tab} »',
 };
 
 const en = {
@@ -2578,6 +2580,8 @@ const en = {
   // Video calls: the player's microphone and camera
   'media.mic': 'Toggle Microphone',
   'media.cam': 'Toggle Camera',
+  'share.instead': 'Share this tab instead',
+  'share.instead.again': 'Share again from this page to switch to “{tab}”',
 };
 
 module.exports = { fr, en };

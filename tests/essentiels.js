@@ -509,6 +509,27 @@ module.exports = async function essentielsTests(ctx) {
   sheet = await sheetOf(priv.wc, 'picker');
   sheet.close(null);
   check('navigation privée : même sélecteur', (await pending).startsWith('err:'));
+
+  // "Share this tab instead": the sharing page shares again and gets the picked tab, without the picker, once.
+  const montre = await open(A + '/montre', 'Page /montre');
+  capture.mark(share.wc, 'screen');
+  await until(() => ui('document.body.classList.contains("share-on")'), 'partage signalé à la barre');
+  check('« Share this tab instead » : refusé pour un onglet d’une autre fenêtre', win.hooks.action(w, 'shareInstead', priv.id) === false);
+  check('« Share this tab instead » : l’onglet qui partage revient au premier plan', win.hooks.action(w, 'shareInstead', montre.id) === true && w.activeId === share.id);
+  await click(share.wc);
+  pending = js(share.wc, 'navigator.mediaDevices.getDisplayMedia({ video: true }).then((s) => { window.flux = s; return "flux:" + s.getVideoTracks().length; }, (e) => "err:" + e.name)', true);
+  await until(() => capture.shared(montre.wc), 'onglet choisi partagé');
+  check('la demande suivante reçoit l’onglet choisi sans sélecteur ; c’est lui qui est surligné', !sheets.top(share.wc) && !capture.shared(share.wc));
+  const switched = await Promise.race([pending, sleep(20000).then(() => 'délai')]);
+  if (switched === 'délai') outils.ignorer('l’onglet choisi : la page reçoit un flux vidéo', 'Chromium n’a pas livré le flux en 20 s : pas d’affichage sur cette machine');
+  else check('l’onglet choisi : la page reçoit un flux vidéo', switched === 'flux:1', switched);
+  await js(share.wc, 'window.flux && window.flux.getTracks().forEach((x) => x.stop()); 1');
+  await click(share.wc);
+  pending = js(share.wc, 'navigator.mediaDevices.getDisplayMedia({ video: true }).then(() => "flux", (e) => "err:" + e.name)', true);
+  sheet = await sheetOf(share.wc, 'picker');
+  sheet.close(null);
+  check('une seule fois : la demande d’après rouvre le sélecteur', (await pending).startsWith('err:'));
+  capture.clearAll(share.wc);
   displayMedia.env.sources = saved.sources;
 
   // Ancienne capture d'écran (getUserMedia + chromeMediaSource) : pour Electron,
