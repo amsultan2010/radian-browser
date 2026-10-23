@@ -214,11 +214,15 @@ function setup({ win, sessions, test = false }) {
   hooks.navigated = (rt) => popups.reset(rt);
   hooks.busy = (rt) => capture.of(rt.wc).length > 0;
   hooks.tabState = (rt) => capture.of(rt.wc);
+  hooks.shared = (rt) => capture.shared(rt.wc);
+  const sharerIn = (w) => { for (const rt of live.values()) if (rt.owner === w && !rt.wc.isDestroyed() && capture.of(rt.wc).includes('screen')) return rt; return null; };
   hooks.navState = (w, rt, tab) => ({
     // Chargement refusé pour un certificat : « non sécurisé », que l'avertissement soit déjà affiché ou non.
     security: rt && tab && !rt.internal ? (rt.failed ? 'broken' : certs.state(rt.wc, rt.wc.getURL() || tab.url)) : '',
     popups: popups.count(rt),
     capture: rt ? capture.of(rt.wc) : [],
+    // A tab of this window is sharing: the other rows offer "Share this tab instead".
+    sharing: !!sharerIn(w),
   });
   // Certificat refusé : avertissement d'Orbe à la place de la page d'erreur.
   hooks.failed = (rt, info) => certs.failed(rt.wc, info, {
@@ -262,6 +266,17 @@ function setup({ win, sessions, test = false }) {
     }
     if (action === 'popupMenu') { const items = popups.menu(w, w.activeRt, t); if (items.length) w.popup(items); return true; }
     if (action === 'captureMenu') { captureMenu(w, (typeof a === 'string' && live.get(a)) || w.activeRt); return true; }
+    if (action === 'shareInstead') {
+      const to = typeof a === 'string' ? live.get(a) : null;
+      const from = sharerIn(w);
+      if (!to || !from || to.owner !== w || to.internal || to.wc.isDestroyed()) return false;
+      displayMedia.shareInstead(from.wc, to.wc);
+      // The page has to share again (see display-media.js): it comes forward, with a word on what to do.
+      w.activate(from.id);
+      const tab = w.data.tabs[to.id];
+      w.toast(t('share.instead.again', { tab: String((tab && (tab.customTitle || tab.title)) || to.wc.getTitle()).slice(0, 60) }), null, null, { stay: 5000 });
+      return true;
+    }
     return undefined;
   };
   hooks.siteMenu = (w) => [{ label: t('site.info'), enabled: !!(w.activeRt && !w.activeRt.internal), click: () => siteInfo(w) }];

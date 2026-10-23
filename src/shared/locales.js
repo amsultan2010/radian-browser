@@ -1317,6 +1317,11 @@ const fr = {
   // JSON view
   'json.raw': 'Brut',
   'json.parsed': 'Formaté',
+  // Video calls: the player's microphone and camera
+  'media.mic': 'Activer ou couper le micro',
+  'media.cam': 'Activer ou couper la caméra',
+  'share.instead': 'Partager cet onglet à la place',
+  'share.instead.again': 'Partage à nouveau depuis cette page pour passer à « {tab} »',
 };
 
 const en = {
@@ -2614,6 +2619,11 @@ const en = {
   // JSON view
   'json.raw': 'Raw',
   'json.parsed': 'Parsed',
+  // Video calls: the player's microphone and camera
+  'media.mic': 'Toggle Microphone',
+  'media.cam': 'Toggle Camera',
+  'share.instead': 'Share this tab instead',
+  'share.instead.again': 'Share again from this page to switch to “{tab}”',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).
