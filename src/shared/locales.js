@@ -1299,9 +1299,6 @@ const fr = {
   'appIcon.sunset': 'Crépuscule',
   'appIcon.graphite': 'Graphite',
   'appIcon.fluted': 'Verre cannelé',
-  // JSON view
-  'json.raw': 'Brut',
-  'json.parsed': 'Formaté',
   // Video calls: the player's microphone and camera
   'media.mic': 'Activer ou couper le micro',
   'media.cam': 'Activer ou couper la caméra',
@@ -1341,6 +1338,8 @@ const fr = {
   'ctl.manageBoosts': 'Gérer les Boosts…',
   'ctl.newBoostMenu': 'Nouveau Boost…',
   'ctl.allSettings': 'Tous les réglages du site…',
+  // JSON strip
+  'json.pretty': 'Mise en forme',
 };
 
 const en = {
@@ -2620,9 +2619,6 @@ const en = {
   'appIcon.sunset': 'Sunset',
   'appIcon.graphite': 'Graphite',
   'appIcon.fluted': 'Fluted Glass',
-  // JSON view
-  'json.raw': 'Raw',
-  'json.parsed': 'Parsed',
   // Video calls: the player's microphone and camera
   'media.mic': 'Toggle Microphone',
   'media.cam': 'Toggle Camera',
@@ -2662,6 +2658,8 @@ const en = {
   'ctl.manageBoosts': 'Manage Boosts…',
   'ctl.newBoostMenu': 'New Boost…',
   'ctl.allSettings': 'All Site Settings…',
+  // JSON strip
+  'json.pretty': 'Pretty-print',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).

@@ -318,7 +318,7 @@ module.exports = async function reglagesTests(ctx) {
   check('mode développeur : ⌃D, à côté du raccourci d’épinglage (⌘D)',
     commands.byName.get('toggleDevMode').accel === 'Ctrl+D' && commands.byName.get('togglePin').accel === 'Cmd+D');
 
-  // JSON view (Arc's JSON Formatter): a collapsible tree, Raw and Parsed, nothing new for the page.
+  // JSON view: a collapsible tree behind Chromium's "Pretty-print" strip (as Arc shows it), nothing new for the page.
   {
     const tab = w.newTab(base + '/data.json');
     await until(() => win.live.get(tab.id) && !win.live.get(tab.id).loading, 'page JSON');
@@ -326,17 +326,17 @@ module.exports = async function reglagesTests(ctx) {
     await until(() => page.executeJavaScript('!!document.querySelector(".jv .en")'), 'arbre JSON');
     const seen = await page.executeJavaScript(`(() => {
       const q = (sel) => document.querySelector(sel);
-      const bar = [...document.querySelectorAll('.jv-bar button')];
-      const out = { labels: bar.map((b) => b.textContent).join(), markup: !!q('.jv b'), key: q('.jv .k').textContent, link: q('.jv a').href, globals: typeof parse + typeof render };
-      bar[0].click();
+      const box = q('.jv-bar input[type=checkbox]');
+      const out = { labels: q('.jv-bar').textContent + '|' + box.checked, markup: !!q('.jv b'), key: q('.jv .k').textContent, link: q('.jv a').href, globals: typeof parse + typeof render };
+      box.click();
       out.raw = q('.jv').hidden && !q('body > pre').hidden;
-      bar[1].click();
+      box.click();
       q('.jv .ex').click();
       out.shut = !q('.jv').hidden && q('.jv .en').classList.contains('shut') && q('.jv .ex').getAttribute('aria-expanded') === 'false';
       return out;
     })()`);
-    check('JSON page: a collapsible tree with Raw and Parsed buttons; its text never becomes markup, and the page sees no new globals',
-      seen.labels === store.t('json.raw') + ',' + store.t('json.parsed') && !seen.markup && seen.key === '"name"' && seen.link === 'https://example.com/' && seen.globals === 'undefinedundefined' && seen.raw && seen.shut, JSON.stringify(seen));
+    check('JSON page: a collapsible tree behind a checked “Pretty-print” box (unchecked: the raw text); its text never becomes markup, and the page sees no new globals',
+      seen.labels === store.t('json.pretty') + '|true' && !seen.markup && seen.key === '"name"' && seen.link === 'https://example.com/' && seen.globals === 'undefinedundefined' && seen.raw && seen.shut, JSON.stringify(seen));
     w.close(tab.id, { silent: true });
   }
 
