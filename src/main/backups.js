@@ -38,8 +38,7 @@ const env = {
   relaunch: () => app.relaunch(),
 };
 
-// Fichier (ou dossier) lisible par son seul propriétaire. Sans effet sous Windows,
-// où le dossier du profil n'est déjà ouvert qu'à l'utilisateur.
+// Fichier (ou dossier) lisible par son seul propriétaire.
 function own(p, mode) {
   try { fs.chmodSync(p, mode); } catch {}
 }

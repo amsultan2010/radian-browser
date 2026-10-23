@@ -202,7 +202,7 @@ module.exports = async function essentielsTests(ctx) {
   pending = js(cam.wc, 'navigator.mediaDevices.getUserMedia({ audio: true }).then((s) => "flux", (e) => "err:" + e.name)', true);
   check('micro refusé : plus de question ensuite', await pending === 'err:NotAllowedError' && !sheets.top(cam.wc));
 
-  // Accord du système (macOS, Windows) : en plus de celui du site.
+  // Accord du système (macOS) : en plus de celui du site.
   const asked = [];
   permissions.os.status = (kind) => (kind === 'camera' ? 'denied' : 'granted');
   pending = js(cam.wc, 'navigator.mediaDevices.getUserMedia({ video: true }).then((s) => "flux", (e) => "err:" + e.name)', true);
@@ -839,11 +839,8 @@ module.exports = async function essentielsTests(ctx) {
   await closeWindow(slowWin, slowIn);
 
   // Le processus de la page figé juste après « Rester » (machine chargée) : c'est ainsi que la
-  // page se perdait. Figer un processus se fait par signal : pas sous Windows.
-  if (process.platform === 'win32') {
-    outils.ignorer('« Rester » puis processus de la page figé : la page reste', 'pas de signal pour figer un processus sous Windows');
-    outils.ignorer('page détruite par Chromium après « Rester » : l’onglet garde sa ligne', 'pas de signal pour figer un processus sous Windows');
-  } else {
+  // page se perdait. Figer un processus se fait par signal.
+  {
     const freeze = (wc, ms) => () => {
       const pid = wc.getOSProcessId();
       process.kill(pid, 'SIGSTOP');

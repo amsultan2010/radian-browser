@@ -145,37 +145,36 @@ const SAFARI = {
 // --- Dossier personnel d'essai ------------------------------------------------------------------
 const write = (file, data) => { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, data); };
 
-// Pose de faux profils sous `home`, à la manière de macOS (ou de Windows). Rend ce qui a été écrit.
-function profils(home, { platform = 'darwin', sqlite = '' } = {}) {
-  const mac = platform !== 'win32';
-  const app = (macPath, winBase, winPath) => (mac ? path.join(home, 'Library', 'Application Support', macPath) : path.join(home, 'AppData', winBase, winPath));
-  const chrome = app('Google/Chrome', 'Local', 'Google/Chrome/User Data');
+// Pose de faux profils sous `home`, à la manière de macOS. Rend ce qui a été écrit.
+function profils(home, { sqlite = '' } = {}) {
+  const app = (macPath) => path.join(home, 'Library', 'Application Support', macPath);
+  const chrome = app('Google/Chrome');
   write(path.join(chrome, 'Local State'), JSON.stringify({ profile: { info_cache: { Default: { name: 'Amadou' }, 'Profile 1': { name: 'Travail <b>' }, 'Profile 7': { name: 'Sans signets' } } } }));
   write(path.join(chrome, 'Default', 'Bookmarks'), CHROME_DEFAULT);
   write(path.join(chrome, 'Profile 1', 'Bookmarks'), chromeBookmarks([url('Intranet', 'http://intranet.exemple/')]));
   write(path.join(chrome, 'Profile 7', 'Preferences'), '{}');
   write(path.join(chrome, 'System Profile', 'Bookmarks'), chromeBookmarks([url('Système', 'https://systeme.exemple/')]));
-  const brave = app('BraveSoftware/Brave-Browser', 'Local', 'BraveSoftware/Brave-Browser/User Data');
+  const brave = app('BraveSoftware/Brave-Browser');
   write(path.join(brave, 'Default', 'Bookmarks'), chromeBookmarks([url('Brave', 'https://brave.com/')]));
   // Edge installé, mais sans aucun signet : il ne doit pas être proposé.
-  const edge = app('Microsoft Edge', 'Local', 'Microsoft/Edge/User Data');
+  const edge = app('Microsoft Edge');
   write(path.join(edge, 'Default', 'Preferences'), '{}');
-  const opera = app('com.operasoftware.Opera', 'Roaming', 'Opera Software/Opera Stable');
+  const opera = app('com.operasoftware.Opera');
   write(path.join(opera, 'Bookmarks'), chromeBookmarks([url('Opera', 'https://www.opera.com/')]));
-  const firefox = app('Firefox', 'Roaming', 'Mozilla/Firefox');
+  const firefox = app('Firefox');
   const ffProfile = path.join(firefox, 'Profiles', 'abcd1234.default-release');
   write(path.join(firefox, 'profiles.ini'), [
     '[Install4F96D1932A9F858E]', 'Default=Profiles/abcd1234.default-release', '',
     '[Profile1]', 'Name=hors du dossier', 'IsRelative=1', 'Path=../../../ailleurs', '',
     '[Profile0]', 'Name=default-release', 'IsRelative=1', 'Path=Profiles/abcd1234.default-release', 'Default=1', '',
     '[General]', 'StartWithLastProfile=1', 'Version=2', '',
-  ].join(mac ? '\n' : '\r\n'));
+  ].join('\n'));
   write(path.join(ffProfile, 'bookmarkbackups', 'bookmarks-2026-09-30_11_AAAA==.jsonlz4'), mozlz4(ffBackup([ffPlace('Ancienne sauvegarde', 'https://ancienne.exemple/')])));
   write(path.join(ffProfile, 'bookmarkbackups', 'bookmarks-2026-10-02_12_BBBB==.jsonlz4'), mozlz4(FIREFOX_BACKUP));
   write(path.join(home, 'ailleurs', 'bookmarkbackups', 'bookmarks-2026-10-02_1_CCCC==.jsonlz4'), mozlz4(FIREFOX_BACKUP));
   const hasSqlite = firefoxSqlite(path.join(ffProfile, 'places.sqlite'), sqlite);
-  let safari = '';
-  if (mac) { safari = path.join(home, 'Library', 'Safari', 'Bookmarks.plist'); write(safari, bplist(SAFARI)); }
+  const safari = path.join(home, 'Library', 'Safari', 'Bookmarks.plist');
+  write(safari, bplist(SAFARI));
   return { chrome, brave, edge, opera, firefox, ffProfile, safari, hasSqlite };
 }
 

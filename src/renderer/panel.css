@@ -1,5 +1,5 @@
 /* Habillage des extensions : en-tête du panneau latéral, bandeau du débogueur. */
-html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; font: 12.5px -apple-system, 'Segoe UI', system-ui, sans-serif; color: var(--fg); }
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; font: 12.5px -apple-system, system-ui, sans-serif; color: var(--fg); }
 
 #panel { position: absolute; inset: 0; display: flex; }
 #panel[hidden], #banner[hidden] { display: none; }

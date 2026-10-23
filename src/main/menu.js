@@ -68,9 +68,8 @@ function build() {
         item('settings'),
         item('passwords'),
         item('defaultBrowser', { type: 'checkbox', checked: isDefaultBrowser(true), click: () => { dispatch('defaultBrowser'); refresh(true); } }),
-        ...(platform.isWin ? [item('undoDefaultBrowser')] : []),
         sep,
-        ...(platform.arcSidebarFile() || platform.isMac ? [item('importArc')] : []),
+        ...(platform.arcSidebarFile() ? [item('importArc')] : []),
         ...(platform.arcUserDataDir() ? [item('importArcData')] : []),
         item('importBookmarks'),
         sep,
@@ -187,7 +186,7 @@ function build() {
           label: require('./window').spaceLabel(sp, store.state, w && w.shared ? w.space.profileId : null, '  '),
           type: 'checkbox',
           checked: !!w && sp.id === w.spaceId,
-          accelerator: i < 9 ? platform.accel(`Ctrl+${i + 1}`) : undefined,
+          accelerator: i < 9 ? `Ctrl+${i + 1}` : undefined,
           click: () => { const win = OrbeWindow.focused || OrbeWindow.primary; if (win) win.switchSpace(sp.id); },
         })),
       ],
@@ -209,7 +208,7 @@ function build() {
           label: `Tab ${n}`,
           visible: false,
           acceleratorWorksWhenHidden: true,
-          accelerator: platform.accel(`Cmd+${n}`),
+          accelerator: `Cmd+${n}`,
           click: () => { const win = OrbeWindow.focused; if (win) win.tabAt(n); },
         })),
       ],
@@ -247,7 +246,7 @@ function build() {
     },
     { label: t('menu.help'), role: 'help', submenu: [item('welcome'), item('shortcuts'), item('helpCenter'), item('whatsNew'), item('reportIssue'), item('support'), item('github'), sep, item('exportNotes'), sep, { label: t('help.troubleshooting'), submenu: [item('revealData'), item('copyInfo'), item('taskManager'), item('recordTrace', { labelKey: commands.tracing() ? 'help.stopTrace' : 'help.recordTrace' }), sep, { label: t('backup.menu'), submenu: require('./backups').menuItems() }] }] },
   ];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(platform.menuTemplate(template)));
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
   if (platform.isMac && app.dock) app.dock.setMenu(Menu.buildFromTemplate(dockTemplate()));
 }
 

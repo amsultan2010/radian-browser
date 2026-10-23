@@ -5,7 +5,7 @@
 // Chaque message de l'éditeur nomme le site qu'il croit modifier : s'il ne
 // correspond plus à `host` (l'éditeur a été pointé ailleurs entre-temps, et un
 // enregistrement différé de l'ancien site arrive après coup), il est refusé.
-const { BrowserWindow, dialog, nativeTheme } = require('electron');
+const { BrowserWindow, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const platform = require('./platform');
@@ -41,7 +41,7 @@ function show() {
     return win;
   }
   win = new BrowserWindow({
-    width: 380, height: 640, minWidth: 320, minHeight: 380, ...platform.windowChrome({ inset: true, dark: nativeTheme.shouldUseDarkColors }),
+    width: 380, height: 640, minWidth: 320, minHeight: 380, ...platform.windowChrome({ inset: true }),
     alwaysOnTop: true, fullscreenable: false, webPreferences: { preload: UI_PRELOAD, sandbox: true, contextIsolation: true },
   });
   trusted.add(win.webContents);

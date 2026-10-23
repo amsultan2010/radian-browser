@@ -324,17 +324,8 @@ module.exports = async function bibliothequeTests(ctx) {
     if (mac) {
       const attr = require('child_process').execFileSync('/usr/bin/xattr', ['-p', 'com.apple.quarantine', got2.path]).toString().trim();
       check('macOS : le fichier téléchargé porte la marque de quarantaine (avertissement du système à l’ouverture)', got2.marked === true && /^0081;[0-9a-f]{8};Radian;[0-9A-F-]{36}$/.test(attr), attr);
-    } else if (process.platform === 'win32') {
-      const zone = fs.readFileSync(got2.path + ':Zone.Identifier', 'utf8');
-      check('Windows : le fichier téléchargé est marqué « zone Internet » (SmartScreen, avertissement à l’ouverture)', got2.marked === true && /\[ZoneTransfer\]\r\nZoneId=3\r\n/.test(zone) && zone.includes('HostUrl=' + origin), JSON.stringify(zone));
     }
     check('la marque ne touche pas au contenu du fichier', fs.readFileSync(got2.path, 'utf8') === 'bonjour');
-    if (process.platform === 'win32') {
-      const priv = path.join(dir, 'prive.txt');
-      fs.writeFileSync(priv, 'x');
-      await downloads.quarantine(priv, origin, false);
-      check('navigation privée : l’adresse d’origine n’est pas écrite à côté du fichier', !fs.readFileSync(priv + ':Zone.Identifier', 'utf8').includes('HostUrl'));
-    }
     try { fs.unlinkSync(got2.path); } catch {}
     store.state.downloads.splice(store.state.downloads.indexOf(got2), 1);
     server.close();
@@ -373,14 +364,13 @@ module.exports = async function bibliothequeTests(ctx) {
   // --- Notes : raccourcis d'Arc, export en fichiers texte -------------------------------------
   {
     const notes = require('../src/main/notes');
-    const platform = require('../src/main/platform');
     const { Menu } = require('electron');
     const accels = [];
     const collect = (m) => { for (const it of m.items) { if (it.accelerator) accels.push(it.accelerator); if (it.submenu) collect(it.submenu); } };
     collect(Menu.getApplicationMenu());
     check('notes : ⌃⇧N (nouvelle note) et ⌃⌥N (à côté de la page), comme dans Arc ; ⌃⌘N ouvre la fenêtre vierge',
-      commands.byName.get('newNote').accel === platform.accel('Ctrl+Shift+N') && commands.byName.get('newNoteSplit').accel === platform.accel('Ctrl+Alt+N')
-      && accels.includes(platform.accel('Ctrl+Shift+N')) && accels.includes(platform.accel('Ctrl+Alt+N')) && commands.byName.get('newBlank').accel === platform.accel('Ctrl+Cmd+N') && accels.includes(platform.accel('Ctrl+Cmd+N')) && new Set(accels).size === accels.length,
+      commands.byName.get('newNote').accel === 'Ctrl+Shift+N' && commands.byName.get('newNoteSplit').accel === 'Ctrl+Alt+N'
+      && accels.includes('Ctrl+Shift+N') && accels.includes('Ctrl+Alt+N') && commands.byName.get('newBlank').accel === 'Ctrl+Cmd+N' && accels.includes('Ctrl+Cmd+N') && new Set(accels).size === accels.length,
       accels.filter((x, i) => accels.indexOf(x) !== i).join());
     const notes0 = store.state.notes;
     store.state.notes = [

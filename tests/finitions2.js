@@ -421,8 +421,8 @@ module.exports = async function finitions2Tests(ctx) {
     const btn = await ui(`(() => { const r = document.getElementById('b-sidebar').getBoundingClientRect(); return { bottom: r.bottom }; })()`);
     check('survol d’une demi-seconde : infobulle maison avec le nom et le raccourci, sous le bouton, dans la barre latérale, sans prendre les clics',
       t1.text === T('side.sidebar') && t1.key === shortcuts.keysOf('toggleSidebar') && t1.key.length > 0 && t1.left >= 6 && t1.right <= t1.sw - 5 && t1.top >= btn.bottom && t1.events === 'none', JSON.stringify(t1));
-    await over('b-menu');
-    await until(async () => { const x = await tip(); return x.on && x.text === T('side.menu'); }, 'infobulle du menu');
+    await over('b-plus');
+    await until(async () => { const x = await tip(); return x.on && x.text === T('side.plus'); }, 'infobulle du bouton +');
     check('bouton sans raccourci : le nom seul', (await tip()).key === '');
     await ui(`document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
     check('un clic referme l’infobulle', (await tip()).on === false);

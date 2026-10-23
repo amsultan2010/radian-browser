@@ -1,8 +1,8 @@
 // Mises à jour : Orbe regarde si une version plus récente est publiée, et le dit.
 //
-// Orbe n'est pas signé par un compte de développeur (signature « ad hoc » sur
-// macOS, aucune sous Windows) : il ne peut donc pas se remplacer lui-même comme
-// le font Sparkle ou Squirrel. Ce module fait la version honnête :
+// Orbe n'est pas signé par un compte de développeur (signature « ad hoc ») : il ne
+// peut donc pas se remplacer lui-même comme le font Sparkle ou Squirrel. Ce module
+// fait la version honnête :
 //   - une question par jour au plus à GitHub (« dernière version publiée »), et
 //     à la demande (« Rechercher les mises à jour… ») ;
 //   - comparaison des numéros de version ;
@@ -82,10 +82,9 @@ function compare(a, b) {
   return 0;
 }
 
-// Nom de l'archive publiée pour ce système (scripts/build-mac.js, build-win.js).
+// Nom de l'archive publiée pour ce système (scripts/build-mac.js).
 function assetName(version, platform = deps.platform, arch = deps.arch) {
   if (platform === 'darwin' && arch === 'arm64') return `Radian-${version}-mac-arm64.zip`;
-  if (platform === 'win32' && arch === 'x64') return `Radian-${version}-windows-x64.zip`;
   return '';
 }
 
@@ -295,9 +294,8 @@ function freeName(dir, name) {
 }
 
 // Marque le fichier comme « venu d'Internet », comme le ferait un navigateur :
-// macOS le soumettra à Gatekeeper et à XProtect (attribut com.apple.quarantine),
-// Windows à SmartScreen (flux Zone.Identifier, zone 3). Rend true si la marque
-// est posée et relue ; sur les autres systèmes, il n'y a rien à poser.
+// macOS le soumettra à Gatekeeper et à XProtect (attribut com.apple.quarantine).
+// Rend true si la marque est posée et relue ; sur les autres systèmes, il n'y a rien à poser.
 function quarantineValue(now = Date.now()) {
   return `0081;${Math.floor(now / 1000).toString(16)};Radian;`;
 }
@@ -307,13 +305,6 @@ function markDownloaded(file, source) {
     const run = (args) => new Promise((resolve) => execFile('/usr/bin/xattr', args, { timeout: 8000 }, (err, out) => resolve(err ? null : String(out))));
     const value = quarantineValue(deps.now());
     return run(['-w', 'com.apple.quarantine', value, file]).then((ok) => (ok === null ? false : run(['-p', 'com.apple.quarantine', file]).then((got) => got !== null && got.trim() === value)));
-  }
-  if (deps.platform === 'win32') {
-    const zone = `[ZoneTransfer]\r\nZoneId=3\r\nHostUrl=${source}\r\n`;
-    try {
-      fs.writeFileSync(file + ':Zone.Identifier', zone);
-      return Promise.resolve(fs.readFileSync(file + ':Zone.Identifier', 'utf8') === zone);
-    } catch { return Promise.resolve(false); }
   }
   return Promise.resolve(true);
 }

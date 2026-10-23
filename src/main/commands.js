@@ -162,9 +162,7 @@ const COMMANDS = [
   { name: 'manageExtensions', label: 'ext.manage', global: true, run: () => hooks.openSettings('extensions') },
   // ⌘E : ouvre l'extension suivante (sa fenêtre, ou son action) ; après la dernière, referme.
   { name: 'cycleExtensions', label: 'ext.cycle', accel: 'Cmd+E', keys: '⌘E', run: (w) => { if (require('./ext-host').cycle(w) === null) w.toast(store.t('ext.none')); } },
-  { name: 'defaultBrowser', label: 'app.defaultBrowser', global: true, run: (w) => { makeDefault(); if (w) w.toast(store.t(platform.isWin ? 'toast.defaultBrowserWin' : 'toast.defaultBrowser')); } },
-  // Windows : retire l'inscription d'Orbe comme navigateur (registre de l'utilisateur).
-  ...(platform.isWin ? [{ name: 'undoDefaultBrowser', label: 'app.undoDefaultBrowser', global: true, run: async (w) => { const ok = await platform.undoDefault(); if (w && ok) w.toast(store.t('toast.undoDefaultBrowser')); } }] : []),
+  { name: 'defaultBrowser', label: 'app.defaultBrowser', global: true, run: (w) => { makeDefault(); if (w) w.toast(store.t('toast.defaultBrowser')); } },
   { name: 'toggleSiteBlocking', label: 'adblock.toggleSite', run: (w) => w.toggleSiteBlocking() },
   { name: 'boost', label: 'boost.edit', run: (w) => hooks.openBoost(w) },
   { name: 'zap', label: 'boost.zapCmd', run: (w) => { const p = w.activeRt; if (p && !p.internal && !w.incognito) require('./boosts').zap(p.wc); } },
@@ -180,8 +178,6 @@ const COMMANDS = [
   { name: 'shortcuts', label: 'help.shortcuts', run: (w) => w.openInternal('shortcuts.html') },
   // Comme Help → Troubleshooting → Task Manager d'Arc.
   { name: 'taskManager', label: 'help.taskManager', run: (w) => w.openInternal('tasks.html') },
-  // Menu de l'application, ouvert depuis la barre latérale (Windows : pas de barre de menus).
-  { name: 'appMenu', label: 'side.menu', palette: false, run: (w) => platform.popupAppMenu(w.win) },
   { name: 'github', label: 'help.github', run: (w) => w.newTab(REPO_URL) },
   // Aide : l'équivalent de « Help Center », « Contact the Team » et « What's new » d'Arc.
   { name: 'helpCenter', label: 'help.center', run: (w) => w.newTab(REPO_URL + '#readme') },
@@ -193,7 +189,6 @@ const COMMANDS = [
   { name: 'recordTrace', label: 'help.recordTrace', global: true, palette: false, run: (w) => recordTrace(w) },
   { name: 'copyInfo', label: 'help.copyInfo', global: true, run: (w) => { clipboard.writeText(appInfo()); if (w) w.toast(store.t('toast.infoCopied')); } },
 ];
-platform.adaptCommands(COMMANDS);
 
 const byName = new Map(COMMANDS.map((c) => [c.name, c]));
 
@@ -242,7 +237,7 @@ function makeDefault() {
 }
 
 // « Aller à la sélection » : la commande du moteur n'agit que si la page a le clavier (ce
-// n'est pas toujours le cas, sous Windows notamment) ; la page fait donc aussi défiler
+// n'est pas toujours le cas) ; la page fait donc aussi défiler
 // elle-même le début de sa sélection (ou le champ où l'on écrit) au milieu de l'écran.
 function jumpToSelection(page) {
   if (!page || page.isDestroyed()) return false;

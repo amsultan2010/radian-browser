@@ -6,8 +6,6 @@ const fs = require('fs');
 const path = require('path');
 const { Menu, clipboard } = require('electron');
 
-const platform = require('../src/main/platform');
-
 const { sleep, until, milieu, ignorer, ignores, profilPret } = require('./outils');
 
 function serve() {
@@ -68,7 +66,7 @@ module.exports = async function selftest(ctx) {
     if (!shots) return;
     await sleep(350);
     // Capture de la fenêtre entière (coque + pages), pour relecture visuelle.
-    await require('./capture').shoot(w.win, shots, name, platform.tint(w.space.color, require('electron').nativeTheme.shouldUseDarkColors));
+    await require('./capture').shoot(w.win, shots, name, require('./capture').tint(w.space.color, require('electron').nativeTheme.shouldUseDarkColors));
   };
 
   const server = await serve();
@@ -244,7 +242,7 @@ module.exports = async function selftest(ctx) {
 
   // Mouvements des pages : animation du système (View.setBounds animé), sans minuteur
   {
-    // Les machines d'intégration sous Windows ont les animations coupées : on les
+    // Les machines d'intégration peuvent avoir les animations coupées : on les
     // impose pour toute la suite, afin que le chemin animé y soit essayé aussi.
     const system = win.motion(1) > 0;
     win.forceMotion(true);
@@ -746,54 +744,8 @@ module.exports = async function selftest(ctx) {
   require('../src/main/menu').build();
   collect(Menu.getApplicationMenu());
   const wanted = ['Cmd+T', 'Cmd+N', 'Shift+Cmd+N', 'Alt+Cmd+N', 'Shift+Cmd+T', 'Cmd+L', 'Shift+Cmd+W', 'Shift+Cmd+2', 'Shift+Cmd+S', 'Cmd+P', 'Shift+Cmd+C', 'Alt+Shift+Cmd+C', 'Cmd+F', 'Cmd+G', 'Cmd+S', 'Shift+Cmd+D', 'Cmd+.', 'Cmd+R', 'Shift+Cmd+R', 'Ctrl+Shift+=', 'Ctrl+Shift+-', 'Cmd+0', 'Alt+Cmd+U', 'Alt+Cmd+I', 'Alt+Cmd+C', 'Alt+Cmd+J', 'Ctrl+Cmd+F', 'Alt+Cmd+Right', 'Alt+Cmd+Left', 'Ctrl+1', 'Cmd+D', 'Alt+Cmd+Down', 'Alt+Cmd+Up', 'Shift+Cmd+K', 'Cmd+[', 'Cmd+]', 'Cmd+Y', 'Shift+Cmd+L', 'Shift+Cmd+J', 'Cmd+,', 'Cmd+1', 'Cmd+9'];
-  // Hors macOS, les mêmes commandes portent les raccourcis du système (⌘ -> Ctrl…).
-  const missing = wanted.map((k) => platform.accel(k)).filter((k) => !accels.has(k));
+  const missing = wanted.filter((k) => !accels.has(k));
   check(`les ${wanted.length} raccourcis d’Arc sont dans le menu`, !missing.length, 'manquants : ' + missing.join(', '));
-
-  // Windows : habillage et raccourcis propres au système
-  if (platform.isWin) {
-    const list = [];
-    const all = (m) => { for (const it of m.items) { if (it.accelerator) list.push(it.accelerator); if (it.submenu) all(it.submenu); } };
-    all(Menu.getApplicationMenu());
-    const twice = list.filter((k, i) => list.indexOf(k) !== i && k !== platform.accel('Cmd+T'));
-    check('Windows : raccourcis en Ctrl, sans doublon, affichés en notation Windows',
-      commands.byName.get('newTab').accel === 'Ctrl+T' && commands.byName.get('newTab').keys === 'Ctrl+T' && commands.byName.get('history').keys === 'Ctrl+H'
-      && !twice.length && !list.some((k) => /Cmd/.test(k)) && !/[⌘⌃⌥⇧]/.test(store.t('side.empty')), 'doublons : ' + twice.join(', '));
-    const chrome = await ui('JSON.stringify([document.documentElement.classList.contains("win"), getComputedStyle(document.getElementById("b-menu")).display, getComputedStyle(document.getElementById("top")).paddingLeft, getComputedStyle(document.body).fontFamily])');
-    const [isWinClass, menuDisplay, topPad, font] = JSON.parse(chrome);
-    check('Windows : bouton de menu visible, pas de marge pour les feux tricolores, police Segoe', isWinClass && menuDisplay !== 'none' && topPad === '0px' && /Segoe/.test(font), chrome);
-    const vb = win.live.get(w.activeId).view.getBounds();
-    const [cw] = w.win.getContentSize();
-    check('Windows : la page laisse libre la bande des boutons de fenêtre', vb.y === platform.CAPTION_H && vb.x + vb.width === cw - 10, JSON.stringify(vb));
-    // Vraie frappe envoyée à la page : le menu est invisible, ses raccourcis doivent rester actifs.
-    const kwc = win.live.get(w.activeId).wc;
-    kwc.focus();
-    let tries = 0;
-    const opened = await until(() => {
-      if (w.modalMode === 'command') return true;
-      if (tries++ % 25 === 0) { kwc.sendInputEvent({ type: 'keyDown', keyCode: 'T', modifiers: ['control'] }); kwc.sendInputEvent({ type: 'keyUp', keyCode: 'T', modifiers: ['control'] }); }
-      return false;
-    }, 'Ctrl+T', 5000).catch(() => false);
-    check('Windows : Ctrl+T frappé dans la page ouvre la barre de commande (menu masqué)', opened === true);
-    if (w.modalMode) w.hideModal();
-    // Barre d'outils : elle s'arrête avant les boutons de fenêtre.
-    commands.setSetting('showToolbar', true);
-    await until(() => ui('document.body.classList.contains("toolbar")'), 'barre d’outils affichée');
-    await sleep(250);
-    const tb = JSON.parse(await ui('JSON.stringify([document.getElementById("toolbar").getBoundingClientRect().right, innerWidth])'));
-    const vt = win.live.get(w.activeId).view.getBounds();
-    check('Windows : la barre d’outils s’arrête avant les boutons de fenêtre', tb[0] <= tb[1] - 138 && vt.y === 50, JSON.stringify([tb, vt]));
-    await shot('win-barre-outils');
-    commands.setSetting('showToolbar', false);
-    await until(() => ui('!document.body.classList.contains("toolbar")'), 'barre d’outils masquée');
-    // Thème sombre : capture seulement (symboles clairs des boutons de fenêtre).
-    if (shots) {
-      commands.setSetting('appearance', 'dark');
-      await until(() => ui('matchMedia("(prefers-color-scheme: dark)").matches'), 'interface en sombre');
-      await shot('win-sombre');
-      commands.setSetting('appearance', 'auto');
-    }
-  }
 
   // Téléchargement
   win.live.get(a.id).wc.downloadURL(base + '/file.txt');
@@ -1163,7 +1115,6 @@ module.exports = async function selftest(ctx) {
   const lw = new little.LittleWindow(base + '/a');
   await until(() => lw.title === 'Page A', 'petite fenêtre chargée');
   check('⌥⌘N ouvre une petite fenêtre', !!lw.view);
-  if (shots && platform.isWin) { await sleep(400); await require('./capture').shoot(lw.win, shots, 'win-petite-fenetre', platform.tint('', require('electron').nativeTheme.shouldUseDarkColors)); }
   const count = w.space.today.length;
   lw.openInOrbe();
   await until(() => w.space.today.length === count + 1, 'ouverture dans Orbe');

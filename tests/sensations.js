@@ -231,8 +231,7 @@ module.exports = async function sensationsTests(ctx) {
     const desk = path.join(root, 'Bureau');
     const outside = path.join(root, 'ailleurs');
     fs.mkdirSync(desk); fs.mkdirSync(outside); fs.mkdirSync(path.join(desk, 'sous-dossier'));
-    // (Windows refuse « < » et « > » dans un nom de fichier.)
-    const HOSTILE = process.platform === 'win32' ? '&lt;img src=x onerror=alert(1)&gt;.png' : '<img src=x onerror=alert(1)>.png';
+    const HOSTILE = '<img src=x onerror=alert(1)>.png';
     const put = (dir, name, age) => { const f = path.join(dir, name); fs.writeFileSync(f, 'x'.repeat(10)); const at = new Date(Date.now() - age * 60e3); fs.utimesSync(f, at, at); return f; };
     put(desk, 'vieux.jpg', 300); put(desk, 'film.mp4', 20); put(desk, HOSTILE, 5); put(desk, 'notes.txt', 1); put(desk, '.cache.png', 1); put(path.join(desk, 'sous-dossier'), 'profond.png', 1);
     const secret = put(outside, 'secret.png', 1);

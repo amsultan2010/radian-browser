@@ -5,7 +5,7 @@ const os = require('os');
 const path = require('path');
 const { store, uid, SPACE_COLORS } = require('./store');
 
-// macOS : ~/Library/Application Support/Arc ; Windows : dossier du paquet Arc (voir platform.js).
+// ~/Library/Application Support/Arc (voir platform.js).
 const ARC_FILE = require('./platform').arcSidebarFile();
 
 // Arc enregistre ses listes sous la forme [id, objet, id, objet, …].

@@ -40,7 +40,7 @@ function open(pane) {
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
-    ...platform.windowChrome({ inset: true, dark: nativeTheme.shouldUseDarkColors }),
+    ...platform.windowChrome({ inset: true }),
     show: false,
     webPreferences: { preload: UI_PRELOAD, sandbox: true, contextIsolation: true },
   });

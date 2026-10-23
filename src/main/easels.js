@@ -432,7 +432,7 @@ const pickCode = (hint) => `new Promise((resolve) => {
   const box = d.createElement('div');
   box.style.cssText = 'all:initial;position:fixed;display:none;pointer-events:none;border:1.5px solid #7c6cf0;border-radius:3px;background:rgba(124,108,240,.10);box-shadow:0 0 0 99999px rgba(0,0,0,.30)';
   const tip = d.createElement('div');
-  tip.style.cssText = 'all:initial;position:fixed;top:18px;left:50%;transform:translateX(-50%);pointer-events:none;padding:8px 14px;border-radius:10px;background:rgba(28,28,32,.92);color:#fff;font:13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;white-space:nowrap';
+  tip.style.cssText = 'all:initial;position:fixed;top:18px;left:50%;transform:translateX(-50%);pointer-events:none;padding:8px 14px;border-radius:10px;background:rgba(28,28,32,.92);color:#fff;font:13px -apple-system,BlinkMacSystemFont,sans-serif;white-space:nowrap';
   tip.textContent = ${JSON.stringify(hint)};
   veil.append(box, tip);
   d.documentElement.appendChild(veil);

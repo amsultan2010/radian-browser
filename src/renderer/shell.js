@@ -832,7 +832,6 @@ for (const box of [$('exts'), $('tb-exts')]) {
   });
 }
 $('b-sidebar').onclick = () => send('toggleSidebar');
-$('b-menu').onclick = () => send('command', 'appMenu');
 $('url').onclick = () => send('openCommand', 'edit');
 $('shield').onclick = () => send('siteControl');
 $('shield').addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); send('shieldMenu'); });

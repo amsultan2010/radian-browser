@@ -53,7 +53,7 @@ async function handle(request, callback) {
   const origin = permissions.originOf(request.securityOrigin || frame.url || '');
   // « Cet onglet » d'abord, sans attendre : les écrans et les fenêtres suivent.
   let list = [{ id: 'tab', name: '', kind: 'tab', thumb: '' }];
-  const audio = { tab: true, screen: process.platform === 'win32' };
+  const audio = { tab: true, screen: false };
   const osState = () => { const st = permissions.os.status('screen'); return st === 'unknown' ? 'granted' : st; };
   const payload = () => ({ site: permissions.siteName(origin), sources: forSheet(list), os: osState(), audio, audioRequested: !!request.audioRequested });
   let sheet = null;
@@ -88,7 +88,7 @@ async function handle(request, callback) {
     return reply(wantAudio ? { video: main, audio: main } : { video: main });
   }
   capture.mark(wc, 'screen');
-  return reply(wantAudio && audio.screen ? { video: picked.source, audio: 'loopback' } : { video: picked.source });
+  return reply({ video: picked.source });
 }
 
 function attach(ses) {

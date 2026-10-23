@@ -65,7 +65,7 @@ function guardDialogs(dialog) {
     const guarded = (...args) => {
       const opts = args.find((a) => a && typeof a === 'object' && !(typeof a.isDestroyed === 'function')) || {};
       // showErrorBox(titre, contenu) : c'est aussi la boîte qu'Electron ouvre de lui-même
-      // pour une exception non rattrapée du processus principal — bloquante sous Windows.
+      // pour une exception non rattrapée du processus principal.
       const what = name === 'showErrorBox' ? `${args[0]} — ${String(args[1]).split('\n').slice(0, 14).join(' | ')}` : String(opts.message || opts.title || '');
       const where = String(new Error().stack).split('\n').slice(2, 6).map((l) => l.trim()).join(' < ');
       state.dialogs.push({ name, what, where });

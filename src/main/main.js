@@ -32,8 +32,6 @@ const imports = require('./imports');
 const extUi = require('./ext-ui');
 const appIcon = require('./app-icon');
 
-platform.adaptLocales(locales);
-
 // Mode test (--selftest, ORBE_SCENARIO, trousseau factice) : réservé au
 // lancement depuis les sources. L'application fabriquée ne l'accepte qu'avec
 // --orbe-test ET un dossier de données à part (essai de fumée de l'intégration
@@ -107,8 +105,6 @@ if (process.env.ORBE_BACKGROUND === '1' && !app.isPackaged) {
   app.focus = () => {};
 }
 sessions.registerScheme();
-// Hors macOS, un lien ouvert avec Orbe arrive en argument de la ligne de commande.
-if (!platform.isMac) for (const x of process.argv.slice(1)) if (/^https?:\/\//i.test(x)) pendingUrls.push([x, {}]);
 
 if (!SELFTEST && !process.env.ORBE_USER_DATA && !app.requestSingleInstanceLock()) app.quit();
 
@@ -219,10 +215,10 @@ function shortcutGroups() {
   const fr = store.state.settings.lang === 'fr';
   return [
     group(t('menu.tabs'), ['newTab', 'commandBar', 'closeTab', 'reopen', 'togglePin', 'nextTab', 'prevTab', 'clearToday'], [
-      { label: fr ? 'Aller à l’onglet 1 à 9' : 'Go to tab 1 to 9', keys: platform.keys('⌘1 … ⌘9') },
-      { label: platform.keys(fr ? 'Onglets récents (maintenir ⌃)' : 'Recent tabs (hold ⌃)'), keys: platform.keys('⌃⇥') },
+      { label: fr ? 'Aller à l’onglet 1 à 9' : 'Go to tab 1 to 9', keys: '⌘1 … ⌘9' },
+      { label: fr ? 'Onglets récents (maintenir ⌃)' : 'Recent tabs (hold ⌃)', keys: '⌃⇥' },
     ]),
-    group(t('menu.spaces'), ['nextSpace', 'prevSpace'], [{ label: fr ? 'Aller à l’Espace 1 à 9' : 'Go to Space 1 to 9', keys: platform.keys('⌃1 … ⌃9') }]),
+    group(t('menu.spaces'), ['nextSpace', 'prevSpace'], [{ label: fr ? 'Aller à l’Espace 1 à 9' : 'Go to Space 1 to 9', keys: '⌃1 … ⌃9' }]),
     group(t('menu.window'), ['newWindow', 'newIncognito', 'newLittle', 'closeWindow', 'toggleSidebar', 'toggleToolbar', 'addSplit', 'closeSplit', 'fullscreen', 'library', 'downloads', 'newEasel', 'settings']),
     group(fr ? 'Page' : 'Page', ['back', 'forward', 'reload', 'forceReload', 'stop', 'find', 'findNext', 'findPrev', 'copyUrl', 'copyUrlMarkdown', 'capture', 'captureToEasel', 'savePage', 'print', 'zoomIn', 'zoomOut', 'actualSize', 'history']),
     group(t('view.developer'), ['devtools', 'inspect', 'console', 'source']),
@@ -391,7 +387,7 @@ function welcomeAction(action, sender) {
 function setupIpc() {
   const ok = (e) => trusted.has(e.sender) && e.senderFrame && e.senderFrame.url.startsWith(INTERNAL);
   ipcMain.on('i18n', (e) => {
-    e.returnValue = ok(e) ? { locales, lang: store.state.settings.lang, settings: store.state.settings, platform: platform.name, keys: shortcuts.keysMap(), defaultKeys: shortcuts.defaultKeysMap() } : null;
+    e.returnValue = ok(e) ? { locales, lang: store.state.settings.lang, settings: store.state.settings, keys: shortcuts.keysMap(), defaultKeys: shortcuts.defaultKeysMap() } : null;
   });
   ipcMain.handle('orbe', async (e, action, payload) => {
     if (!ok(e) || typeof action !== 'string') return undefined;

@@ -26,7 +26,6 @@ module.exports = async function securiteTests(ctx) {
   const palette = require('../src/main/palette');
   const T = (k, v) => store.t(k, null, v);
   const mac = process.platform === 'darwin';
-  const windows = process.platform === 'win32';
   const ui = (js) => w.ui.webContents.executeJavaScript(js);
   await until(() => ui('typeof S === "object" && S !== null'), 'coque chargée');
 
@@ -200,8 +199,6 @@ module.exports = async function securiteTests(ctx) {
     if (mac) {
       const attr = (f) => { try { return require('child_process').execFileSync('/usr/bin/xattr', ['-p', 'com.apple.quarantine', f]).toString().trim(); } catch { return ''; } };
       check('macOS : la page enregistrée et ses fichiers portent la quarantaine', saved.ok === true && [target, ...extras].every((f) => /^0081;/.test(attr(f))), JSON.stringify([target, ...extras].map(attr)));
-    } else if (windows) {
-      check('Windows : la page enregistrée et ses fichiers sont marqués « zone Internet »', saved.ok === true && [target, ...extras].every((f) => /ZoneId=3/.test(fs.readFileSync(f + ':Zone.Identifier', 'utf8'))));
     }
     // (Electron n'annonce pas cet enregistrement par « will-download » : sans le marquage explicite, rien ne le couvrirait.)
     check('« Enregistrer la page » n’est pas un téléchargement pour Electron : aucune ligne dans la liste, d’où le marquage à part', store.state.downloads.length === records);
@@ -241,10 +238,8 @@ module.exports = async function securiteTests(ctx) {
     fs.writeFileSync(path.join(tmp, 'history.json.bak'), JSON.stringify(old.history));
     const b1 = backups.snapshot(file, new Date(2026, 9, 20, 8, 0, 0));
     const b2 = backups.snapshot(file, new Date(2026, 9, 19, 8, 0, 0));
-    if (!windows) {
-      const mode = (f) => fs.statSync(f).mode & 0o777;
-      check('sauvegardes : fichiers lisibles par leur seul propriétaire (0600), dossier aussi (0700)', mode(b1) === 0o600 && mode(b2) === 0o600 && mode(backups.dirOf(file)) === 0o700, [b1, b2, backups.dirOf(file)].map((f) => mode(f).toString(8)).join());
-    }
+    const mode = (f) => fs.statSync(f).mode & 0o777;
+    check('sauvegardes : fichiers lisibles par leur seul propriétaire (0600), dossier aussi (0700)', mode(b1) === 0o600 && mode(b2) === 0o600 && mode(backups.dirOf(file)) === 0o700, [b1, b2, backups.dirOf(file)].map((f) => mode(f).toString(8)).join());
     const read = (f) => JSON.parse(fs.readFileSync(f, 'utf8'));
     const all = () => [b1, b2, file + '.bak'].map(read);
     store.file = file;
@@ -279,7 +274,7 @@ module.exports = async function securiteTests(ctx) {
     backups.flushForget();
     check('historique effacé, note supprimée, autorisations réinitialisées, archive vidée : rien n’en reste dans les sauvegardes',
       all().every((s) => !('history' in s) && s.notes.map((n) => n.id).join() === 'n2' && Object.keys(s.permissions).length === 0 && !s.profilePermissions && !s.tabs['fermé2'] && !!s.tabs[openId]) && !fs.existsSync(path.join(tmp, 'history.json.bak')), JSON.stringify(all()[0]));
-    if (!windows) check('sauvegarde récrite : toujours lisible par son seul propriétaire', (fs.statSync(b1).mode & 0o777) === 0o600);
+    check('sauvegarde récrite : toujours lisible par son seul propriétaire', (fs.statSync(b1).mode & 0o777) === 0o600);
 
     // Restauration : ce qui revient, ce qui ne revient pas.
     store.state.permissions = { 'https://reste.exemple.fr': { geolocation: true } };
