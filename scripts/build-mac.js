@@ -82,6 +82,7 @@ fs.copyFileSync(path.join(root, 'package.json'), path.join(target, 'package.json
 fs.copyFileSync(path.join(root, 'LICENSE'), path.join(target, 'LICENSE'));
 fs.mkdirSync(path.join(target, 'assets'));
 fs.copyFileSync(path.join(root, 'assets', 'blocklist.txt'), path.join(target, 'assets', 'blocklist.txt'));
+fs.cpSync(path.join(root, 'assets', 'icons'), path.join(target, 'assets', 'icons'), { recursive: true, filter: (f) => !f.endsWith('.svg') });
 fs.copyFileSync(path.join(root, 'assets', 'radian.icns'), path.join(resources, 'radian.icns'));
 if (process.env.RADIAN_HAPTICS) fs.copyFileSync(process.env.RADIAN_HAPTICS, path.join(contents, 'MacOS', 'radian-haptics'));
 else console.log('No swiftc: building without trackpad haptics.');

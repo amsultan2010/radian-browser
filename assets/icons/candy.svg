@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <filter id="tile-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.3"/></filter>
+    <filter id="sticker-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.24"/></filter>
+    <clipPath id="tile"><path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z"/></clipPath>
+    <mask id="band" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><path d="M284.3 493A275 275 0 0 0 755.7 394" fill="none" stroke="#fff" stroke-width="128" stroke-linecap="round" stroke-linejoin="round"/></mask>
+    <clipPath id="left"><path d="M56.1 -523.3L1129.5 1623.3L56.1 2160L-1017.2 13.3Z"/></clipPath>
+    <clipPath id="right"><path d="M56.1 -523.3L1129.5 1623.3L2202.8 1086.6L1129.5 -1060Z"/></clipPath>
+    <clipPath id="stem"><rect x="306.3" y="0" width="128" height="1024"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="100" x2="0" y2="924" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFE4EF"/><stop offset="1" stop-color="#FFC1D8"/></linearGradient>
+    <linearGradient id="cherry" x1="0" y1="262" x2="0" y2="761" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FF5A7E"/><stop offset="1" stop-color="#DC1C4C"/></linearGradient>
+    <linearGradient id="cherry-dark" x1="0" y1="262" x2="0" y2="761" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E23A62"/><stop offset="1" stop-color="#B8143F"/></linearGradient>
+    <pattern id="mint" patternUnits="userSpaceOnUse" width="64" height="64" patternTransform="rotate(-40)"><rect width="64" height="64" fill="#36CDB3"/><rect width="22" height="64" fill="#E9FFFB"/></pattern>
+    <pattern id="mint-dark" patternUnits="userSpaceOnUse" width="64" height="64" patternTransform="rotate(-40)"><rect width="64" height="64" fill="#1F9C87"/><rect width="22" height="64" fill="#BFE9E1"/></pattern>
+    <filter id="soft-light" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="5"/></filter>
+  </defs>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="#FFD3E3" filter="url(#tile-shadow)"/>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="url(#bg)"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="180" stroke-linecap="round" stroke-linejoin="round" filter="url(#sticker-shadow)">
+    <path d="M370.3 697V326H474.3A112 140 0 0 1 546.3 573.2L608.2 697"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394"/>
+  </g>
+  <g fill="none" stroke-width="128" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M370.3 697V326" stroke="url(#cherry)"/>
+    <path d="M370.3 559.8V697" stroke="#9E1238"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="url(#mint)"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="url(#mint-dark)" clip-path="url(#stem)"/>
+    <path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="url(#cherry)"/>
+    <path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="url(#cherry-dark)" mask="url(#band)"/>
+  </g>
+  <path d="M340 420V350Q340 296 394 296H456" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" opacity="0.7" filter="url(#soft-light)"/>
+</svg>

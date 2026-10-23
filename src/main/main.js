@@ -30,6 +30,7 @@ const panes = require('./panes');
 const updates = require('./updates');
 const imports = require('./imports');
 const extUi = require('./ext-ui');
+const appIcon = require('./app-icon');
 
 platform.adaptLocales(locales);
 
@@ -162,6 +163,7 @@ function applyAppearance() {
 
 function broadcastSettings() {
   applyAppearance();
+  appIcon.apply(store.state.settings.appIcon);
   if (adblock.isEnabled() !== store.state.settings.adblock) adblock.setEnabled(store.state.settings.adblock);
   for (const wc of webContents.getAllWebContents()) {
     if (trusted.has(wc) && !wc.isDestroyed()) wc.send('settings', store.state.settings);
@@ -186,6 +188,7 @@ const SETTABLE = {
   externalLinks: prefs.externalLinks,
   autoPip: (v) => typeof v === 'boolean',
   batterySaver: (v) => typeof v === 'boolean',
+  appIcon: (v) => appIcon.NAMES.includes(v),
   sounds: (v) => typeof v === 'boolean',
   soundVolume: (v) => Number.isInteger(v) && v >= 0 && v <= 100,
   soundGestures: (v) => typeof v === 'boolean',
@@ -272,7 +275,7 @@ async function globalAction(action, a, sender) {
     case 'tasks:list': case 'tasks:end':
       return require('./tasks').handle(action, a);
     case 'settings:get':
-      return { settings: s.settings, spaces: s.spaces.map((sp) => ({ id: sp.id, name: `${sp.icon} ${sp.name}` })), profiles: profileList(), engines: Object.entries(suggest.ENGINES).map(([id, e]) => ({ id, name: e.name })), version: app.getVersion(), chrome: process.versions.chrome, ...panes.info() };
+      return { settings: s.settings, spaces: s.spaces.map((sp) => ({ id: sp.id, name: `${sp.icon} ${sp.name}` })), profiles: profileList(), engines: Object.entries(suggest.ENGINES).map(([id, e]) => ({ id, name: e.name })), version: app.getVersion(), chrome: process.versions.chrome, appIcons: appIcon.list(), ...panes.info() };
     case 'settings:set':
       for (const [k, v] of Object.entries(a || {})) if (Object.hasOwn(SETTABLE, k) && SETTABLE[k](v)) s.settings[k] = v;
       store.save();
@@ -441,6 +444,7 @@ app.whenReady().then(async () => {
   const { components } = require('electron');
   if (components) components.whenReady().catch((err) => console.error('[orbe] widevine', err.message));
   applyAppearance();
+  appIcon.apply(store.state.settings.appIcon);
   extensions.configure({ dir: path.join(app.getPath('userData'), 'Extensions'), fetch: (u, o) => net.fetch(u, o), lang: store.state.settings.lang });
   extApi.configure({ dir: path.join(app.getPath('userData'), 'Extensions') });
   extensions.hooks.equip = (ses) => extApi.equip(ses);

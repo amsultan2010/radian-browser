@@ -58,6 +58,21 @@ html.win #bar { padding-top: 34px; }
 .pane input[type=range] { width: 160px; accent-color: var(--accent); }
 .btn:disabled { opacity: 0.45; }
 
+/* --- App icon ------------------------------------------------------------------- */
+.line.app-icons { flex-wrap: wrap; justify-content: space-between; gap: 4px; padding: 10px; }
+.app-icon {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  width: 84px; padding: 6px 2px 5px; border-radius: 10px;
+  color: var(--dim); font-size: 11px; font-weight: 500;
+  transition: background-color var(--press), color var(--press);
+}
+.app-icon img { width: 56px; height: 56px; border-radius: 15px; outline: 2.5px solid transparent; outline-offset: -3px; transition: outline-color 140ms var(--ease-out); }
+.app-icon:hover { background: var(--hover); color: var(--fg); }
+.app-icon[aria-pressed="true"] { color: var(--fg); }
+.app-icon[aria-pressed="true"] img { outline-color: var(--accent); }
+.app-icon:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent); outline-offset: 1px; }
+@media (prefers-reduced-motion: reduce) { .app-icon, .app-icon img { transition: none; } }
+
 /* --- Mises à jour ---------------------------------------------------------------- */
 #update-headline { font-weight: 600; }
 #update-notes { margin: 0; padding: 10px 14px; max-height: 150px; overflow: auto; white-space: pre-wrap; word-break: break-word; font: 12px/1.5 inherit; font-family: inherit; color: var(--dim); border-top: 0.5px solid var(--line); user-select: text; outline: none; }

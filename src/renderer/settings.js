@@ -25,6 +25,7 @@ function fill(s) {
   drawDownloadDir();
   drawDev();
   drawSleep();
+  drawAppIcons();
 }
 
 // --- Volets -------------------------------------------------------------------
@@ -447,6 +448,29 @@ window.addEventListener('blur', () => stopRecording());
 el('keys-search').addEventListener('input', () => drawKeys());
 el('keys-reset-all').onclick = () => applyKeys(O.send('shortcuts:resetAll'), '');
 el('keys-essential').onclick = () => O.send('settings:showShortcuts');
+
+// --- Appearance: app icon ---------------------------------------------------------------
+// Built once (rebuilding would lose keyboard focus at each settings broadcast), then only the pressed state follows.
+function drawAppIcons() {
+  const grid = el('appIcons');
+  if (!grid.childElementCount) {
+    for (const { name, src } of DATA.appIcons || []) {
+      const b = make('button', 'app-icon');
+      b.dataset.name = name;
+      const img = make('img');
+      img.src = src;
+      img.alt = '';
+      const label = make('span', null, t('appIcon.' + name));
+      label.dataset.t = 'appIcon.' + name;
+      b.append(img, label);
+      b.onclick = () => O.send('settings:set', { appIcon: name });
+      grid.append(b);
+    }
+  }
+  for (const b of grid.children) b.setAttribute('aria-pressed', String(b.dataset.name === S.appIcon));
+  // No variants (Windows, or artwork missing from the build): no section.
+  for (const n of [el('appIconTitle'), grid.parentElement, el('appIconHint')]) n.hidden = !grid.childElementCount;
+}
 
 // --- Confidentialité ------------------------------------------------------------------
 function listWithRemove(box, items, emptyKey, onRemove) {

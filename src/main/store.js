@@ -41,6 +41,7 @@ const DEFAULT_SETTINGS = {
   externalLinks: 'little', // as in Arc, links from other apps open in Little Radian
   autoPip: true,
   batterySaver: true,
+  appIcon: 'original', // Dock icon variant (src/main/app-icon.js)
   pipOffSites: [],
   sounds: true,
   // Volume des sons (0 à 100) ; sons des gestes (onglets, Espaces, épingle) : coupés par défaut.

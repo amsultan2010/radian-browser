@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'">
 <title>Radian</title>
 <link rel="stylesheet" href="base.css">
 <link rel="stylesheet" href="page.css">
@@ -170,6 +170,13 @@
     <div class="line"><div class="grow"><div data-t="set.showToolbar"></div><div class="sub" data-t="set.showToolbarHint"></div></div><input type="checkbox" id="showToolbar"></div>
     <div class="line"><div class="grow"><div data-t="set.showFullUrl"></div><div class="sub" data-t="set.showFullUrlHint"></div></div><input type="checkbox" id="showFullUrl"></div>
   </div>
+
+  <!-- App icon: one button per variant, drawn by settings.js from "settings:get" (src/main/app-icon.js). -->
+  <h2 id="appIconTitle" data-t="set.appIcon"></h2>
+  <div class="card">
+    <div class="line app-icons" id="appIcons" role="group" aria-labelledby="appIconTitle"></div>
+  </div>
+  <p class="muted note" id="appIconHint" data-t="set.appIconHint"></p>
   </section>
 
   <!-- ===== Confidentialité ===== -->

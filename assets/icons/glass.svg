@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <filter id="tile-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.3"/></filter>
+    <filter id="sticker-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.24"/></filter>
+    <clipPath id="tile"><path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z"/></clipPath>
+    <mask id="band" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><path d="M284.3 493A275 275 0 0 0 755.7 394" fill="none" stroke="#fff" stroke-width="128" stroke-linecap="round" stroke-linejoin="round"/></mask>
+    <clipPath id="left"><path d="M56.1 -523.3L1129.5 1623.3L56.1 2160L-1017.2 13.3Z"/></clipPath>
+    <clipPath id="right"><path d="M56.1 -523.3L1129.5 1623.3L2202.8 1086.6L1129.5 -1060Z"/></clipPath>
+    <clipPath id="stem"><rect x="306.3" y="0" width="128" height="1024"/></clipPath>
+    <filter id="blur" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="110"/></filter>
+    <filter id="lift" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="14" stdDeviation="20" flood-color="#1B1460" flood-opacity="0.35"/></filter>
+    <mask id="ring-full" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><path d="M370.3 697V326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" fill="none" stroke="#fff" stroke-width="128" stroke-linecap="round" stroke-linejoin="round"/><path d="M370.3 697V326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" fill="none" stroke="#000" stroke-width="108" stroke-linecap="round" stroke-linejoin="round"/></mask>
+    <mask id="ring-sw" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><path d="M284.3 493A275 275 0 0 0 755.7 394" fill="none" stroke="#fff" stroke-width="128" stroke-linecap="round" stroke-linejoin="round"/><path d="M284.3 493A275 275 0 0 0 755.7 394" fill="none" stroke="#000" stroke-width="108" stroke-linecap="round" stroke-linejoin="round"/></mask>
+    <mask id="ring-r" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" fill="none" stroke="#fff" stroke-width="128" stroke-linecap="round" stroke-linejoin="round"/><path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" fill="none" stroke="#000" stroke-width="108" stroke-linecap="round" stroke-linejoin="round"/></mask>
+  </defs>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="#EEF0F8" filter="url(#tile-shadow)"/>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="#EEF0F8"/>
+  <g clip-path="url(#tile)">
+    <g filter="url(#blur)">
+      <circle cx="300" cy="280" r="280" fill="#FF4D6A"/>
+      <circle cx="780" cy="300" r="230" fill="#FF8A8F"/>
+      <circle cx="760" cy="760" r="320" fill="#2346E0"/>
+      <circle cx="250" cy="790" r="230" fill="#7B5CFF"/>
+    </g>
+    <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="#fff" fill-opacity="0.12"/>
+  </g>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#lift)">
+    <g>
+      <path d="M370.3 697V326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#fff" stroke-opacity="0.55" stroke-width="128"/>
+      <rect width="1024" height="1024" fill="#fff" fill-opacity="0.95" mask="url(#ring-full)"/>
+    </g>
+    <g>
+      <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#fff" stroke-opacity="0.55" stroke-width="128"/>
+      <rect width="1024" height="1024" fill="#fff" fill-opacity="0.95" mask="url(#ring-sw)"/>
+    </g>
+    <g mask="url(#band)">
+      <path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#fff" stroke-opacity="0.55" stroke-width="128"/>
+      <rect width="1024" height="1024" fill="#fff" fill-opacity="0.95" mask="url(#ring-r)"/>
+    </g>
+  </g>
+</svg>
