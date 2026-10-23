@@ -35,43 +35,6 @@ Radian aims to be that replacement, and to stay open source so it can't be
 taken away again. Behaviour is matched by watching Arc run and measuring it
 frame by frame, never by reading Arc's code or reusing its assets.
 
-## Features
-
-Most of what works today comes from [Orbe](https://github.com/amadoubaui/orbe),
-the MIT-licensed Arc-style browser Radian is built on. Radian's own work so far
-is the English interface with Arc's menu wording, and layout, colours and motion
-re-measured against Arc 1.170. Progress against Arc, feature by feature, is in
-[docs/parity/status.md](docs/parity/status.md).
-
-<table>
-<tr><td><b>Sidebar and Spaces</b></td><td>Favorites tiles, pinned tabs, folders and Today tabs, with drag and drop and rename in place. Resizable, hidden with ⌘S and revealed by hovering the left edge. Spaces with their own icon, theme and profile, switched with ⌃1–⌃9, ⌥⌘←/→ or a two-finger swipe. Profiles keep cookies, logins and favorites apart.</td></tr>
-<tr><td><b>Tabs</b></td><td>⌘W archives a tab and ⇧⌘T brings it back. Idle Today tabs archive themselves after 12 hours, and ⇧⌘K clears Today. ⌘D pins and unpins, ⌃Tab switches between recent tabs, and old tabs are put to sleep, as are background tabs that keep burning CPU (sooner in Battery Saver). Several windows share the same sidebar, and all of them come back on relaunch.</td></tr>
-<tr><td><b>Command Bar</b></td><td>⌘T and ⌘L open one bar for addresses, search, open tabs, history, actions (with their shortcuts) and search suggestions, styled like Arc's. It learns which result you pick for what you type, and you can add your own Site Search shortcuts.</td></tr>
-<tr><td><b>Peek, Split View and Little Radian</b></td><td>Links leaving a pinned tab, or ⇧-clicked links, open in Peek over the page; ⌘O turns the Peek into a tab. Split View holds up to four panes (⌃⇧= / ⌃⇧-). Little Radian (⌥⌘N) opens a small window with Arc's tinted frame and "open in Space" button. Incognito windows with ⇧⌘N.</td></tr>
-<tr><td><b>Themes and motion</b></td><td>A gradient theme per Space: one to three colours picked on a colour field, intensity, four textures (grain, sand, tweed, denim), light, dark or automatic, and pages of ready-made swatches, the first one matching Arc's picker. Text stays readable on any colour (contrast of at least 4.5:1). Pages can read the theme through <code>--arc-*</code> CSS variables. Rows slide, tabs glow while loading, lists bounce, and Reduce Motion is respected. The trackpad taps as a dragged tab finds its place, and you can pick one of seven app icons for the Dock.</td></tr>
-<tr><td><b>Library, Easels, Notes and Boosts</b></td><td>The Library holds history, the archive, downloads and media. Easels (⌃⇧E) are infinite canvases for text, images, shapes, arrows and sticky notes, and ⌥⇧⌘2 captures part of a page onto one. Notes (⌃⇧N). Boosts restyle a site with your own CSS, and Zap hides an element. Page capture, a mini media player in the sidebar and automatic Picture in Picture.</td></tr>
-<tr><td><b>Extensions</b></td><td>Install from the Chrome Web Store, with signatures checked. Extension buttons sit under the address, with a side panel. Tested on real pages with Dark Reader, Wappalyzer, uBlock Origin Lite, CSS Peeper and GoFullPage.</td></tr>
-<tr><td><b>Import from Arc</b></td><td><i>Radian → Import from Arc…</i> brings over Spaces, pinned tabs, folders, favorites and profiles. Run it again later and it updates Radian from Arc without deleting anything, after a backup. A second step brings over Arc's history, saved passwords and logins. Bookmarks import from Chrome, Brave, Edge, Vivaldi, Opera, Firefox and Safari.</td></tr>
-<tr><td><b>Privacy</b></td><td>A built-in ad and tracker blocker (about 24,000 domains) with per-site exceptions. A password manager encrypted with the macOS keychain, with CSV import and export. Copied URLs lose their tracking parameters. Per-site permissions.</td></tr>
-</table>
-
-## Status
-
-**Early.** Radian is a fresh fork, and the Arc-parity work is under way. The
-plan, its phases and the rules the project follows are in
-[docs/plan.md](docs/plan.md).
-
-- Done: fork of Orbe, rename to Radian, English by default with Arc's menu
-  wording, new logo and app icon, Arc-measured layout, colours, theme picker,
-  Command Bar, Little Radian and motion, and a downloadable DMG on GitHub
-  Releases. See [CHANGELOG.md](CHANGELOG.md).
-- Next: measuring the rest of Arc before it shuts down on 2026-12-22, then
-  visual and motion parity surface by surface, then the remaining feature gaps.
-  Signed and notarized builds once the project has an Apple Developer account.
-- Not planned for now: accounts, sync, AI features, Windows. Orbe's Windows
-  build is still in the code and in CI, but Radian only targets macOS (Apple
-  Silicon first).
-
 ## Install
 
 Radian needs macOS 13 Ventura or later on a Mac with Apple Silicon. There is no Intel
@@ -130,6 +93,43 @@ npm run build -- --install   # or: builds Radian.app and copies it to /Applicati
 signed unless you set up a Developer ID, as described under
 [Release process](CONTRIBUTING.md#release-process). An app you build yourself
 opens without the first-launch steps above.
+
+## Features
+
+Most of what works today comes from [Orbe](https://github.com/amadoubaui/orbe),
+the MIT-licensed Arc-style browser Radian is built on. Radian's own work so far
+is the English interface with Arc's menu wording, and layout, colours and motion
+re-measured against Arc 1.170. Progress against Arc, feature by feature, is in
+[docs/parity/status.md](docs/parity/status.md).
+
+<table>
+<tr><td><b>Sidebar and Spaces</b></td><td>Favorites tiles, pinned tabs, folders and Today tabs, with drag and drop and rename in place. Resizable, hidden with ⌘S and revealed by hovering the left edge. Spaces with their own icon, theme and profile, switched with ⌃1–⌃9, ⌥⌘←/→ or a two-finger swipe. Profiles keep cookies, logins and favorites apart.</td></tr>
+<tr><td><b>Tabs</b></td><td>⌘W archives a tab and ⇧⌘T brings it back. Idle Today tabs archive themselves after 12 hours, and ⇧⌘K clears Today. ⌘D pins and unpins, ⌃Tab switches between recent tabs, and old tabs are put to sleep, as are background tabs that keep burning CPU (sooner in Battery Saver). Several windows share the same sidebar, and all of them come back on relaunch.</td></tr>
+<tr><td><b>Command Bar</b></td><td>⌘T and ⌘L open one bar for addresses, search, open tabs, history, actions (with their shortcuts) and search suggestions, styled like Arc's. It learns which result you pick for what you type, and you can add your own Site Search shortcuts.</td></tr>
+<tr><td><b>Peek, Split View and Little Radian</b></td><td>Links leaving a pinned tab, or ⇧-clicked links, open in Peek over the page; ⌘O turns the Peek into a tab. Split View holds up to four panes (⌃⇧= / ⌃⇧-). Little Radian (⌥⌘N) opens a small window with Arc's tinted frame and "open in Space" button. Incognito windows with ⇧⌘N.</td></tr>
+<tr><td><b>Themes and motion</b></td><td>A gradient theme per Space: one to three colours picked on a colour field, intensity, four textures (grain, sand, tweed, denim), light, dark or automatic, and pages of ready-made swatches, the first one matching Arc's picker. Text stays readable on any colour (contrast of at least 4.5:1). Pages can read the theme through <code>--arc-*</code> CSS variables. Rows slide, tabs glow while loading, lists bounce, and Reduce Motion is respected. The trackpad taps as a dragged tab finds its place, and you can pick one of seven app icons for the Dock.</td></tr>
+<tr><td><b>Library, Easels, Notes and Boosts</b></td><td>The Library holds history, the archive, downloads and media. Easels (⌃⇧E) are infinite canvases for text, images, shapes, arrows and sticky notes, and ⌥⇧⌘2 captures part of a page onto one. Notes (⌃⇧N). Boosts restyle a site with your own CSS, and Zap hides an element. Page capture, a mini media player in the sidebar and automatic Picture in Picture.</td></tr>
+<tr><td><b>Extensions</b></td><td>Install from the Chrome Web Store, with signatures checked. Extension buttons sit under the address, with a side panel. Tested on real pages with Dark Reader, Wappalyzer, uBlock Origin Lite, CSS Peeper and GoFullPage.</td></tr>
+<tr><td><b>Import from Arc</b></td><td><i>Radian → Import from Arc…</i> brings over Spaces, pinned tabs, folders, favorites and profiles. Run it again later and it updates Radian from Arc without deleting anything, after a backup. A second step brings over Arc's history, saved passwords and logins. Bookmarks import from Chrome, Brave, Edge, Vivaldi, Opera, Firefox and Safari.</td></tr>
+<tr><td><b>Privacy</b></td><td>A built-in ad and tracker blocker (about 24,000 domains) with per-site exceptions. A password manager encrypted with the macOS keychain, with CSV import and export. Copied URLs lose their tracking parameters. Per-site permissions.</td></tr>
+</table>
+
+## Status
+
+**Early.** Radian is a fresh fork, and the Arc-parity work is under way. The
+plan, its phases and the rules the project follows are in
+[docs/plan.md](docs/plan.md).
+
+- Done: fork of Orbe, rename to Radian, English by default with Arc's menu
+  wording, new logo and app icon, Arc-measured layout, colours, theme picker,
+  Command Bar, Little Radian and motion, and a downloadable DMG on GitHub
+  Releases. See [CHANGELOG.md](CHANGELOG.md).
+- Next: measuring the rest of Arc before it shuts down on 2026-12-22, then
+  visual and motion parity surface by surface, then the remaining feature gaps.
+  Signed and notarized builds once the project has an Apple Developer account.
+- Not planned for now: accounts, sync, AI features, Windows. Orbe's Windows
+  build is still in the code and in CI, but Radian only targets macOS (Apple
+  Silicon first).
 
 ## Development
 

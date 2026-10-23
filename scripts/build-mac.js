@@ -163,9 +163,22 @@ if (args.includes('--dmg')) {
   const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'radian-dmg-'));
   run('ditto', [appPath, path.join(stage, 'Radian.app')]);
   fs.symlinkSync('/Applications', path.join(stage, 'Applications'));
-  fs.rmSync(dmg, { force: true });
-  run('hdiutil', ['create', '-volname', 'Radian', '-srcfolder', stage, '-fs', 'HFS+', '-format', 'ULFO', '-ov', dmg]);
+  // The mounted disk shows Radian's icon: .VolumeIcon.icns, plus the "has custom icon" Finder flag
+  // (0x0400) on the volume's root, set on a writable copy that is then compressed.
+  fs.copyFileSync(path.join(root, 'assets', 'radian.icns'), path.join(stage, '.VolumeIcon.icns'));
+  const rw = path.join(out, name + '-rw.dmg');
+  run('hdiutil', ['create', '-volname', 'Radian', '-srcfolder', stage, '-fs', 'HFS+', '-format', 'UDRW', '-ov', rw]);
   fs.rmSync(stage, { recursive: true, force: true });
+  const mount = fs.mkdtempSync(path.join(os.tmpdir(), 'radian-vol-'));
+  run('hdiutil', ['attach', rw, '-nobrowse', '-noautoopen', '-mountpoint', mount]);
+  try {
+    run('xattr', ['-wx', 'com.apple.FinderInfo', '0000000000000000040000000000000000000000000000000000000000000000', mount]);
+  } finally {
+    try { run('hdiutil', ['detach', mount]); } catch { run('hdiutil', ['detach', '-force', mount]); }
+  }
+  fs.rmSync(dmg, { force: true });
+  run('hdiutil', ['convert', rw, '-format', 'ULFO', '-o', dmg]);
+  fs.rmSync(rw, { force: true });
   if (identity) run('codesign', ['--force', '--sign', identity, '--timestamp', dmg]);
   const profile = process.env.RADIAN_NOTARY_PROFILE;
   if (identity && profile) {

@@ -166,7 +166,7 @@ module.exports = async function reglagesTests(ctx) {
   const ext = w.activeId;
   await until(() => win.live.get(ext) && !win.live.get(ext).loading && w.data.tabs[ext].title.startsWith('Page réglages'), 'page chargée');
   const wc = win.live.get(ext).wc;
-  await set({ externalLinks: 'window' });
+  await set({ externalLinks: before.externalLinks });
 
   // Moteur de recherche et suggestions par profil
   await globalAction('settings:setProfile', { id: pid, key: 'searchEngine', value: 'duckduckgo' }, null);
@@ -310,7 +310,7 @@ module.exports = async function reglagesTests(ctx) {
     await until(async () => (await stripe()) === 'false|false', 'liseré retiré');
     check('réglage coupé : plus de mode développeur automatique', !prefs2.devMode(base + '/') && !w.toolbarShown && w.contentRect().y === yBefore);
   }
-  await set({ showFullUrl: true });
+  await set({ showFullUrl: before.showFullUrl });
   check('mode développeur : ⌃D sur macOS, hors du raccourci d’épinglage sous Windows',
     commands.byName.get('toggleDevMode').accel === (platform.isMac ? 'Ctrl+D' : 'Alt+Shift+D') && commands.byName.get('togglePin').accel === platform.accel('Cmd+D'));
 
@@ -324,6 +324,7 @@ module.exports = async function reglagesTests(ctx) {
   await until(async () => (await css(banner)) === 'block', 'bandeau rétabli');
   check('bandeaux de cookies : masqués quand le réglage est actif, rétablis sinon', shown === 'block');
   const themeVar = 'getComputedStyle(document.documentElement).getPropertyValue("--radian-theme-color").trim()';
+  // On by default in Radian, as in Arc: the page already has the colour exactly when the setting was on.
   const noTheme = await css(themeVar);
   await set({ themeData: true });
   await until(async () => (await css(themeVar)).toLowerCase() === s2.color.toLowerCase(), 'couleur du thème');
@@ -334,7 +335,8 @@ module.exports = async function reglagesTests(ctx) {
     (await arcVar('--arc-palette-background')) === arcWant['--arc-palette-background'] && (await arcVar('--arc-background-gradient-color0')) === arcWant['--arc-background-gradient-color0'] && (await arcVar('--arc-palette-focus')) === arcWant['--arc-palette-focus']);
   await set({ themeData: false });
   await until(async () => (await css(themeVar)) === '', 'couleur retirée');
-  check('couleurs de l’Espace données aux pages seulement sur demande', noTheme === '');
+  check('couleurs de l’Espace données aux pages seulement sur demande', (noTheme !== '') === !!before.themeData, noTheme);
+  await set({ themeData: before.themeData });
   const bh = boosts.hostOf(base);
   boosts.set(bh, { css: 'body { outline: 3px solid rgb(255, 0, 0) !important; }', enabled: true });
   await boosts.apply(wc);
@@ -390,7 +392,7 @@ module.exports = async function reglagesTests(ctx) {
   const closed = await until(() => { if (lw.win.isDestroyed()) return true; lw.usedAt = Date.now() - 13 * 36e5; little.LittleWindow.archiveStale(); return false; }, 'petite fenêtre fermée').catch(() => false);
   check('petites fenêtres inutilisées : fermées après le délai, leur page dans l’archive',
     never === 0 && tooEarly === 0 && !!closed && lw.win.isDestroyed() && store.state.archive[0].url === base + '/?petite', JSON.stringify([never, tooEarly, closed]));
-  await set({ littleArchiveHours: 0 });
+  await set({ littleArchiveHours: before.littleArchiveHours });
 
   // --- Raccourcis -----------------------------------------------------------------
   const menuItem = (label) => {
