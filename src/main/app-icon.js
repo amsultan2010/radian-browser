@@ -6,6 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 
+// Two rows of seven in the settings grid; each icon of the second row sits under its closest relative (ink, schoolbook; glass, fluted).
 const NAMES = ['original', 'midnight', 'ink', 'neon', 'sorbet', 'candy', 'glass', 'hologram', 'metal', 'schoolbook', 'arcade', 'sunset', 'graphite', 'fluted'];
 const DIR = path.join(__dirname, '..', '..', 'assets', 'icons');
 let shown = '';
