@@ -1296,6 +1296,9 @@ const fr = {
   'ext.updateAsk': 'La nouvelle version de « {name} » demande davantage',
   'ext.updateRefused': 'Mise à jour non installée : les nouvelles autorisations ont été refusées. La version {version} reste en place.',
   'impb.undoExpired': 'Trop tard pour annuler cet import d’ici : retire les signets à la main.',
+  // New Note app choice
+  'set.noteApp': 'Application de documents par défaut',
+  'set.noteAppNotes': 'Notes de Radian',
 };
 
 const en = {
@@ -2572,6 +2575,9 @@ const en = {
   'ext.updateAsk': 'The new version of “{name}” asks for more',
   'ext.updateRefused': 'Update not installed: the new permissions were declined. Version {version} stays in place.',
   'impb.undoExpired': 'Too late to undo this import from here: remove the bookmarks by hand.',
+  // New Note app choice
+  'set.noteApp': 'Default Document App',
+  'set.noteAppNotes': 'Radian Notes',
 };
 
 module.exports = { fr, en };
