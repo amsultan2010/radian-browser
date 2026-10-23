@@ -126,6 +126,24 @@ module.exports = {
       await jusqua(() => !ctx.page('settings.html'), 'réglages refermés');
     });
 
+    // --- Petite fenêtre : bouton d'extensions (PET-9) ------------------------------------------
+    await t.verifier('petite fenêtre : un bouton d’extensions à gauche de la copie du lien ; l’extension s’ouvre contre sa page', async () => {
+      await ctx.principal(({ req }) => req('ext-host.js').closePopup());
+      await jusqua(() => !pageExt('popup.html'), 'fenêtres d’extension refermées', 8000);
+      await ctx.principal(({ req }, url) => { new (req('little.js').LittleWindow)(url); }, ctx.url('/b'));
+      const barre = await ctx.attendrePage('little.html');
+      await jusqua(() => barre.locator('#exts').isVisible(), 'bouton d’extensions de la petite fenêtre');
+      const [b, c] = [await barre.locator('#exts').boundingBox(), await barre.locator('#copy').boundingBox()];
+      assert.ok(b.x + b.width <= c.x + 0.5, JSON.stringify([b, c]));
+      // Le menu natif ne se pilote pas : on ouvre l'extension qu'il propose, ancrée comme lui.
+      await ctx.principal(({ req }, x) => { const l = req('little.js').LittleWindow.all[0]; req('ext-host.js').openPopup(l, x, { x: 0, y: 48, right: 400 }); }, id);
+      const popup = await jusqua(() => pageExt('popup.html'), 'fenêtre de l’extension (petite fenêtre)', 8000);
+      const actif = await popup.evaluate(() => chrome.tabs.query({ active: true, currentWindow: true }).then((x) => x.map((y) => y.url)));
+      assert.deepEqual(actif, [ctx.url('/b')], 'la fenêtre voit la page de la petite fenêtre');
+      await ctx.principal(({ req }) => { for (const l of req('little.js').LittleWindow.all) l.win.close(); });
+      await jusqua(() => !pageExt('popup.html') && !ctx.page('little.html'), 'petite fenêtre refermée', 8000);
+    });
+
     // --- Clic droit sur le bouton : détacher (EXT-3, EXT-5) -------------------------------
     await t.verifier('clic droit sur le bouton de l’extension : son menu ; « Détacher » retire le bouton, qui revient une fois épinglé', async () => {
       // Le menu natif ne se pilote pas : il est relevé, puis son article actionné.
