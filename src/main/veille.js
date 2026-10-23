@@ -85,4 +85,38 @@ function budget(totalBytes, percent) {
   return Math.round((totalBytes / 1048576) * (percent / 100));
 }
 
-module.exports = { pick, budget, MIN_LIVE, saving, idleFor, SAVER_LEVEL, SAVER_IDLE };
+// CPU rule (Arc: "background tabs using a lot of CPU are frozen automatically"): a hidden tab whose
+// renderer stays above `pct` % of one core for `samples` samples in a row sleeps like an idle tab
+// (the page is consulted, so it can refuse). Each sample is the mean over the whole interval, so
+// a short burst never counts. Sampling runs only while some tab could sleep (window.js, `watchCpu`).
+// 50 % of a core is Chrome's heavy-ad CPU line; two minutes lets a page finish a real job.
+const CPU = { everyMs: 30e3, pct: 50, samples: 4 };
+// Battery Saver (`saving`): sampled twice as often, half the threshold, one minute.
+const CPU_SAVER = { everyMs: 15e3, pct: 25, samples: 4 };
+
+// `tabs`: [{ id, pids, kept, typed }], the same `kept` / `typed` as `pick`, `pids` every renderer
+// process of the tab's frames. `readings`: Map pid -> cumulative CPU seconds of that process.
+// `state`: what the previous call returned (an empty Map the first time).
+// Returns { ids, state }: the tabs to put to sleep, and the state for the next call.
+function burning(tabs, readings, state, { now = Date.now(), saver = false } = {}) {
+  const { pct, samples } = saver ? CPU_SAVER : CPU;
+  const users = new Map(); // pid -> the tabs that use it
+  for (const t of tabs) for (const pid of t.pids) users.set(pid, [...(users.get(pid) || []), t]);
+  const next = new Map();
+  const ids = [];
+  for (const [pid, list] of users) {
+    const cum = readings.get(pid);
+    // A process is watched only while every tab in it may sleep: a shared process never puts an
+    // innocent tab to sleep, and CPU spent while a tab was on screen never counts.
+    if (!Number.isFinite(cum) || list.some((t) => t.kept || t.typed)) continue;
+    const p = state.get(pid);
+    // First sight or a reused pid (its counter went back): this sample is only a baseline.
+    const used = p && now > p.at && cum >= p.cum ? ((cum - p.cum) / ((now - p.at) / 1000)) * 100 : 0;
+    const streak = used >= pct ? p.streak + 1 : 0;
+    next.set(pid, { cum, at: now, streak });
+    if (streak >= samples) for (const t of list) if (!ids.includes(t.id)) ids.push(t.id);
+  }
+  return { ids, state: next };
+}
+
+module.exports = { pick, budget, MIN_LIVE, saving, idleFor, SAVER_LEVEL, SAVER_IDLE, burning, CPU, CPU_SAVER };

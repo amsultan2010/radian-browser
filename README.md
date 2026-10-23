@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/amsultan2010/radian-browser/releases/latest"><img src="https://img.shields.io/github/v/release/amsultan2010/radian-browser?style=for-the-badge&label=download&color=blue" alt="Download the latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge&logo=apple&logoColor=white" alt="Platform: macOS">
   <a href="package.json"><img src="https://img.shields.io/badge/dynamic/json?style=for-the-badge&logo=electron&logoColor=white&color=47848F&label=Electron&url=https%3A%2F%2Fraw.githubusercontent.com%2Famsultan2010%2Fradian-browser%2Fmain%2Fpackage.json&query=%24.orbe.electron" alt="Electron version"></a>
@@ -40,14 +41,14 @@ Most of what works today comes from [Orbe](https://github.com/amadoubaui/orbe),
 the MIT-licensed Arc-style browser Radian is built on. Radian's own work so far
 is the English interface with Arc's menu wording, and layout, colours and motion
 re-measured against Arc 1.170. Progress against Arc, feature by feature, is in
-[docs/parity/features.md](docs/parity/features.md).
+[docs/parity/status.md](docs/parity/status.md).
 
 <table>
 <tr><td><b>Sidebar and Spaces</b></td><td>Favorites tiles, pinned tabs, folders and Today tabs, with drag and drop and rename in place. Resizable, hidden with ⌘S and revealed by hovering the left edge. Spaces with their own icon, theme and profile, switched with ⌃1–⌃9, ⌥⌘←/→ or a two-finger swipe. Profiles keep cookies, logins and favorites apart.</td></tr>
-<tr><td><b>Tabs</b></td><td>⌘W archives a tab and ⇧⌘T brings it back. Idle Today tabs archive themselves after 12 hours, and ⇧⌘K clears Today. ⌘D pins and unpins, ⌃Tab switches between recent tabs, and old tabs are put to sleep. Several windows share the same sidebar.</td></tr>
-<tr><td><b>Command Bar</b></td><td>⌘T and ⌘L open one bar for addresses, search, open tabs, history, actions (with their shortcuts) and search suggestions, styled like Arc's.</td></tr>
+<tr><td><b>Tabs</b></td><td>⌘W archives a tab and ⇧⌘T brings it back. Idle Today tabs archive themselves after 12 hours, and ⇧⌘K clears Today. ⌘D pins and unpins, ⌃Tab switches between recent tabs, and old tabs are put to sleep, as are background tabs that keep burning CPU (sooner in Battery Saver). Several windows share the same sidebar, and all of them come back on relaunch.</td></tr>
+<tr><td><b>Command Bar</b></td><td>⌘T and ⌘L open one bar for addresses, search, open tabs, history, actions (with their shortcuts) and search suggestions, styled like Arc's. It learns which result you pick for what you type, and you can add your own Site Search shortcuts.</td></tr>
 <tr><td><b>Peek, Split View and Little Radian</b></td><td>Links leaving a pinned tab, or ⇧-clicked links, open in Peek over the page; ⌘O turns the Peek into a tab. Split View holds up to four panes (⌃⇧= / ⌃⇧-). Little Radian (⌥⌘N) opens a small window with Arc's tinted frame and "open in Space" button. Incognito windows with ⇧⌘N.</td></tr>
-<tr><td><b>Themes and motion</b></td><td>A gradient theme per Space: one to three colours picked on a colour field, intensity, four textures (grain, sand, tweed, denim), light, dark or automatic, and pages of ready-made swatches, the first one matching Arc's picker. Text stays readable on any colour (contrast of at least 4.5:1). Pages can read the theme through <code>--arc-*</code> CSS variables. Rows slide, tabs glow while loading, lists bounce, and Reduce Motion is respected.</td></tr>
+<tr><td><b>Themes and motion</b></td><td>A gradient theme per Space: one to three colours picked on a colour field, intensity, four textures (grain, sand, tweed, denim), light, dark or automatic, and pages of ready-made swatches, the first one matching Arc's picker. Text stays readable on any colour (contrast of at least 4.5:1). Pages can read the theme through <code>--arc-*</code> CSS variables. Rows slide, tabs glow while loading, lists bounce, and Reduce Motion is respected. The trackpad taps as a dragged tab finds its place, and you can pick one of seven app icons for the Dock.</td></tr>
 <tr><td><b>Library, Easels, Notes and Boosts</b></td><td>The Library holds history, the archive, downloads and media. Easels (⌃⇧E) are infinite canvases for text, images, shapes, arrows and sticky notes, and ⌥⇧⌘2 captures part of a page onto one. Notes (⌃⇧N). Boosts restyle a site with your own CSS, and Zap hides an element. Page capture, a mini media player in the sidebar and automatic Picture in Picture.</td></tr>
 <tr><td><b>Extensions</b></td><td>Install from the Chrome Web Store, with signatures checked. Extension buttons sit under the address, with a side panel. Tested on real pages with Dark Reader, Wappalyzer, uBlock Origin Lite, CSS Peeper and GoFullPage.</td></tr>
 <tr><td><b>Import from Arc</b></td><td><i>Radian → Import from Arc…</i> brings over Spaces, pinned tabs, folders, favorites and profiles. Run it again later and it updates Radian from Arc without deleting anything, after a backup. A second step brings over Arc's history, saved passwords and logins. Bookmarks import from Chrome, Brave, Edge, Vivaldi, Opera, Firefox and Safari.</td></tr>
@@ -62,28 +63,73 @@ plan, its phases and the rules the project follows are in
 
 - Done: fork of Orbe, rename to Radian, English by default with Arc's menu
   wording, new logo and app icon, Arc-measured layout, colours, theme picker,
-  Command Bar, Little Radian and motion. See [CHANGELOG.md](CHANGELOG.md).
-- Next: measuring the rest of Arc before it shuts down, then visual and motion
-  parity surface by surface, then the remaining feature gaps.
+  Command Bar, Little Radian and motion, and a downloadable DMG on GitHub
+  Releases. See [CHANGELOG.md](CHANGELOG.md).
+- Next: measuring the rest of Arc before it shuts down on 2026-12-22, then
+  visual and motion parity surface by surface, then the remaining feature gaps.
+  Signed and notarized builds once the project has an Apple Developer account.
 - Not planned for now: accounts, sync, AI features, Windows. Orbe's Windows
   build is still in the code and in CI, but Radian only targets macOS (Apple
   Silicon first).
 
 ## Install
 
-There are no signed releases yet. Signed and notarized builds will come once
-the project has an Apple Developer account. Until then, build Radian from
-source:
+Radian needs macOS 13 Ventura or later on a Mac with Apple Silicon. There is no Intel
+build yet.
+
+1. Download `Radian-<version>-mac-arm64.dmg` from the
+   [latest release](https://github.com/amsultan2010/radian-browser/releases/latest).
+2. Open the DMG and drag Radian to Applications.
+3. Open Radian from Applications. To bring your Arc setup over, use
+   **Radian → Import from Arc…**.
+
+### First launch
+
+Releases are not notarized by Apple yet, so macOS blocks Radian the first time
+you open it. To allow it:
+
+1. Open Radian. macOS says it can't check it for malware. Click **Done**.
+2. Open **System Settings → Privacy & Security**, scroll down to **Security**
+   and click **Open Anyway** next to the message about Radian.
+3. Confirm with your password or Touch ID, then click **Open**.
+
+Or do the same in Terminal, by removing the quarantine flag macOS puts on
+downloaded apps:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/Radian.app
+```
+
+You may have to do this again after an update. Notarized builds will remove
+this step once the project has an Apple Developer account.
+
+### Updates
+
+Radian checks GitHub Releases for a new version at most once a day, and when you
+choose **Radian → Check for Updates…**. When one is out, it downloads
+`Radian-<version>-mac-arm64.zip` to your Downloads folder and shows it in
+Finder. Open the zip and drag the new Radian to Applications, replacing the old
+one. Radian never installs anything by itself. You can turn off the daily check
+in Settings with **Check for updates automatically**.
+
+### Build from source
+
+You need [Node.js](https://nodejs.org) 20 or newer. The Xcode Command Line Tools
+(`xcode-select --install`) add trackpad haptics; without them Radian builds
+without haptics.
 
 ```sh
 git clone https://github.com/amsultan2010/radian-browser.git
 cd radian-browser
-npm run build -- --install   # builds Radian.app and copies it to /Applications
+npm run dist                 # builds Radian.app, the DMG and the zip
+npm run build -- --install   # or: builds Radian.app and copies it to /Applications
 ```
 
-The build is ad-hoc signed and not notarized, which is enough to run it on the
-Mac that built it. To bring your Arc setup over, use **Radian → Import from
-Arc…**.
+`npm run dist` writes `Radian.app`, `Radian-<version>-mac-arm64.dmg` and
+`Radian-<version>-mac-arm64.zip` to `~/.orbe-dev/dist`. Builds are ad-hoc
+signed unless you set up a Developer ID, as described under
+[Release process](CONTRIBUTING.md#release-process). An app you build yourself
+opens without the first-launch steps above.
 
 ## Development
 
@@ -96,6 +142,7 @@ npm test           # end-to-end tests
 npm run test:ui    # Playwright UI tests with real mouse and keyboard input
 npm run test:ext   # extension API tests, in the real browser
 npm run build      # builds ~/.orbe-dev/dist/Radian.app
+npm run dist       # also builds the DMG and zip next to it
 ```
 
 - On first run, Electron (the version pinned under `"orbe"` in

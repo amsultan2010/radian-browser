@@ -220,8 +220,9 @@
       return c;
     };
     const accentText = legible(mix(accent, fam.fg, 0.55));
-    // Texte posé sur l'accent (ligne choisie de la barre de commande) : blanc, sauf sur un accent pâle.
-    const onAccent = contrast([255, 255, 255], accent) >= 3 ? [255, 255, 255] : [20, 20, 22];
+    // Text on the accent (command bar selection, toasts): white while it reads at 4.5:1, else the darker ink if that reads better.
+    const white = contrast([255, 255, 255], accent);
+    const onAccent = white >= MIN_CONTRAST || white >= contrast([10, 10, 12], accent) ? [255, 255, 255] : [10, 10, 12];
     const rgba = (c, a) => `rgba(${c.map(Math.round).join(', ')}, ${a})`;
     // Variables qu'Arc donne aux pages (mêmes noms, lus par les Boosts et quelques sites),
     // en « #RRGGBBAA ». Rôles d'après arc.net/colors.html ; les valeurs sont celles de Radian.

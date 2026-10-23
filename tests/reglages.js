@@ -60,7 +60,7 @@ module.exports = async function reglagesTests(ctx) {
 
   await set({ littleArchiveHours: 5 });
   await set({ littleArchiveHours: '24' });
-  const badHours = s().littleArchiveHours === 0;
+  const badHours = s().littleArchiveHours === 6;
   await set({ littleArchiveHours: 24 });
   check('délai des petites fenêtres : seules les valeurs proposées sont acceptées', badHours && s().littleArchiveHours === 24);
   await set({ littleArchiveHours: 0 });
@@ -74,6 +74,21 @@ module.exports = async function reglagesTests(ctx) {
   check('mode développeur : liste de sites validée (hôtes bien formés, sans doublon)', badDev && s().devSites.join() === 'localhost:3000,exemple.org');
   await set({ devSites: [] });
 
+  // Site Search: the user's own sites, { name, keyword, url } with %s where the query goes.
+  const site = { name: 'Docs', keyword: 'd', url: 'https://docs.exemple.fr/?q=%s' };
+  await set({ siteSearch: [{ ...site, url: 'javascript:alert(%s)' }] });
+  await set({ siteSearch: [{ ...site, url: 'https://docs.exemple.fr/' }] });
+  await set({ siteSearch: [{ ...site, keyword: 'deux mots' }] });
+  await set({ siteSearch: [site, { ...site, name: 'Autre' }] });
+  await set({ siteSearch: [{ ...site, en_trop: 1 }] });
+  const badSites = !(s().siteSearch || []).length;
+  await set({ siteSearch: [site, { name: 'Invidious', keyword: 'yt', url: 'https://yewtu.be/search?q=%s' }] });
+  const palette = require('../src/main/palette');
+  check('recherche dans un site : liste validée (adresse http(s) avec %s, raccourci sans espace ni doublon), puis proposée par la barre de commande avant les sites intégrés',
+    badSites && s().siteSearch.length === 2 && palette.siteFor('yt').name === 'Invidious' && palette.siteFor('youtube').name === 'YouTube' && palette.siteKeys().d[0] === 'kw:d'
+    && palette.siteItems('kw:d', 'a b')[0].url === 'https://docs.exemple.fr/?q=a%20b');
+  await set({ siteSearch: [] });
+
   await set({ downloadDir: 'relatif/dossier' });
   await set({ downloadDir: path.join(tmp, 'absent') });
   await set({ downloadDir: 42 });
@@ -83,11 +98,27 @@ module.exports = async function reglagesTests(ctx) {
 
   const s2 = store.makeSpace('Réglages', '⚙️', '#10b981');
   w.data.spaces.push(s2);
+  const extBefore = s().externalLinks;
   await set({ externalLinks: 'space:inconnu' });
   await set({ externalLinks: 'ailleurs' });
-  const badExt = s().externalLinks === 'window';
+  const badExt = s().externalLinks === extBefore;
   await set({ externalLinks: 'space:' + s2.id });
   check('liens des autres applications : Espace existant accepté, valeur inconnue refusée', badExt && s().externalLinks === 'space:' + s2.id);
+
+  // Air Traffic Control rule kinds: "URL contains" / "URL is equal to", stored in their normal form.
+  const routes0 = JSON.stringify(s().routes);
+  await set({ routes: [{ match: 'github.com/radian', to: s2.id, kind: 'regex' }] });
+  await set({ routes: [{ match: 'GitHub.com/Radian', to: s2.id, kind: 'contains' }] });
+  await set({ routes: [{ match: 'https://github.com/radian', to: s2.id, kind: 'equals' }] });
+  const badKinds = JSON.stringify(s().routes) === routes0;
+  await set({ routes: [{ match: 'github.com/radian', to: 'little', kind: 'equals' }, { match: 'github.com/radian', to: s2.id, kind: 'contains' }] });
+  const typed = [await globalAction('settings:routeText', { text: 'HTTPS://GitHub.com/Radian#x', kind: 'contains' }, null), await globalAction('settings:routeText', { text: 'https://GitHub.com/radian/', kind: 'equals' }, null),
+    await globalAction('settings:routeText', 'https://www.GitHub.com/Orbe/', null), await globalAction('settings:routeText', { text: 'a b', kind: 'contains' }, null), await globalAction('settings:routeText', { text: 'x.fr', kind: 'regex' }, null)];
+  const checked = await globalAction('settings:routeCheck', [{ match: '/chemin' }, { match: '/chemin', kind: 'contains' }, 'figma.com'], null);
+  check('aiguillage : règles « l’adresse contient » et « l’adresse est égale à » acceptées sous leur forme normale, type inconnu refusé ; la première qui correspond décide',
+    badKinds && s().routes.length === 2 && prefs.routeFor('https://github.com/radian/') === 'little' && prefs.routeFor('https://github.com/radian/issues') === s2.id
+    && typed.join('|') === 'github.com/radian|github.com/radian|github.com/orbe||' && checked.join() === 'false,true,true', JSON.stringify({ typed, checked }));
+  await set({ routes: JSON.parse(routes0) });
 
   // Profil d'essai
   const pid = 'p-reglages';
@@ -260,7 +291,7 @@ module.exports = async function reglagesTests(ctx) {
       prefs2.isLocal('http://localhost:3000/') && prefs2.isLocal('https://app.localhost/x') && prefs2.isLocal('http://127.0.0.1:8080/') && prefs2.isLocal('http://[::1]:5173/')
       && !prefs2.isLocal('https://localhost.pirate.invalid/') && !prefs2.isLocal('https://exemple.fr/?localhost') && !prefs2.isLocal('file:///localhost') && !prefs2.isLocal('http://127.0.0.2/'));
     check('pendant les essais, le mode développeur automatique est coupé au départ (les pages d’essai sont locales)', s().devLocalhost === false && !w.toolbarShown);
-    const stripe = () => ui('(() => { const b = document.body.classList.contains("dev-site"); const g = getComputedStyle(document.getElementById("tb-url"), "::after"); return b + "|" + (g.content !== "none" && g.backgroundImage.includes("repeating-linear-gradient")); })()');
+    const stripe = () => ui('(() => { const b = document.body.classList.contains("dev-site"); const r = document.querySelector(".row.tab.active"); const g = r ? getComputedStyle(r, "::after") : { content: "none", backgroundImage: "" }; return b + "|" + (g.content !== "none" && g.backgroundImage.includes("repeating-linear-gradient")); })()');
     const noStripe = await stripe();
     await set({ devLocalhost: true });
     await until(async () => (await stripe()) === 'true|true', 'liseré du mode développeur');

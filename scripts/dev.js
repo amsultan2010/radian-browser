@@ -35,7 +35,20 @@ function ensure() {
     if (!fs.existsSync(manifest)) fs.writeFileSync(manifest, '{"name":"orbe-runtime","private":true}\n');
     npm(['install', spec, '--no-audit', '--no-fund'], runtime);
   }
+  process.env.RADIAN_HAPTICS = haptics(); // read by src/main/haptics.js in the launched app
   return path.join(runtime, 'node_modules', 'electron', 'cli.js');
+}
+
+// Trackpad haptics helper (native/haptics.swift), rebuilt when its source changes.
+// Needs swiftc from the Command Line Tools; without it Radian simply has no haptics.
+function haptics() {
+  if (process.platform !== 'darwin') return '';
+  const src = path.join(root, 'native', 'haptics.swift');
+  const bin = path.join(runtime, 'radian-haptics');
+  try {
+    if (!fs.existsSync(bin) || fs.statSync(bin).mtimeMs < fs.statSync(src).mtimeMs) execFileSync('swiftc', ['-O', '-o', bin, src], { stdio: 'ignore' });
+    return bin;
+  } catch { return ''; }
 }
 
 // --- Essais surveillés ----------------------------------------------------------
@@ -119,4 +132,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { ensure, npm, runtime, version, root, drm, supervise };
+module.exports = { ensure, haptics, npm, runtime, version, root, drm, supervise };

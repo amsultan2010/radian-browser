@@ -30,6 +30,7 @@ const panes = require('./panes');
 const updates = require('./updates');
 const imports = require('./imports');
 const extUi = require('./ext-ui');
+const appIcon = require('./app-icon');
 
 platform.adaptLocales(locales);
 
@@ -107,12 +108,13 @@ if (process.env.ORBE_BACKGROUND === '1' && !app.isPackaged) {
 }
 sessions.registerScheme();
 // Hors macOS, un lien ouvert avec Orbe arrive en argument de la ligne de commande.
-if (!platform.isMac) for (const x of process.argv.slice(1)) if (/^https?:\/\//i.test(x)) pendingUrls.push(x);
+if (!platform.isMac) for (const x of process.argv.slice(1)) if (/^https?:\/\//i.test(x)) pendingUrls.push([x, {}]);
 
 if (!SELFTEST && !process.env.ORBE_USER_DATA && !app.requestSingleInstanceLock()) app.quit();
 
-function openUrl(url) {
-  if (!app.isReady()) return pendingUrls.push(url);
+// `handoff`: a page continued from another device opens as a tab, never in Little Radian.
+function openUrl(url, { handoff = false } = {}) {
+  if (!app.isReady()) return pendingUrls.push([url, { handoff }]);
   // Aiguillage (comme Air Traffic Control dans Arc) : la première règle qui nomme
   // le site de l'adresse décide de l'Espace, ou de la petite fenêtre (prefs.js, `routeFor`).
   let target = null;
@@ -121,6 +123,7 @@ function openUrl(url) {
     const ext = store.state.settings.externalLinks;
     // Sans règle : petite fenêtre, Espace précis (« space:<id> »), ou l'Espace affiché.
     target = to || (ext === 'little' ? 'little' : (String(ext).startsWith('space:') ? ext.slice(6) : null));
+    if (handoff && target === 'little') target = null;
   }
   // Lien de réunion (Meet, Zoom, Teams…) : jamais en petite fenêtre, toujours dans un onglet.
   if (target === 'little' && win.isMeetingUrl(url)) target = null;
@@ -162,6 +165,7 @@ function applyAppearance() {
 
 function broadcastSettings() {
   applyAppearance();
+  appIcon.apply(store.state.settings.appIcon);
   if (adblock.isEnabled() !== store.state.settings.adblock) adblock.setEnabled(store.state.settings.adblock);
   for (const wc of webContents.getAllWebContents()) {
     if (trusted.has(wc) && !wc.isDestroyed()) wc.send('settings', store.state.settings);
@@ -186,6 +190,7 @@ const SETTABLE = {
   externalLinks: prefs.externalLinks,
   autoPip: (v) => typeof v === 'boolean',
   batterySaver: (v) => typeof v === 'boolean',
+  appIcon: (v) => appIcon.NAMES.includes(v),
   sounds: (v) => typeof v === 'boolean',
   soundVolume: (v) => Number.isInteger(v) && v >= 0 && v <= 100,
   soundGestures: (v) => typeof v === 'boolean',
@@ -272,7 +277,7 @@ async function globalAction(action, a, sender) {
     case 'tasks:list': case 'tasks:end':
       return require('./tasks').handle(action, a);
     case 'settings:get':
-      return { settings: s.settings, spaces: s.spaces.map((sp) => ({ id: sp.id, name: `${sp.icon} ${sp.name}` })), profiles: profileList(), engines: Object.entries(suggest.ENGINES).map(([id, e]) => ({ id, name: e.name })), version: app.getVersion(), chrome: process.versions.chrome, ...panes.info() };
+      return { settings: s.settings, spaces: s.spaces.map((sp) => ({ id: sp.id, name: `${sp.icon} ${sp.name}` })), profiles: profileList(), engines: Object.entries(suggest.ENGINES).map(([id, e]) => ({ id, name: e.name })), version: app.getVersion(), chrome: process.versions.chrome, appIcons: appIcon.list(), ...panes.info() };
     case 'settings:set':
       for (const [k, v] of Object.entries(a || {})) if (Object.hasOwn(SETTABLE, k) && SETTABLE[k](v)) s.settings[k] = v;
       store.save();
@@ -280,8 +285,9 @@ async function globalAction(action, a, sender) {
       return s.settings;
     // Aiguillage : écriture normale d'une règle tapée ('' si elle ne nomme pas un site),
     // et, pour une liste de règles, lesquelles nomment un site.
-    case 'settings:routeText': return prefs.routeText(typeof a === 'string' ? a : '');
-    case 'settings:routeCheck': return (Array.isArray(a) ? a.slice(0, 100) : []).map((m) => !!prefs.routeRule(m));
+    // `a` is the typed text, or { text, kind } for a "contains" / "equals" rule; routeCheck takes { match, kind } rules.
+    case 'settings:routeText': return prefs.routeText(typeof a === 'string' ? a : String((a && a.text) || ''), a && a.kind);
+    case 'settings:routeCheck': return (Array.isArray(a) ? a.slice(0, 100) : []).map((r) => !!(typeof r === 'string' ? prefs.routeRule(r) : r && prefs.routeText(r.match, r.kind)));
     case 'settings:renameProfile': {
       const p = s.profiles.find((x) => x.id === (a && a.id));
       const name = String((a && a.name) || '').trim().slice(0, 40);
@@ -419,7 +425,7 @@ app.on('continue-activity', (e, type, userInfo, details) => {
   const url = handoffUrl(type, details);
   if (!url) return;
   e.preventDefault();
-  openUrl(url);
+  openUrl(url, { handoff: true });
 });
 app.on('second-instance', (e, argv) => {
   const url = argv.find((x) => /^https?:\/\//i.test(x));
@@ -441,6 +447,7 @@ app.whenReady().then(async () => {
   const { components } = require('electron');
   if (components) components.whenReady().catch((err) => console.error('[orbe] widevine', err.message));
   applyAppearance();
+  appIcon.apply(store.state.settings.appIcon);
   extensions.configure({ dir: path.join(app.getPath('userData'), 'Extensions'), fetch: (u, o) => net.fetch(u, o), lang: store.state.settings.lang });
   extApi.configure({ dir: path.join(app.getPath('userData'), 'Extensions') });
   extensions.hooks.equip = (ses) => extApi.equip(ses);
@@ -523,9 +530,9 @@ app.whenReady().then(async () => {
   app.setAboutPanelOptions({ applicationName: 'Radian', applicationVersion: app.getVersion(), copyright: 'Free software — MIT license. Based on Orbe.', credits: `Chromium ${process.versions.chrome}` });
   menu.build();
 
-  const first = newWindow();
+  const [first] = OrbeWindow.reopening().map((opts) => newWindow(opts));
   if (firstRun && !SELFTEST && !process.env.ORBE_NO_WELCOME) { store.state.window.welcomed = true; require('./starter').seed(first); first.openInternal('welcome.html'); }
-  for (const url of pendingUrls.splice(0)) openUrl(url);
+  for (const [url, opts] of pendingUrls.splice(0)) openUrl(url, opts);
 
   // L'historique se charge une fois la fenêtre affichée et la coque peinte.
   setTimeout(() => store.warmHistory(), 400);

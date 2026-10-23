@@ -695,7 +695,16 @@ module.exports = async function selftest(ctx) {
   openUrl(base + '/b');
   check('aiguillage : le lien s’ouvre dans l’Espace de la règle', w.space === s2 && tabs()[w.activeId].url === base + '/b');
   w.close(w.activeId);
+  // "URL contains" and "URL is equal to" rules route the same way; a longer URL is not equal.
+  // Unrouted links must land in this window (not Little Radian, the default) so each one closes its own tab.
+  const extBefore = store.state.settings.externalLinks;
+  store.state.settings.externalLinks = 'window';
+  const routedTo = (url) => { w.spaceAt(1); openUrl(url); const sp = w.space; w.close(w.activeId); return sp; };
+  store.state.settings.routes = [{ match: base.replace(/^http:\/\//, '') + '/egal', to: s2.id, kind: 'equals' }, { match: '/contient', to: s2.id, kind: 'contains' }];
+  check('aiguillage : règles « l’adresse contient » et « l’adresse est égale à »',
+    routedTo(base + '/contient/page') === s2 && routedTo(base + '/egal/') === s2 && routedTo(base + '/egal/plus') !== s2 && routedTo(base + '/?/contient') !== s2);
   store.state.settings.routes = [];
+  store.state.settings.externalLinks = extBefore;
   w.spaceAt(1);
 
   // Handoff (macOS) : page reprise d'un autre appareil. L'événement d'Electron est rejoué tel quel.
@@ -934,7 +943,7 @@ module.exports = async function selftest(ctx) {
     const navy = Theme.palette({ colors: ['#0b1d4a'], accent: '#0b1d4a', intensity: 1, grain: 0, texture: 'grain', mode: 'light' }, false);
     const lemon = Theme.palette({ colors: ['#fff27a'], accent: '#fff27a', intensity: 1, grain: 0, texture: 'grain', mode: 'dark' }, true);
     const lemonLight = Theme.palette({ colors: ['#fff27a'], accent: '#fff27a', intensity: 1, grain: 0, texture: 'grain', mode: 'light' }, false);
-    check('thème : fond foncé en mode clair = texte clair ; fond pâle = texte sombre ; en mode sombre, le fond reste sombre ; texte sur l’accent choisi de même', navy.family === 'dark' && navy.onAccent === '#ffffff' && lemonLight.family === 'light' && lemonLight.fg === '#1d1d1f' && lemonLight.onAccent === '#141416' && lemon.family === 'dark');
+    check('thème : fond foncé en mode clair = texte clair ; fond pâle = texte sombre ; en mode sombre, le fond reste sombre ; texte sur l’accent choisi de même', navy.family === 'dark' && navy.onAccent === '#ffffff' && lemonLight.family === 'light' && lemonLight.fg === '#1d1d1f' && lemonLight.onAccent === '#0a0a0c' && lemon.family === 'dark');
     // Textures : quatre carreaux, exactement ceux que produit le script, gris moyen neutre.
     const txDir = path.join(__dirname, '..', 'src', 'renderer', 'textures');
     const tiles = Theme.TEXTURES.map((name) => {

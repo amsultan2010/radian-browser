@@ -2,7 +2,7 @@
 // Appelé par tests/selftest.js, ou seul :
 //   ORBE_SCENARIO=tests/fenetres.js node scripts/dev.js --selftest
 const http = require('http');
-const { clipboard, Menu } = require('electron');
+const { clipboard, Menu, screen } = require('electron');
 
 const { sleep, until, milieu, ignorer, profilPret } = require('./outils');
 
@@ -31,7 +31,7 @@ function serve() {
 }
 
 module.exports = async function fenetresTests(ctx) {
-  const { first: w, store, win, little, commands, openUrl } = ctx;
+  const { first: w, store, win, little, commands, openUrl, OrbeWindow } = ctx;
   let failed = 0;
   const check = ctx.check || ((name, ok, detail = '') => { if (!ok) failed += 1; console.log(`${ok ? '  ✓' : '  ✗'} ${name}${ok || !detail ? '' : ' — ' + detail}`); });
   const ui = (js) => w.ui.webContents.executeJavaScript(js);
@@ -897,6 +897,63 @@ module.exports = async function fenetresTests(ctx) {
       check('menu d’une vidéo : « Image dans l’image » la détache, une seconde fois la ramène', true);
     }
     w.close(V, { silent: true, ask: false });
+  }
+
+  // === Session: every normal window comes back (ONG-22) ======================
+  {
+    w.switchSpace(space.id);
+    const P = await open('/p/p', 'Page p');
+    const Q = await open('/p/q', 'Page q'); // active in w; P is active in no window
+    // Save of two windows.
+    const w2 = new OrbeWindow();
+    w2.win.setBounds({ x: 40, y: 60, width: 800, height: 560 });
+    w2.remember();
+    const iw = new OrbeWindow({ incognito: true });
+    const list = store.state.windows;
+    check('session: every normal window is saved, in opening order, with its own Space, tabs and place (private window left out)',
+      list.length === OrbeWindow.all.filter((x) => x.shared && !x.gone).length && list.indexOf(w.entry) >= 0 && list.indexOf(w.entry) < list.indexOf(w2.entry) && !iw.entry
+      && w.entry.spaceId === space.id && w.entry.activeBySpace[space.id] === Q && w2.entry.spaceId === w2.spaceId && w2.spaceId !== space.id
+      && JSON.stringify(w2.entry.bounds) === JSON.stringify(w2.win.getBounds()),
+      JSON.stringify({ list, w: w.entry, w2: w2.entry }));
+    check('session: state.window still holds the first window only (an older Radian reads it)', store.state.window.spaceId === space.id && store.state.window.activeBySpace === w.activeBySpace);
+
+    // Restore of two windows, as startup does (main.js): both saved on the same tab.
+    const e1 = { bounds: { x: 60, y: 80, width: 800, height: 560 }, spaceId: space.id, activeBySpace: { [space.id]: P }, sidebarVisible: false };
+    const e2 = { bounds: { x: -30000, y: -30000, width: 760, height: 520 }, spaceId: space.id, activeBySpace: { [space.id]: P }, sidebarVisible: true };
+    const [r1, r2] = OrbeWindow.reopening({ settings: {}, windows: [e1, e2] }).map((o) => OrbeWindow.open(o));
+    const inside = (b) => screen.getAllDisplays().some(({ workArea: a }) => b.x >= a.x && b.y >= a.y && b.x + b.width <= a.x + a.width && b.y + b.height <= a.y + a.height);
+    check('session: a saved window reopens with its place, Space, active tab and sidebar, and stays in the list',
+      r1.entry === e1 && r1.spaceId === space.id && r1.activeId === P && r1.sidebarVisible === false && r1.win.getSize().join('x') === '800x560' && win.live.get(P).owner === r1
+      && store.state.windows.slice(-2).every((e, i) => e === [e1, e2][i]),
+      JSON.stringify({ space: r1.spaceId, active: r1.activeId, side: r1.sidebarVisible, size: r1.win.getSize() }));
+    check('session: a tab is live in one window only (the later window shows its Space without it); a window saved off-screen comes back onto a display',
+      r2.spaceId === space.id && r2.activeId === null && r2.sidebarVisible === true && inside(r2.win.getBounds()),
+      JSON.stringify({ active: r2.activeId, bounds: r2.win.getBounds() }));
+
+    // Close vs quit.
+    r2.win.close();
+    await until(() => !OrbeWindow.all.includes(r2), 'window closed');
+    check('session: a window closed (not quitting) leaves the list', !store.state.windows.includes(e2) && store.state.windows.includes(e1));
+    const quit = win.hooks.quitState;
+    quit.quitting = true;
+    try {
+      r1.win.close();
+      await until(() => !OrbeWindow.all.includes(r1), 'window closed while quitting');
+      check('session: quitting keeps every window in the list, those already closed too', store.state.windows.includes(e1) && store.state.windows.includes(w2.entry));
+    } finally { quit.quitting = false; }
+    w2.remember();
+    check('session: quit called off, the next save drops windows the quit had closed', !store.state.windows.includes(e1) && store.state.windows.includes(w2.entry));
+
+    // Upgrade from a state saved before the list existed.
+    const old = store.normalize({ window: { bounds: { x: 10, y: 30, width: 900, height: 600 }, spaceId: 'x', welcomed: true } });
+    check('session: older state (no list): one window from state.window, as before; same with the setting off; unreadable entries dropped',
+      Array.isArray(old.windows) && !old.windows.length && old.window.welcomed === true && JSON.stringify(OrbeWindow.reopening(old)) === '[{}]'
+      && JSON.stringify(OrbeWindow.reopening({ settings: { restoreSession: false }, windows: [e1, e2] })) === '[{}]'
+      && store.normalize({ windows: [null, 3, [], { spaceId: 'a' }] }).windows.length === 1,
+      JSON.stringify(old.windows));
+
+    for (const x of [w2, iw]) x.win.close();
+    await until(() => !OrbeWindow.all.includes(w2) && !OrbeWindow.all.includes(iw), 'windows closed');
   }
 
   // === Ménage ================================================================

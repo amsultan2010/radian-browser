@@ -3,6 +3,7 @@
 | Path | What it is |
 | --- | --- |
 | [plan.md](plan.md) | The project plan: decisions, Electron's known gaps and their workarounds, rules and phases. Start here. |
+| [parity/status.md](parity/status.md) | Where Radian stands on each Arc feature: done, partial or missing. |
 | [parity/features.md](parity/features.md) | Arc's 78 features, with triggers, defaults, edge cases and sources, ranked P0 to P2. |
 | [parity/visual-spec.md](parity/visual-spec.md) | Every visual and feel detail of Arc found in public sources. |
 | [parity/menus.md](parity/menus.md) | Arc 1.170's menu bar, window layout and AppleScript dictionary. |

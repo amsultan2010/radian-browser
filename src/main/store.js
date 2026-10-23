@@ -38,9 +38,10 @@ const DEFAULT_SETTINGS = {
   neverSleep: [],
   peekLinks: true,
   routes: [],
-  externalLinks: 'window',
+  externalLinks: 'little', // as in Arc, links from other apps open in Little Radian
   autoPip: true,
   batterySaver: true,
+  appIcon: 'original', // Dock icon variant (src/main/app-icon.js)
   pipOffSites: [],
   sounds: true,
   // Volume des sons (0 à 100) ; sons des gestes (onglets, Espaces, épingle) : coupés par défaut.
@@ -54,7 +55,7 @@ const DEFAULT_SETTINGS = {
   peekShift: true,
   littleAltClick: true,
   littleShortcut: '',
-  littleArchiveHours: 0,
+  littleArchiveHours: 6, // as in Arc
   cookieBanners: false,
   themeData: true, // Arc always exposes the --arc-* theme variables to pages
   boostsEnabled: true,
@@ -158,6 +159,8 @@ class Store {
     s.boosts = s.boosts || {};
     s.notes = Array.isArray(s.notes) ? s.notes : [];
     s.window = s.window || {};
+    // Every normal window open at quit, in order (see `remember` in window.js); missing before Radian saved it.
+    s.windows = Array.isArray(s.windows) ? s.windows.filter((e) => e && typeof e === 'object' && !Array.isArray(e)) : [];
     // Mises à jour : dernière vérification et version annoncée (src/main/updates.js).
     s.updates = s.updates && typeof s.updates === 'object' && !Array.isArray(s.updates) ? s.updates : {};
     if (!Array.isArray(s.spaces) || !s.spaces.length) {

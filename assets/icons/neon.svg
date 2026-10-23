@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <filter id="tile-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.3"/></filter>
+    <filter id="sticker-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.24"/></filter>
+    <clipPath id="tile"><path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z"/></clipPath>
+    <mask id="band" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><path d="M284.3 493A275 275 0 0 0 755.7 394" fill="none" stroke="#fff" stroke-width="128" stroke-linecap="round" stroke-linejoin="round"/></mask>
+    <clipPath id="left"><path d="M56.1 -523.3L1129.5 1623.3L56.1 2160L-1017.2 13.3Z"/></clipPath>
+    <clipPath id="right"><path d="M56.1 -523.3L1129.5 1623.3L2202.8 1086.6L1129.5 -1060Z"/></clipPath>
+    <clipPath id="stem"><rect x="306.3" y="0" width="128" height="1024"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="100" x2="0" y2="924" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1E1236"/><stop offset="1" stop-color="#07050D"/></linearGradient>
+    <radialGradient id="haze" cx="512" cy="512" r="420" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#7A2CFF" stop-opacity="0.22"/><stop offset="1" stop-color="#7A2CFF" stop-opacity="0"/></radialGradient>
+    <filter id="glow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="30"/></filter>
+    <mask id="stem-shape" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><path d="M370.3 697V326" fill="none" stroke="#fff" stroke-width="128" stroke-linecap="round" stroke-linejoin="round"/></mask>
+    <clipPath id="over-stem"><rect x="282" y="0" width="176" height="1024"/></clipPath>
+  </defs>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="#140C24" filter="url(#tile-shadow)"/>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="url(#bg)"/>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="url(#haze)"/>
+  <g fill="none" stroke-width="128" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#tile)">
+    <g filter="url(#glow)" opacity="0.85"><path d="M370.3 697V326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#FF2D87"/><path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#18D8FF"/></g>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#18D8FF"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#C9F6FF" stroke-width="44"/>
+    <path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="url(#bg)" stroke-width="176" mask="url(#band)"/>
+    <path d="M370.3 697V326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#FF2D87"/>
+    <path d="M370.3 697V326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#FFC2DC" stroke-width="44"/>
+    <g clip-path="url(#over-stem)">
+      <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="url(#bg)" stroke-width="176" mask="url(#stem-shape)"/>
+      <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#18D8FF"/>
+      <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#C9F6FF" stroke-width="44"/>
+      </g>
+  </g>
+</svg>

@@ -5,11 +5,13 @@ reports are taken seriously and handled before other work.
 
 ## Supported versions
 
-Radian has no releases yet. Only the latest commit on `main` is supported.
-Once releases start, only the latest release will get security fixes.
+Only the latest release on
+[GitHub Releases](https://github.com/amsultan2010/radian-browser/releases/latest)
+and the latest commit on `main` get security fixes.
 
 | Version | Supported |
 | --- | --- |
+| Latest release | Yes |
 | `main` (latest commit) | Yes |
 | Anything older | No |
 
@@ -26,7 +28,7 @@ A useful report includes:
 
 - what the problem is and what an attacker could do with it;
 - the affected file and lines (for example `src/main/passwords.js:120-145`);
-- the commit you tested, your macOS version and Mac model;
+- the release or commit you tested, your macOS version and Mac model;
 - steps to reproduce, ideally with a minimal page or extension that triggers it.
 
 This is a small volunteer project, so replies are best effort. You'll be kept

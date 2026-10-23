@@ -37,16 +37,24 @@ const SITES = [
 const SITE_BY_ID = new Map(SITES.map((s) => [s.id, s]));
 const SITE_BY_KEY = new Map(SITES.flatMap((s) => s.keys.map((k) => [k, s])));
 
+// The user's own sites (Settings > General > Site Search, validated in prefs.js); their keyword wins over a built-in key.
+const customSites = () => (store.state.settings.siteSearch || []).map((c) => ({ id: 'kw:' + c.keyword, name: c.name, keys: [c.keyword], url: c.url }));
+const siteById = (id) => customSites().find((s) => s.id === id) || SITE_BY_ID.get(id) || null;
+
 // Site désigné par la saisie entière (« yt », « youtube.com »), ou null.
-const siteFor = (text) => SITE_BY_KEY.get(String(text || '').trim().toLowerCase()) || null;
+function siteFor(text) {
+  const key = String(text || '').trim().toLowerCase();
+  return customSites().find((s) => s.keys[0] === key) || SITE_BY_KEY.get(key) || null;
+}
 
 function siteUrl(site, q) {
   const fr = store.state.settings.lang === 'fr';
-  return site.url.replace('{lang}', fr ? 'fr' : 'en').replace('{tld}', fr ? 'fr' : 'com').replace('%s', encodeURIComponent(q));
+  return site.url.replace('{lang}', fr ? 'fr' : 'en').replace('{tld}', fr ? 'fr' : 'com').replaceAll('%s', encodeURIComponent(q));
 }
 
 // Ce que la vue doit savoir pour entrer dans la recherche d'un site sans attendre : clé tapée -> [identifiant, nom].
-const siteKeys = () => Object.fromEntries(SITES.flatMap((s) => s.keys.map((k) => [k, [s.id, s.name]])));
+// Custom sites come last so their keyword replaces a built-in one.
+const siteKeys = () => Object.fromEntries([...SITES, ...customSites()].flatMap((s) => s.keys.map((k) => [k, [s.id, s.name]])));
 
 // Ligne « Rechercher sur YouTube — ⇥ » quand la saisie désigne un site.
 function siteHint(q) {
@@ -56,7 +64,7 @@ function siteHint(q) {
 
 // Suggestions pendant la recherche dans un site : la requête, rien d'autre.
 function siteItems(id, q) {
-  const site = SITE_BY_ID.get(String(id));
+  const site = siteById(String(id));
   const text = String(q || '').trim();
   if (!site || !text) return [];
   return [{ kind: 'search', url: siteUrl(site, text), title: text, subtitle: t('cmd.searchSite', { site: site.name }) }];

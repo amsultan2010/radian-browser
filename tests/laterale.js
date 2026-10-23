@@ -116,7 +116,7 @@ module.exports = async function lateraleTests(ctx) {
   w.activate(A);
   let tpl = w.tabMenuTemplate(C);
   check('menu d’un onglet du jour : lien, lien Markdown, dupliquer, renommer, épingler, favoris, vue scindée, son, déplacer, archiver (celui-ci, en dessous, au-dessus, les autres)',
-    labels(tpl).join('|') === ['tabs.copyLink', 'tabs.copyLinkMarkdown', 'tabs.duplicate', 'tabs.rename', 'tabs.changeIcon', 'tabs.pin', 'tabs.addFavorite', 'tabs.openSplit', 'tabs.mute', 'tabs.moveTo', 'tabs.close', 'tabs.closeOthers', 'tabs.closeAbove', 'tabs.closeAllOthers'].map((k) => T(k)).join('|'), labels(tpl).join('|'));
+    labels(tpl).join('|') === ['tabs.copyLink', 'tabs.copyLinkMarkdown', ...(process.platform === 'darwin' ? ['tb.share'] : []), 'tabs.duplicate', 'tabs.rename', 'tabs.changeIcon', 'tabs.pin', 'tabs.addFavorite', 'tabs.openSplit', 'tabs.mute', 'tabs.moveTo', 'tabs.close', 'tabs.closeOthers', 'tabs.closeAbove', 'tabs.closeAllOthers'].map((k) => T(k)).join('|'), labels(tpl).join('|'));
   pick(tpl, 'tabs.copyLink').click();
   await until(async () => (await clipboard.readText()) === dead('C'), 'lien copié');
   check('menu : « Copier le lien »', true);
@@ -790,19 +790,19 @@ module.exports = async function lateraleTests(ctx) {
 
   // Menu du Dock.
   const dock = () => menu.dockTemplate();
-  check('menu du Dock : navigation privée, petites fenêtres (grisé sans petite fenêtre)', labels(dock()).join('|') === [T('file.newIncognito'), T('dock.hideLittle')].join('|') && dock()[1].enabled === false);
+  check('menu du Dock : nouvelle fenêtre, navigation privée, petites fenêtres (grisé sans petite fenêtre)', labels(dock()).join('|') === [T('file.newWindow'), T('file.newIncognito'), T('dock.hideLittle')].join('|') && dock()[2].enabled === false);
   const lw = new little.LittleWindow(base + '/p2');
   await until(() => lw.win.isVisible(), 'petite fenêtre affichée');
-  check('… avec une petite fenêtre : « Masquer toutes les petites fenêtres »', dock()[1].enabled === true && dock()[1].label === T('dock.hideLittle'));
-  dock()[1].click();
+  check('… avec une petite fenêtre : « Masquer toutes les petites fenêtres »', dock()[2].enabled === true && dock()[2].label === T('dock.hideLittle'));
+  dock()[2].click();
   await until(() => !lw.win.isVisible(), 'petite fenêtre masquée');
-  check('… elle se masque, l’article devient « Afficher toutes les petites fenêtres »', dock()[1].label === T('dock.showLittle'));
-  dock()[1].click();
+  check('… elle se masque, l’article devient « Afficher toutes les petites fenêtres »', dock()[2].label === T('dock.showLittle'));
+  dock()[2].click();
   await until(() => lw.win.isVisible(), 'petite fenêtre réaffichée');
-  check('… puis revient', dock()[1].label === T('dock.hideLittle'));
+  check('… puis revient', dock()[2].label === T('dock.hideLittle'));
   lw.win.close();
   const windows0 = OrbeWindow.all.length;
-  dock()[0].click();
+  dock()[1].click();
   await until(() => OrbeWindow.all.length === windows0 + 1 && OrbeWindow.all.some((x) => x.incognito), 'fenêtre privée ouverte');
   check('menu du Dock : « Navigation privée » ouvre une fenêtre privée', true);
   for (const x of OrbeWindow.all.filter((y) => y.incognito)) x.win.close();

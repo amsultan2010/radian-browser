@@ -1,7 +1,7 @@
 // Une fenêtre Orbe : une vue « coque » (barre latérale) qui occupe toute la
 // fenêtre, les vues web des onglets posées par-dessus dans la zone de contenu,
 // et des vues flottantes (barre de commande, recherche, notifications).
-const { app, BaseWindow, WebContentsView, Menu, clipboard, ClipboardItem, screen, dialog, nativeTheme } = require('electron');
+const { app, BaseWindow, WebContentsView, Menu, clipboard, ClipboardItem, screen, dialog, nativeTheme, webContents } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -109,9 +109,26 @@ const hooks = {
 const t = (key, vars) => store.t(key, null, vars);
 // Ce qu'une première fenêtre reprend de la session précédente : l'Espace affiché
 // et l'onglet actif de chaque Espace. Réglage coupé : premier Espace, aucun onglet actif.
-function resumed(saved, spaces, on) {
+// `taken`: tabs already active in another window (a tab is live in one window only).
+function resumed(saved, spaces, on, taken = new Set()) {
   if (!on) return { spaceId: spaces[0].id, activeBySpace: {} };
-  return { spaceId: spaces.some((s) => s.id === saved.spaceId) ? saved.spaceId : spaces[0].id, activeBySpace: { ...(saved.activeBySpace || {}) } };
+  return { spaceId: spaces.some((s) => s.id === saved.spaceId) ? saved.spaceId : spaces[0].id, activeBySpace: Object.fromEntries(Object.entries(saved.activeBySpace || {}).filter(([, id]) => !taken.has(id))) };
+}
+// What a normal window keeps of itself across launches (global flags stay in state.window).
+function keep(into, w) {
+  if (!w.win.isFullScreen() && !w.win.isMinimized()) into.bounds = w.win.getBounds();
+  into.spaceId = w.spaceId;
+  into.activeBySpace = w.activeBySpace;
+  into.sidebarVisible = w.sidebarVisible;
+}
+// Saved bounds brought back onto a connected display (one unplugged since, say).
+// Unreadable bounds (hand-edited file): none, the window opens at its default size.
+function onScreen(b) {
+  if (!b || ![b.x, b.y, b.width, b.height].every((v) => Number.isInteger(v) && Math.abs(v) < 1e5)) return {};
+  const area = screen.getDisplayMatching(b).workArea;
+  const width = Math.min(b.width, area.width);
+  const height = Math.min(b.height, area.height);
+  return { x: clamp(b.x, area.x, area.x + area.width - width), y: clamp(b.y, area.y, area.y + area.height - height), width, height };
 }
 // Nom d'un Espace dans un menu. Quand son profil n'est pas celui de l'Espace d'où l'on
 // part (`from`), il est rappelé à la suite (pastille de profil d'Arc) : déplacer un onglet
@@ -132,7 +149,7 @@ const INTERNAL_PAGES = new Set(['library.html', 'shortcuts.html', 'welcome.html'
 const webUrl = (u) => (/^https?:\/\//i.test(u || '') ? u : null);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 // Messages de l'interface qui ne sont pas un geste de l'utilisateur (aucun son ne les suit).
-const QUIET_ACTIONS = new Set(['ready', 'battery', 'themeGet', 'suggest', 'select', 'dragZone', 'dragZoneOver', 'sidebarWidth', 'splitResize']);
+const QUIET_ACTIONS = new Set(['ready', 'battery', 'themeGet', 'suggest', 'select', 'dragZone', 'dragZoneOver', 'sidebarWidth', 'splitResize', 'haptic']);
 // Ce que l'interface reçoit du thème d'un Espace (voir src/renderer/theme.js).
 const themeFields = (s) => ({ color: s.color, color2: s.color2 || '', color3: s.color3 || '', plain: !!s.plain, intensity: typeof s.intensity === 'number' ? s.intensity : 0.5, grain: s.grain || 0, texture: s.texture || 'grain', mode: s.mode || 'auto' });
 
@@ -262,6 +279,7 @@ function liveUrl(rt) {
   try { return rt.wc.getURL() || ''; } catch { return ''; }
 }
 let lastSweep = null; // dernier passage de veille : { at, totalMb, budgetMb, real }
+const cpuWatch = { timer: null, state: new Map() }; // CPU rule, see `OrbeWindow.watchCpu`
 
 function tabMemory() {
   const byPid = new Map(app.getAppMetrics().map((m) => [m.pid, processMb(m)]));
@@ -283,9 +301,9 @@ function tabMemory() {
   return { total, of, real };
 }
 
-// Vignettes de la bascule ⌃Tab : elle ne montre que huit onglets, seules les
-// huit dernières vignettes prises sont donc gardées (23 Ko pièce).
-const THUMBS = 8;
+// Ctrl-Tab switcher thumbnails: it shows only five tabs, as in Arc, so only the
+// last five thumbnails taken are kept (23 KB each).
+const THUMBS = 5;
 const thumbIds = [];
 function keepThumb(rt, data) {
   rt.thumb = data;
@@ -312,6 +330,18 @@ function noteDownload(phase, d, wc) {
   if (!wc || wc.isDestroyed()) return;
   if (!downloading.has(wc.id)) downloading.set(wc.id, new Set());
   downloading.get(wc.id).add(d.id);
+}
+// What spares a live tab from automatic sleep (veille.js), shared by every sleep rule.
+function spared(rt, visible, now, s) {
+  return {
+    // Épargné par les règles automatiques : l'utilisateur y a agi, la page charge, ou elle a refusé une veille.
+    // … ou c'est un site qui reste vivant (keepalive.js : messagerie, courrier, musique, et la liste de l'utilisateur).
+    typed: !!rt.typed || !!rt.loading || !!rt.objected || keepalive.matches(liveUrl(rt), s),
+    kept: visible.has(rt.id) || rt.wc.isCurrentlyAudible() || rt.wc.isDevToolsOpened() || hooks.busy(rt)
+      // Image dans l'image, page filmée par une autre, téléchargement en cours, veille demandée à
+      // l'instant (une page qui n'y a toujours pas répondu redevient candidate, limite en nombre comprise).
+      || !!rt.pip || rt.wc.isBeingCaptured() || downloading.has(rt.wc.id) || (!!rt.sleeping && now - (rt.sleepAsked || 0) < SLEEP_WAIT),
+  };
 }
 // Pastille de l'adresse du lien survolé : largeur courte, délai avant qu'elle ne s'étende,
 // durées de ses mouvements, marge autour d'elle où le pointeur la fait s'écarter.
@@ -354,20 +384,24 @@ class OrbeWindow {
   // onglets, que rien n'enregistre dans la barre latérale des autres fenêtres, mais
   // garde la session ordinaire (cookies, historique), à la différence de la navigation
   // privée. Ses onglets fermés ne rejoignent pas l'archive (voir `archives`).
-  constructor({ incognito = false, blank = false } = {}) {
+  // `saved`: an entry of state.windows reopened at startup (see `reopening`).
+  constructor({ incognito = false, blank = false, saved = null } = {}) {
     this.incognito = incognito;
     this.blank = !incognito && !!blank;
     const apart = incognito || this.blank;
-    const saved = apart ? {} : store.state.window;
     const first = !OrbeWindow.all.some((w) => w.shared);
+    // This window's entry in state.windows (see `remember`).
+    this.entry = apart ? undefined : saved || {};
+    const restore = !apart && (!!saved || first);
+    saved = saved || (apart ? {} : store.state.window);
     this.data = apart
       ? { spaces: [incognito ? store.makeSpace(t('incognito.title'), '🕶️', '#52525b') : store.makeSpace(t('blank.title'), '◻️', '#71717a')], tabs: {}, favs: { default: [] }, profiles: [{ id: 'default', name: '' }] }
       : store.state;
     // Une trace de Chromium en cours porterait sur cette fenêtre aussi : elle est arrêtée et jetée.
     if (incognito) require('./trace').discard(OrbeWindow.focused || OrbeWindow.primary);
     this.session = incognito ? sessions.incognitoSession() : sessions.mainSession();
-    const restore = !apart && first;
-    const resume = resumed(saved, this.data.spaces, restore && store.state.settings.restoreSession !== false);
+    const taken = new Set(OrbeWindow.all.flatMap((w) => (w.shared ? Object.values(w.activeBySpace) : [])));
+    const resume = resumed(saved, this.data.spaces, restore && store.state.settings.restoreSession !== false, taken);
     this.spaceId = resume.spaceId;
     this.activeBySpace = resume.activeBySpace;
     this.closed = [];
@@ -382,8 +416,8 @@ class OrbeWindow {
     this.findOpen = false;
     this.switcher = null;
 
-    const b = (restore && saved.bounds) || {};
-    const offset = first ? 0 : 28 * (OrbeWindow.all.length % 6);
+    const b = onScreen((restore && saved.bounds) || {});
+    const offset = restore ? 0 : 28 * (OrbeWindow.all.length % 6);
     this.win = new BaseWindow({
       width: b.width || 1360,
       height: b.height || 860,
@@ -420,11 +454,12 @@ class OrbeWindow {
     this.win.on('close', (e) => {
       // Les pages qui ont quelque chose à perdre (beforeunload) sont consultées d'abord.
       if (this.askUnload(e)) return;
+      // Marked closing first: `remember` then drops it from state.windows, unless Orbe is quitting.
+      this.closing = true;
       this.remember();
       // La fenêtre se ferme sans plus porter aucune vue : sous Windows, détruire
       // une fenêtre avec ses vues encore attachées (parfois en cours d'animation,
       // ou reprises à une autre fenêtre) pouvait bloquer l'application.
-      this.closing = true;
       try { for (const v of [...this.win.contentView.children]) this.win.contentView.removeChildView(v); } catch {}
       this.attached = new Set();
     });
@@ -436,6 +471,7 @@ class OrbeWindow {
     for (const ev of ['focus', 'blur']) {
       this.win.on(ev, () => {
         if (this.closing) return;
+        this.syncPeekTimer(true);
         clearTimeout(this.focusTimer);
         this.focusTimer = setTimeout(() => { if (!this.closing && !this.win.isDestroyed()) this.sendState(); }, 60);
       });
@@ -457,6 +493,8 @@ class OrbeWindow {
     });
     this.layout();
     this.setButtons(this.sidebarVisible);
+    // Listed in state.windows right away: a window left untouched until quitting still comes back.
+    this.remember();
   }
 
   // Feux tricolores : masqués avec la barre latérale ; macOS oublie leur
@@ -642,6 +680,14 @@ class OrbeWindow {
     const w = new OrbeWindow(opts);
     if (full) hooks.enterFullScreen(w.win);
     return w;
+  }
+
+  // Windows to open at startup (options for `open`). Like Arc, every normal window open at
+  // quit comes back, in order (state.windows). Without that list (state saved by an older
+  // Orbe) or with the setting off: a single window, from state.window, as before.
+  static reopening(state = store.state) {
+    const list = state.settings.restoreSession !== false ? state.windows || [] : [];
+    return list.length ? list.map((saved) => ({ saved })) : [{}];
   }
 
   // La plus ancienne fenêtre normale encore ouverte mémorise son état.
@@ -965,13 +1011,15 @@ class OrbeWindow {
     OrbeWindow.pushAll();
   }
 
-  // La surveillance du bord gauche ne tourne que barre latérale masquée.
-  syncPeekTimer() {
-    const needed = !this.sidebarVisible && !this.win.isDestroyed();
-    // Une image (16 ms) : comme dans Arc, la barre paraît dès que le pointeur touche le bord.
+  // The left edge is watched only while the sidebar is hidden and this window has
+  // focus (the only time pollPeek acts), so a background window never wakes 60 times a second.
+  syncPeekTimer(focusOnly) {
+    const hidden = !this.sidebarVisible && !this.win.isDestroyed();
+    const needed = hidden && this.win.isFocused();
+    // One frame (16 ms): as in Arc, the sidebar appears as soon as the pointer touches the edge.
     if (needed && !this.peekTimer) this.peekTimer = setInterval(() => this.pollPeek(), 16);
     else if (!needed && this.peekTimer) { clearInterval(this.peekTimer); this.peekTimer = null; }
-    if (needed) this.fillSpares(); // la barre flottante se prépare dès que la barre latérale est masquée
+    if (hidden && !focusOnly) this.fillSpares(); // the floating sidebar gets ready as soon as the sidebar hides
   }
 
   setPeek(on) {
@@ -1022,12 +1070,13 @@ class OrbeWindow {
   }
 
   remember() {
-    if (!this.persistent || this.win.isDestroyed()) return;
-    const w = store.state.window;
-    if (!this.win.isFullScreen() && !this.win.isMinimized()) w.bounds = this.win.getBounds();
-    w.spaceId = this.spaceId;
-    w.activeBySpace = this.activeBySpace;
-    w.sidebarVisible = this.sidebarVisible;
+    if (!this.shared || this.win.isDestroyed()) return;
+    // state.window: the oldest normal window, as before (all an older Orbe, or the setting off, reads).
+    if (this.persistent) keep(store.state.window, this);
+    // state.windows: every normal window open now, in opening order (Arc reopens them all).
+    // Quitting leaves the list as it is: windows the quit has already closed stay in it.
+    if (hooks.quitState.quitting) keep(this.entry, this);
+    else store.state.windows = OrbeWindow.all.filter((w) => w.shared && !w.gone).map((w) => (keep(w.entry, w), w.entry));
     store.save();
   }
 
@@ -1036,6 +1085,10 @@ class OrbeWindow {
     clearTimeout(this.toastTimer);
     clearTimeout(this.focusTimer);
     clearTimeout(this.spareLater);
+    // CPU rule: the next sweep arms it again for the windows left.
+    clearTimeout(cpuWatch.timer);
+    cpuWatch.timer = null;
+    cpuWatch.state.clear();
     windows.delete(this.id);
     for (const [id, rt] of [...live]) if (rt.owner === this) OrbeWindow.destroyView(id);
     this.closePeek({ animate: false });
@@ -1461,13 +1514,7 @@ class OrbeWindow {
       id: rt.id,
       lastUsed: rt.lastUsed,
       mb: mem ? mem.of(rt.id) : 0,
-      // Épargné par les règles automatiques : l'utilisateur y a agi, la page charge, ou elle a refusé une veille.
-      // … ou c'est un site qui reste vivant (keepalive.js : messagerie, courrier, musique, et la liste de l'utilisateur).
-      typed: !!rt.typed || !!rt.loading || !!rt.objected || keepalive.matches(liveUrl(rt), s),
-      kept: visible.has(rt.id) || rt.wc.isCurrentlyAudible() || rt.wc.isDevToolsOpened() || hooks.busy(rt)
-        // Image dans l'image, page filmée par une autre, téléchargement en cours, veille demandée à
-        // l'instant (une page qui n'y a toujours pas répondu redevient candidate, limite en nombre comprise).
-        || !!rt.pip || rt.wc.isBeingCaptured() || downloading.has(rt.wc.id) || (!!rt.sleeping && now - (rt.sleepAsked || 0) < SLEEP_WAIT),
+      ...spared(rt, visible, now, s),
     }));
     const picked = veille.pick(tabs, {
       max: s.maxLiveTabs,
@@ -1479,7 +1526,39 @@ class OrbeWindow {
     // La limite en nombre s'applique tout de suite ; ancienneté et mémoire consultent la page.
     for (const p of picked) { if (p.why === 'count') OrbeWindow.destroyView(p.id); else OrbeWindow.sleepView(p.id); }
     if (deep && picked.length) OrbeWindow.pushAll();
+    OrbeWindow.watchCpu(tabs);
     return picked;
+  }
+
+  // CPU rule (veille.burning): hidden tabs that keep burning CPU sleep like idle ones. Sampled only
+  // while a live tab could sleep, so nothing runs at rest; `trimLive` (each sweep) arms it again.
+  static watchCpu(tabs) {
+    if (cpuWatch.timer || !tabs.some((t) => !t.kept && !t.typed)) return;
+    const s = store.state.settings;
+    const saver = veille.saving(OrbeWindow.battery, s.batterySaver !== false);
+    cpuWatch.timer = setTimeout(OrbeWindow.sampleCpu, (saver ? veille.CPU_SAVER : veille.CPU).everyMs);
+    cpuWatch.timer.unref();
+  }
+
+  static sampleCpu() {
+    cpuWatch.timer = null;
+    const s = store.state.settings;
+    const now = Date.now();
+    const visible = new Set();
+    for (const w of windows.values()) for (const id of w.visibleIds()) visible.add(id);
+    // Cumulative CPU seconds, not `percentCPUUsage`: every caller of getAppMetrics (sweep, task
+    // manager) restarts that one, so it would only cover the time since the last of them.
+    const readings = new Map(app.getAppMetrics().map((m) => [m.pid, m.cpu.cumulativeCPUUsage]));
+    const pidsOf = (wc) => { const pids = new Set(); try { for (const f of wc.mainFrame.framesInSubtree) pids.add(f.osProcessId); } catch {} return [...pids]; };
+    const tabs = [...live.values()].filter((rt) => !rt.wc.isDestroyed()).map((rt) => ({ id: rt.id, pids: pidsOf(rt.wc), ...spared(rt, visible, now, s) }));
+    // Any other page sharing a process (Little Arc window, extension, interface) keeps it awake.
+    const ours = new Set([...live.values()].map((rt) => rt.wc));
+    tabs.push({ id: '', pids: webContents.getAllWebContents().filter((wc) => !ours.has(wc) && !wc.isDestroyed()).flatMap(pidsOf), kept: true, typed: false });
+    const { ids, state } = veille.burning(tabs, readings, cpuWatch.state, { now, saver: veille.saving(OrbeWindow.battery, s.batterySaver !== false) });
+    cpuWatch.state = state;
+    for (const id of ids) OrbeWindow.sleepView(id);
+    if (ids.length) OrbeWindow.pushAll();
+    OrbeWindow.watchCpu(tabs);
   }
 
   // Passage de fond (toutes les minutes) : relève d'abord l'empreinte réelle des processus
@@ -2108,7 +2187,7 @@ class OrbeWindow {
   copyLinks(ids) {
     ids = this.checkIds(ids);
     if (!ids.length) return;
-    clipboard.writeText(ids.map((id) => this.data.tabs[id].url).join('\n'));
+    clipboard.writeText(ids.map((id) => cleanUrl(this.data.tabs[id].url)).join('\n'));
     this.toast(t('toast.linksCopied', { n: ids.length }));
   }
 
@@ -2428,7 +2507,7 @@ class OrbeWindow {
     if (!f || f.node.type !== 'folder') return;
     const tabs = [...walk(f.node.children)].map((tid) => this.data.tabs[tid]).filter(Boolean);
     if (!tabs.length) return;
-    clipboard.writeText(tabs.map((tab) => (markdown ? `- ${mdLink(tab.customTitle || tab.title, tab.url)}` : tab.url)).join('\n'));
+    clipboard.writeText(tabs.map((tab) => (markdown ? `- ${mdLink(tab.customTitle || tab.title, cleanUrl(tab.url))}` : cleanUrl(tab.url))).join('\n'));
     this.toast(t('toast.linksCopied', { n: tabs.length }));
   }
 
@@ -3400,6 +3479,7 @@ class OrbeWindow {
     if (mode === 'edit' && !this.activeId) mode = 'new';
     if (this.modalMode === 'command' && this.commandMode === mode) return this.hideModal();
     this.commandMode = mode;
+    this.commandQuery = ''; // what was typed, for learning picks (see `runItem`)
     const tab = mode === 'edit' ? this.data.tabs[this.activeId] : null;
     const rect = this.contentRect();
     const [W] = this.win.getContentSize();
@@ -3456,6 +3536,7 @@ class OrbeWindow {
   async suggest(q, scope) {
     if (this.suggestAbort) this.suggestAbort.abort();
     const ctrl = (this.suggestAbort = new AbortController());
+    this.commandQuery = scope ? '' : q;
     const items = this.suggestLocal(q, scope);
     if (!this.incognito && !scope) {
       suggest.remote(q, ctrl.signal).then((more) => {
@@ -3476,6 +3557,9 @@ class OrbeWindow {
     this.hideModal();
     this.pinEdit = null;
     if (!item) return;
+    // The bar learns which page was picked for what was typed (never in a private window).
+    if (!this.incognito && this.commandQuery) suggest.learn(this.commandQuery, item.url);
+    this.commandQuery = '';
     if (item.kind === 'command') return this.run(String(item.command), item.arg);
     if (item.kind === 'tab' && this.locate(item.tabId)) {
       if (mode === 'split' && this.activeId) { this.splitWith(this.activeId, item.tabId); return this.placeSplit(anchor, item.tabId, side); }
@@ -3516,7 +3600,7 @@ class OrbeWindow {
       const ids = this.orderedIds()
         .filter((id) => live.has(id) || this.space.today.includes(id))
         .sort((a, b) => (this.data.tabs[b].lastActiveAt || 0) - (this.data.tabs[a].lastActiveAt || 0))
-        .slice(0, 8);
+        .slice(0, 5); // Arc's switcher shows the last 5 tabs
       if (ids.length < 2) return;
       this.switcher = { ids, index: 0 };
     }
@@ -4253,8 +4337,8 @@ class OrbeWindow {
     ];
   }
 
-  share() {
-    const tab = this.activeId && this.data.tabs[this.activeId];
+  share(id = this.activeId) {
+    const tab = id && this.data.tabs[id];
     if (!tab || !webUrl(tab.url) || !platform.isMac) return;
     try { new (require('electron').ShareMenu)({ urls: [cleanUrl(tab.url)] }).popup({ window: this.win }); } catch {}
   }
@@ -4348,8 +4432,9 @@ class OrbeWindow {
     const fav = loc.list === 'favorites';
     const others = this.data.spaces.filter((s) => s !== loc.space);
     const tpl = [
-      { label: t('tabs.copyLink'), click: () => clipboard.writeText(tab.url) },
-      { label: t('tabs.copyLinkMarkdown'), click: () => clipboard.writeText(mdLink(tab.customTitle || tab.title, tab.url)) },
+      { label: t('tabs.copyLink'), click: () => { clipboard.writeText(cleanUrl(tab.url)); this.toast(t('toast.urlCopied')); } },
+      { label: t('tabs.copyLinkMarkdown'), click: () => { clipboard.writeText(mdLink(tab.customTitle || tab.title, cleanUrl(tab.url))); this.toast(t('toast.markdownCopied')); } },
+      ...(platform.isMac && webUrl(tab.url) ? [{ label: t('tb.share'), click: () => this.share(id) }] : []),
       { label: t('tabs.duplicate'), click: () => this.duplicate(id) },
       { label: t('tabs.rename'), visible: !fav, click: () => this.askRename(id) },
       { label: t('tabs.changeIcon'), click: () => this.openIcons('tab', id) },
@@ -4810,6 +4895,7 @@ class OrbeWindow {
       case 'ready': return this.sendState();
       case 'hoverTab': return this.prewake(a);
       case 'battery': return OrbeWindow.setBattery(a, this);
+      case 'haptic': return store.state.settings.haptics === false ? undefined : require('./haptics').perform(a);
       // Clic sur l'onglet déjà affiché : rien à faire, et surtout ne pas
       // reprendre le clavier (second clic d'un double-clic pour renommer).
       case 'activate': return a === this.activeId && live.has(a) && !this.peekState ? undefined : this.activate(a);

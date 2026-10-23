@@ -386,10 +386,10 @@ function render(s) {
   // Connexion : cadenas discret en https, « Non sécurisé » en http ou avec un certificat refusé.
   const sec = s.activeId && !s.nav.internal ? (s.nav.security || '') : '';
   const lock = $('lock');
-  lock.hidden = !(sec === 'secure' || sec === 'insecure' || sec === 'broken');
+  // As in Arc, a secure site shows nothing; only an unsafe one gets a warning.
+  lock.hidden = !(sec === 'insecure' || sec === 'broken');
   lock.className = sec;
-  $('lock-icon').setAttribute('href', sec === 'secure' ? '#i-lock' : '#i-warn');
-  $('lock-text').textContent = sec === 'secure' ? '' : t('site.notSecure');
+  $('lock-text').textContent = t('site.notSecure');
   lock.title = sec ? t('site.sec.' + sec) : '';
   const blocked = s.activeId ? (s.nav.popups || 0) : 0;
   $('popup-note').hidden = !blocked;
@@ -994,23 +994,6 @@ function slideSet(x) {
   scroller.style.transform = `translateX(${-x}px)`;
   if (slide.ghost) slide.ghost.style.transform = `translateX(${slide.dir * W - x}px)`;
   tintEl.style.opacity = slide.ghost ? String(slide.cut ? 1 : Math.min(1, Math.abs(x) / W)) : '0';
-  followDots(slide.ghost ? Math.min(1, Math.abs(x) / W) : 0);
-}
-
-// Pastilles du bas : pendant le balayage, la largeur passe de la pastille courante à
-// celle de l'Espace qui arrive, au pas des doigts (comme dans Arc). À 0, elles sont
-// rendues au CSS, qui les mène au ressort à leur place (geste abandonné ou Espace changé).
-function followDots(p) {
-  const box = $('spaces');
-  const from = p && slide && slide.targetId ? box.querySelector('.sp.active') : null;
-  const to = from ? box.querySelector(`.sp[data-space="${CSS.escape(slide.targetId)}"]`) : null;
-  const pair = !!to && from !== to;
-  for (const el of box.children) if (!(pair && (el === from || el === to)) && el.style.width) { el.style.width = ''; el.style.transition = ''; }
-  if (!pair) return;
-  const [big, small] = slide.dots || (slide.dots = [from.offsetWidth, to.offsetWidth]);
-  from.style.transition = to.style.transition = 'none';
-  from.style.width = big - (big - small) * p + 'px';
-  to.style.width = small + (big - small) * p + 'px';
 }
 
 // Pastille « + » du bout de la rangée : `p` de 0 (absente) à 1 (nouvel Espace).
@@ -1103,7 +1086,6 @@ function slideFly(to, done) {
   // Vitesse des doigts, en parts du trajet restant par seconde.
   const v0 = Math.abs(dist) > 1 ? Math.max(0, Math.min(40, (slide.v * 1000) / dist)) : 0;
   const timing = springTiming(v0, slide.cut ? PAGER.cut : PAGER.response);
-  followDots(0);
   const opts = { duration: timing.duration, easing: timing.easing, fill: 'forwards' };
   slide.phase = 'settle';
   slide.fly = { from, to, t0: performance.now(), timing };
@@ -1139,7 +1121,6 @@ function slideEnd() {
   if (ghost) ghost.remove();
   scroller.style.transform = '';
   tintEl.style.opacity = '';
-  followDots(0);
   pagerEl.classList.remove('sliding');
   const next = pending || other;
   if (next) render(next);
@@ -1592,10 +1573,14 @@ function dropGeom() {
 
 // Affiche la destination : dossier mis en évidence, lignes écartées et place
 // libre, ou trait dans la grille des favoris.
+let feltAt = ''; // last drop place a haptic tap marked, as Arc taps on each new place
 function showTarget(t) {
   const same = t === target || (t && target && t.to === target.to && t.folderId === target.folderId && t.index === target.index && t.into === target.into && !t.pos && t.g === target.g);
   if (same) return;
   target = t;
+  const place = t ? `${t.to}|${t.folderId}|${t.index}|${t.into ? 1 : 0}` : '';
+  if (place && place !== feltAt) send('haptic', 'align');
+  feltAt = place;
   const into = (t && t.into) || null;
   if (into !== intoEl) {
     if (intoEl) intoEl.classList.remove('drop-into');

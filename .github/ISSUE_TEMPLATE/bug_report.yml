@@ -9,7 +9,7 @@ body:
         Thanks for reporting a bug. Before you submit:
 
         - Search [existing issues](https://github.com/amsultan2010/radian-browser/issues) to avoid duplicates.
-        - Check the bug still happens on the latest commit of `main`.
+        - Check the bug still happens in the latest release or on the latest commit of `main`.
         - If Radian works but does something differently from Arc, use the **Radian differs from Arc** template instead.
         - Security problems go to [Security Advisories](https://github.com/amsultan2010/radian-browser/security/advisories/new), not here.
 
@@ -82,9 +82,10 @@ body:
     attributes:
       label: How you run Radian
       options:
+        - Downloaded release (DMG)
         - npm start
         - ORBE_DRM=1 npm start (Widevine build)
-        - Built app (npm run build)
+        - Built app (npm run build or npm run dist)
     validations:
       required: true
 

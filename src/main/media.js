@@ -33,8 +33,8 @@ const LIMITS = {
   drift: 1.5, // écart de position (s) au-delà duquel la coque est recalée
 };
 // Gestes qui prêtent une activation d'utilisateur à la page (voir `act`).
-const GESTURE = new Set(['toggle', 'prev', 'next']);
-const ACTIONS = new Set(['toggle', 'prev', 'next', 'back', 'forward', 'seek', 'close', 'mute', 'open', 'volume']);
+const GESTURE = new Set(['toggle', 'prev', 'next', 'pip']);
+const ACTIONS = new Set(['toggle', 'prev', 'next', 'back', 'forward', 'seek', 'close', 'mute', 'open', 'volume', 'pip']);
 const attached = new WeakSet();
 // Clé du document affiché par chaque onglet : elle ouvre la table des gestionnaires
 // `mediaSession` que src/preload/media.js garde hors de portée de la page.
@@ -64,8 +64,11 @@ const infoCode = (key) => `(() => { try {
   return {
     has: !!m, paused: m ? !!m.paused : true, t: m ? num(m.currentTime) : 0, d: m ? num(m.duration) : 0, v: m && typeof m.volume === 'number' ? m.volume : 1,
     title: md ? String(md.title || '').slice(0, ${LIMITS.raw}) : '', artist: md ? String(md.artist || '').slice(0, ${LIMITS.raw}) : '', art, acts,
+    pip: !!m && m.tagName === 'VIDEO' && m.videoWidth > 0 && !m.disablePictureInPicture && document.pictureInPictureEnabled && document.pictureInPictureElement !== m,
   };
 } catch { return null; } })()`;
+// Arc's "back to Picture in Picture" button on the sidebar player.
+const PIP = `(() => { ${PICK} if (!m || m.tagName !== 'VIDEO' || !document.pictureInPictureEnabled) return false; return m.requestPictureInPicture().then(() => true, () => false); })()`;
 const TOGGLE = `(() => { ${PICK} if (m) { if (m.paused) m.play().catch(() => {}); else m.pause(); } return !!m && !m.paused; })()`;
 const seekCode = (expr) => `(() => { ${PICK} if (!m || !isFinite(m.duration)) return false; m.currentTime = Math.max(0, Math.min(m.duration, ${expr})); return true; })()`;
 // Volume de l'onglet : Electron n'offre que le muet. Le réglage est donc celui des
@@ -92,6 +95,7 @@ function clean(raw) {
     artSrc: artworkKind(r.art) ? r.art : '',
     prev: acts.includes('previoustrack'),
     next: acts.includes('nexttrack'),
+    pip: r.pip === true,
   };
 }
 
@@ -211,6 +215,7 @@ function make(env) {
         prev: !!m.prev,
         next: !!m.next,
         seek: !!m.duration,
+        pip: !!m.pip,
       };
     });
   }
@@ -244,6 +249,7 @@ function make(env) {
         return run(TOGGLE);
       case 'prev': return run(actCode(keyOf(rt.wc), 'previoustrack'));
       case 'next': return run(actCode(keyOf(rt.wc), 'nexttrack'));
+      case 'pip': return run(PIP);
       case 'back': return run(seekCode(`m.currentTime - ${LIMITS.step}`));
       case 'forward': return run(seekCode(`m.currentTime + ${LIMITS.step}`));
       case 'seek': {
