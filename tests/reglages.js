@@ -74,6 +74,21 @@ module.exports = async function reglagesTests(ctx) {
   check('mode développeur : liste de sites validée (hôtes bien formés, sans doublon)', badDev && s().devSites.join() === 'localhost:3000,exemple.org');
   await set({ devSites: [] });
 
+  // Site Search: the user's own sites, { name, keyword, url } with %s where the query goes.
+  const site = { name: 'Docs', keyword: 'd', url: 'https://docs.exemple.fr/?q=%s' };
+  await set({ siteSearch: [{ ...site, url: 'javascript:alert(%s)' }] });
+  await set({ siteSearch: [{ ...site, url: 'https://docs.exemple.fr/' }] });
+  await set({ siteSearch: [{ ...site, keyword: 'deux mots' }] });
+  await set({ siteSearch: [site, { ...site, name: 'Autre' }] });
+  await set({ siteSearch: [{ ...site, en_trop: 1 }] });
+  const badSites = !(s().siteSearch || []).length;
+  await set({ siteSearch: [site, { name: 'Invidious', keyword: 'yt', url: 'https://yewtu.be/search?q=%s' }] });
+  const palette = require('../src/main/palette');
+  check('recherche dans un site : liste validée (adresse http(s) avec %s, raccourci sans espace ni doublon), puis proposée par la barre de commande avant les sites intégrés',
+    badSites && s().siteSearch.length === 2 && palette.siteFor('yt').name === 'Invidious' && palette.siteFor('youtube').name === 'YouTube' && palette.siteKeys().d[0] === 'kw:d'
+    && palette.siteItems('kw:d', 'a b')[0].url === 'https://docs.exemple.fr/?q=a%20b');
+  await set({ siteSearch: [] });
+
   await set({ downloadDir: 'relatif/dossier' });
   await set({ downloadDir: path.join(tmp, 'absent') });
   await set({ downloadDir: 42 });
