@@ -864,6 +864,8 @@ module.exports = async function finitionsTests(ctx) {
   d.tabs[pin.id].title = '(3) Boîte de réception';
   w.changed();
   await until(() => ui(`(() => { const c = document.querySelector('#fav [data-id="${pin.id}"] .count'); return !!c && !c.hidden && c.textContent === '3'; })()`), 'pastille « 3 » sur le favori');
+  // Measured once the tile and its badge have finished animating in.
+  await ui(`Promise.all(document.querySelector('#fav [data-id="${pin.id}"]').getAnimations({ subtree: true }).map((a) => a.finished.catch(() => {}))).then(() => 1)`);
   check('favori : le nombre annoncé en tête du titre de sa page paraît en pastille', await ui(`(() => { const t = document.querySelector('#fav [data-id="${pin.id}"]').getBoundingClientRect(); const c = document.querySelector('#fav [data-id="${pin.id}"] .count').getBoundingClientRect(); return c.width >= 14 && c.right <= t.right && c.top >= t.top && c.bottom < t.top + t.height / 2; })()`));
   d.tabs[pin.id].title = '(1234) Fil';
   w.changed();
