@@ -14,8 +14,38 @@ body.cover { background: var(--base); }
 body.anchor { place-items: start; padding: 10px 12px; background: rgba(0, 0, 0, 0.16); }
 body.anchor #card { width: min(400px, 100%); position: relative; overflow: visible; }
 body.anchor #card::before { content: ''; position: absolute; top: -6px; left: 22px; width: 12px; height: 12px; background: var(--panel); border-left: 0.5px solid var(--panel-line); border-top: 0.5px solid var(--panel-line); transform: rotate(45deg); }
-body.anchor.control #card { width: min(430px, 100%); overflow: auto; }
-body.anchor.control #card::before { display: none; }
+/* Site Control Center, as captured in Arc 1.170 (docs/parity/captures/live/devmode.md): a 236 pt popover,
+   no dimming; four 48 × 32 tiles, Extensions, Settings, then a hairline, the connection chip and More. */
+body.anchor.control { background: transparent; }
+body.anchor.control #card { width: 236px; padding: 10px; gap: 0; border-radius: 16px; overflow: auto; }
+body.anchor.control #card::before, body.control #head, body.control #buttons { display: none; }
+.tiles { display: flex; flex-wrap: wrap; gap: 8px; }
+.tile { width: 48px; height: 32px; border-radius: 8px; display: grid; place-items: center; position: relative; background: rgba(0, 0, 0, 0.72); color: #fff; }
+.tile.light { background: color-mix(in srgb, var(--fg) 14%, transparent); color: var(--fg); }
+.tile:hover { filter: brightness(1.25); }
+.tile[disabled] { opacity: 0.45; pointer-events: none; }
+.tile svg.i { width: 18px; height: 18px; }
+.tile img { width: 18px; height: 18px; border-radius: 4px; }
+.tile .letter { font-size: 13px; font-weight: 600; }
+.tile .badge { position: absolute; top: 1px; right: 3px; font-size: 9px; font-weight: 700; padding: 0 4px; border-radius: 6px; background: var(--accent); color: #fff; }
+body.control h2 { font-size: 13px; font-weight: 600; color: var(--fg); text-transform: none; letter-spacing: 0; margin: 12px 0 8px; }
+.set { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 0 2px; border-radius: 10px; text-align: left; }
+button.set:hover { background: var(--pill); }
+.set[disabled] { opacity: 0.45; pointer-events: none; }
+.set .dot { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; flex: none; background: #fff; color: #1c1c1e; }
+.set .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.set .txt > * { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.set .name { font-size: 13px; font-weight: 500; color: var(--fg); }
+.set .val { font-size: 12px; color: var(--dim); }
+.set .val.state { font-weight: 600; }
+.set .b.small { height: 24px; padding: 0 8px; font-size: 11px; }
+body.control .item { padding: 0 2px; }
+body.control .item + .item { border-top: 0; }
+.foot { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 0.5px solid var(--line); }
+.chip { height: 32px; padding: 0 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; font-weight: 500; background: var(--pill); color: var(--fg); }
+.chip.insecure { background: color-mix(in srgb, #ff453a 16%, transparent); color: #ff453a; }
+.round { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--fg) 14%, transparent); color: var(--fg); }
+.tile:focus-visible, .set:focus-visible, .chip:focus-visible, .round:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 1px; }
 p.hint { font-size: 12px; }
 .quick { display: flex; gap: 6px; flex-wrap: wrap; }
 .b.small { height: 26px; padding: 0 10px; font-size: 12px; }
@@ -88,6 +118,16 @@ h2 { font-size: 11px; font-weight: 600; color: var(--dim); text-transform: upper
   <symbol id="i-key" viewBox="0 0 16 16"><circle cx="5.4" cy="10.6" r="2.6"/><path d="m7.3 8.7 5.2-5.2M10.6 5.4l1.6 1.6M12.5 3.5l1.2 1.2"/></symbol>
   <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.6"/><path d="M8 7.4v3.4M8 5.2h.01"/></symbol>
   <symbol id="i-out" viewBox="0 0 16 16"><path d="M9.5 3h3.5v3.5M13 3 7.6 8.4M11.6 9.4v2.4a1.2 1.2 0 0 1-1.2 1.2H4.2A1.2 1.2 0 0 1 3 11.8V5.6a1.2 1.2 0 0 1 1.2-1.2h2.4"/></symbol>
+  <!-- Site Control Center (Arc): share, new Boost, capture a portion, capture the full page, developer mode, blocker, insecure, more, add. -->
+  <symbol id="i-share" viewBox="0 0 16 16"><path d="M5.5 6.5h-.75A1.75 1.75 0 0 0 3 8.25v4A1.75 1.75 0 0 0 4.75 14h6.5A1.75 1.75 0 0 0 13 12.25v-4a1.75 1.75 0 0 0-1.75-1.75h-.75M8 9.5V1.75M5.5 4.25 8 1.75l2.5 2.5"/></symbol>
+  <symbol id="i-boost" viewBox="0 0 16 16"><path d="m2.75 13.25 7.5-7.5M9 4.5l2.5 2.5M12 1.75v2.5M10.75 3h2.5M14.25 6.25v1.5M13.5 7h1.5"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 16 16"><path d="M3.75 4.5h1.6l1-1.75h3.3l1 1.75h1.6a2 2 0 0 1 2 2v4.75a2 2 0 0 1-2 2h-8.5a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2z"/><circle cx="8" cy="8.6" r="2.4"/></symbol>
+  <symbol id="i-fullpage" viewBox="0 0 16 16"><path d="M2.75 5V3.75a1 1 0 0 1 1-1H5M11 2.75h1.25a1 1 0 0 1 1 1V5M13.25 11v1.25a1 1 0 0 1-1 1H11M5 13.25H3.75a1 1 0 0 1-1-1V11M5.5 6h5M5.5 8h5M5.5 10h3"/></symbol>
+  <symbol id="i-hammer" viewBox="0 0 16 16"><path d="m8.75 7.25-5.6 5.6a1.06 1.06 0 0 0 1.5 1.5l5.6-5.6M6.5 4.25 8.75 2h1.5l3 3-1.5 1.5-1-1-1.25 1.25z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 16 16"><path d="M8 1.75 13 3.5v4.25c0 3-2.1 5.1-5 6.5-2.9-1.4-5-3.5-5-6.5V3.5z"/></symbol>
+  <symbol id="i-lock-off" viewBox="0 0 16 16"><rect x="3.6" y="7.2" width="8.8" height="6" rx="1.6"/><path d="M5.6 7.2V5.4a2.4 2.4 0 0 1 4.6-.9M2.5 2.5l11 11"/></symbol>
+  <symbol id="i-more" viewBox="0 0 16 16"><path d="M3.75 8h.01M8 8h.01M12.25 8h.01" stroke-width="2.4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.25v9.5M3.25 8h9.5"/></symbol>
   <symbol id="i-sad" viewBox="0 0 16 16"><rect x="2.4" y="2.4" width="11.2" height="11.2" rx="2.6"/><path d="M5.8 6.4h.01M10.2 6.4h.01M5.6 11c1.4-1.6 3.4-1.6 4.8 0"/></symbol>
 </svg>
 <div id="card" hidden>
