@@ -376,7 +376,16 @@ function render(s) {
   $('url-text').textContent = label || t('side.search');
   $('url-text').classList.toggle('placeholder', !label);
   // Lueur de chargement le long du bord haut de la page.
-  b.classList.toggle('loading', !!s.nav.loading && !!s.activeId);
+  // Its width follows the load progress (window.js) and fills up before fading out. A new load or
+  // another tab jumps to its own value instead of sliding back.
+  const loading = !!s.nav.loading && !!s.activeId;
+  const glow = $('glow').firstElementChild;
+  const snap = (loading && !b.classList.contains('loading')) || glow.dataset.tab !== String(s.activeId || '');
+  glow.dataset.tab = String(s.activeId || '');
+  if (snap) glow.style.transition = 'none';
+  glow.style.transform = `scaleX(${loading ? s.nav.progress : 1})`;
+  if (snap) { getComputedStyle(glow).transform; glow.style.transition = ''; }
+  b.classList.toggle('loading', loading);
   $('url').title = s.nav.internal ? '' : s.nav.url;
   const shield = $('shield');
   shield.hidden = !s.activeId || s.nav.internal || false;

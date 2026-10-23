@@ -1129,7 +1129,7 @@ class OrbeWindow {
       webPreferences: { session: this.sessionFor(id), sandbox: true, contextIsolation: true, nodeIntegrationInSubFrames: true, preload: internal ? UI_PRELOAD : undefined },
     });
     view.setBackgroundColor('#ffffff');
-    rt = { id, view, wc: view.webContents, owner: this, loading: false, lastUsed: Date.now(), internal };
+    rt = { id, view, wc: view.webContents, owner: this, loading: false, progress: 1, lastUsed: Date.now(), internal };
     live.set(id, rt);
     this.wire(rt, tab);
     if (!viewOptions && !existing) {
@@ -1227,8 +1227,13 @@ class OrbeWindow {
       if (!owner.win.isDestroyed()) owner.close(rt.id);
       else live.delete(rt.id);
     });
-    wc.on('did-start-loading', () => { rt.loading = true; OrbeWindow.pushAll(); });
-    wc.on('did-stop-loading', () => { rt.loading = false; OrbeWindow.pushAll(); });
+    // Load progress for the top glow (Arc: GlowProgressLoadingIndicator). Electron has no progress
+    // event, so it steps on load milestones; only the shown tab's steps are sent, small ones dropped.
+    const progress = (p) => { if (p - rt.progress < 0.05) return; rt.progress = p; if (rt.owner.activeRt === rt) OrbeWindow.pushAll(); };
+    wc.on('did-start-loading', () => { rt.loading = true; rt.progress = 0.15; OrbeWindow.pushAll(); });
+    wc.on('did-stop-loading', () => { rt.loading = false; rt.progress = 1; OrbeWindow.pushAll(); });
+    wc.on('dom-ready', () => progress(0.6));
+    wc.on('did-frame-finish-load', (e, isMainFrame) => progress(isMainFrame ? 0.9 : rt.progress + (0.9 - rt.progress) / 4));
     wc.on('page-title-updated', (e, title) => {
       if (isErrorPage(wc.getURL())) return;
       tab.title = String(title).slice(0, 300);
@@ -4825,6 +4830,7 @@ class OrbeWindow {
         internal: tab ? isInternal(tab.url) : false,
         title: tab ? (tab.title || '') : '',
         loading: !!(this.activeRt && this.activeRt.loading),
+        progress: this.activeRt ? this.activeRt.progress : 1,
         canBack: !!(wc && wc.navigationHistory.canGoBack()),
         canForward: !!(wc && wc.navigationHistory.canGoForward()),
         blocked: wc && settings.adblock ? (adblock.stats().blockedByTab.get(wc.id) || 0) : 0,
