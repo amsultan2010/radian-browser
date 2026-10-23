@@ -102,10 +102,9 @@ svg.i.tb { width: 20px; height: 20px; }
 #capture-note { grid-area: 1 / 6; }
 #shield { grid-area: 1 / 7; margin-right: 4px; }
 #lock, #url-row .note, #shield, #exts { z-index: 1; } /* au-dessus de la pastille, qui les précède ou les suit */
-/* Au repos, rien dans la pastille (comme Arc) : cadenas d’une page sûre et bouclier paraissent au survol. */
-#url-row:not(:hover) #shield { display: none; }
-/* As in Arc, pinned extensions show in the pill when the sidebar is hovered (help center GIF). */
-#sidebar:not(:hover) #exts { display: none; }
+/* Au repos, rien dans la pastille (comme Arc) : cadenas d’une page sûre et bouclier paraissent au survol.
+   As in Arc, hovering anywhere over the sidebar reveals them, pinned extensions included (help center GIF). */
+#sidebar:not(:hover) #shield, #sidebar:not(:hover) #exts { display: none; }
 #shield {
   height: 28px;
   min-width: 28px;
@@ -825,7 +824,7 @@ html[data-family="dark"] body.blurred #url:has(.placeholder) > * { opacity: 0.55
 /* « Copier le lien » : bouton posé au bout de la pastille d'adresse, au survol. */
 #url-copy { flex: none; width: 28px; height: 28px; margin: 0; border-radius: 8px; display: none; place-items: center; color: var(--dim); z-index: 1; transition: transform var(--spring-bouncy); }
 #url-copy svg { width: 14px; height: 14px; }
-#url-row:hover #url-copy:not([hidden]) { display: grid; }
+#sidebar:hover #url-copy:not([hidden]) { display: grid; }
 #url-copy:hover { background: var(--hover); color: var(--fg); }
 #url-copy:active { transform: scale(0.88); transition: transform var(--press); }
 

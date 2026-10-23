@@ -114,8 +114,8 @@ module.exports = {
     });
 
     // --- Pastille d'adresse ---------------------------------------------------------
-    await t.verifier('pastille d’adresse : « Copier le lien » paraît au survol et copie l’adresse', async () => {
-      assert.equal(await shell.locator('#url-copy').isVisible(), false);
+    await t.verifier('pastille d’adresse : « Copier le lien » paraît au survol de la barre latérale et copie l’adresse', async () => {
+      await jusqua(async () => { await shell.mouse.move(600, 600); return !(await shell.locator('#url-copy').isVisible()); }, '« Copier le lien » masqué hors de la barre latérale');
       await ctx.clic(shell, '#url-copy', { survol: shell.locator('#url') });
       await jusqua(async () => (await pressePapiers()) === ctx.url('/relent'), 'adresse dans le presse-papiers');
       const r = await shell.evaluate(() => {
