@@ -177,9 +177,11 @@ function tooltips(o = {}) {
     caps.hidden = !keys;
     tip.hidden = false;
     const r = el.getBoundingClientRect();
+    const right = (o.right ? o.right() : innerWidth) - 6;
+    // A long label (French, German…) shortens with an ellipsis rather than run under the page.
+    tip.style.maxWidth = `${Math.min(280, right - 6)}px`;
     const w = tip.offsetWidth;
     const h = tip.offsetHeight;
-    const right = (o.right ? o.right() : innerWidth) - 6;
     const x = Math.max(6, Math.min(right - w, r.left + r.width / 2 - w / 2));
     const y = r.bottom + 6 + h > innerHeight - 4 ? r.top - h - 6 : r.bottom + 6;
     tip.style.transform = `translate(${Math.round(x)}px,${Math.round(y)}px)`;
