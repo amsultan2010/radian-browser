@@ -355,8 +355,8 @@ body.peek-out #backdrop, body.peek-out #peek { animation: fade-out var(--peek-ms
 #command.anchored #cmd-field { height: 42px; }
 #command.anchored #cmd-input { font-size: 15px; }
 
-/* Adresse du lien survolé */
-#status { position: fixed; inset: 0; padding: 0 9px; display: flex; align-items: center; border-radius: 8px; background: color-mix(in srgb, var(--accent) 22%, rgba(30, 30, 34, 0.92)); color: rgba(255, 255, 255, 0.94); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Adresse du lien survolé : a navy pill, as in Arc 1.170 (live capture; the navy of its tooltips). */
+#status { position: fixed; inset: 0; padding: 0 10px; display: flex; align-items: center; border-radius: 13px; background: #0a0d4b; color: rgba(255, 255, 255, 0.94); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Balayage de page (précédent / suivant) : une pastille sort du bord et suit les
    doigts — shell et page ne bougent pas, seule sa transformation change. Passé
