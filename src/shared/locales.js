@@ -1301,6 +1301,7 @@ const fr = {
   'appIcon.metal': 'Métal',
   'appIcon.schoolbook': 'Cahier',
   'appIcon.arcade': 'Arcade',
+  'appIcon.sunset': 'Crépuscule',
 };
 
 const en = {
@@ -2582,6 +2583,7 @@ const en = {
   'appIcon.metal': 'Metal',
   'appIcon.schoolbook': 'Schoolbook',
   'appIcon.arcade': 'Arcade',
+  'appIcon.sunset': 'Sunset',
 };
 
 module.exports = { fr, en };
