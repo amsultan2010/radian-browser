@@ -219,10 +219,11 @@ function replacePin(w) {
 }
 
 // Section de la Bibliothèque affichée en dernier (réglage de fenêtre, voir `lib:section`).
-const LIBRARY_SECTIONS = ['history', 'archive', 'downloads', 'media', 'easels', 'spaces', 'boosts'];
+// Arc's order; it opens on Media, its first section, the first time.
+const LIBRARY_SECTIONS = ['media', 'downloads', 'easels', 'spaces', 'boosts', 'archive', 'history'];
 function librarySection() {
   const last = store.state.window.librarySection;
-  return LIBRARY_SECTIONS.includes(last) ? last : 'history';
+  return LIBRARY_SECTIONS.includes(last) ? last : 'media';
 }
 
 // New Note, as in Arc: a new document in the Profile's "Default Document App" (a new tab), or a Radian note.

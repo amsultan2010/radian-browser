@@ -123,14 +123,16 @@ module.exports = async function bibliothequeTests(ctx) {
   const labels = await js(`[0, 1, 2, 3, 9, 12, 13, 14, 40, 400].map((n) => period(${fixed} - n * 864e5, ${fixed}))`);
   check('périodes, comme dans Arc : aujourd’hui, hier, plus tôt cette semaine, la semaine dernière, plus tôt ce mois-ci, puis le mois',
     labels.join('|') === [T('lib.today'), T('lib.yesterday'), T('lib.thisWeek'), T('lib.lastWeek'), T('lib.lastWeek'), T('lib.thisMonth'), T('lib.thisMonth'), 'Septembre', 'Septembre', 'Septembre 2025'].join('|'), labels.join('|'));
+  const filtersShut = await js('document.getElementById("filters").hidden && !document.getElementById("filter").hidden');
+  await js('document.getElementById("filter").click()');
   const seen = await js(`({ titres: [...document.querySelectorAll('#list h2')].map((h) => h.textContent), filtres: !document.getElementById('filters').hidden,
     choix: [...document.getElementById('f-how').options].map((o) => o.textContent), espaces: [...document.getElementById('f-space').options].map((o) => o.textContent),
-    croix: document.querySelectorAll('#list .line [data-do=delete]').length, etiquettes: [...document.querySelectorAll('#list .line .tag')].map((x) => x.textContent),
+    croix: document.querySelectorAll('#list .line [data-do=delete]').length, recherche: document.getElementById('q').placeholder,
     injecte: document.querySelectorAll('#list img[src="x"]').length, brut: document.querySelectorAll('#list .line .name')[2].textContent, xss: window.__xss || 0 })`);
   check('page de l’archive : lignes groupées par période', seen.titres.length === 2 && seen.titres[0] === T('lib.today') && seen.titres[1] !== T('lib.today'), seen.titres.join(' | '));
-  check('page de l’archive : filtres (façon de fermer, Espace), croix par ligne, étiquettes d’Espace et de cause',
-    seen.filtres && seen.choix.join('|') === ['all', 'manual', 'auto', 'little'].map((k) => T('lib.how.' + k)).join('|') && seen.espaces[0] === T('lib.allSpaces') && seen.espaces.includes('📚 Lecture')
-    && seen.croix === 3 && seen.etiquettes.includes('📚 Lecture') && seen.etiquettes.includes(T('lib.by.auto')) && seen.etiquettes.includes(T('lib.by.little')), JSON.stringify(seen));
+  check('page de l’archive, comme dans Arc : « Search Archive… », bouton « Filter » qui montre les filtres (façon de fermer, Espace), croix par ligne',
+    filtersShut && seen.filtres && seen.recherche === T('lib.searchArchive') && seen.choix.join('|') === ['all', 'manual', 'auto', 'little'].map((k) => T('lib.how.' + k)).join('|') && seen.espaces[0] === T('lib.allSpaces') && seen.espaces.includes('📚 Lecture')
+    && seen.croix === 3, JSON.stringify(seen));
   check('un titre de page n’est jamais interprété comme du HTML', seen.injecte === 0 && seen.xss === 0 && seen.brut === '<img src=x onerror="window.__xss=1">');
   await js(`(() => { const s = document.getElementById('f-how'); s.value = 'auto'; s.dispatchEvent(new Event('change')); })()`);
   await until(() => js('document.querySelectorAll("#list .line").length === 1 && document.querySelector("#list .line .name").textContent === "Lu il y a deux mois"'), 'archive filtrée');
@@ -181,19 +183,20 @@ module.exports = async function bibliothequeTests(ctx) {
   await until(() => page().getURL().endsWith('library.html#history') && store.state.window.librarySection === 'history', 'historique demandé');
   check('⌘Y demande toujours l’historique, dans le même panneau', w.libraryShown && w.activeId === shownTab);
   store.state.window.librarySection = 'inconnue';
-  check('section retenue illisible : l’historique', commands.librarySection() === 'history');
+  check('section retenue illisible : les Médias, première section d’Arc', commands.librarySection() === 'media');
 
   // --- Espaces --------------------------------------------------------------------------
   w.run('librarySpaces');
   const page2 = page;
   check('section Espaces : le panneau s’élargit à 744 pt, la page le suit', w.libraryView.getBounds().width === Math.min(w.win.getContentSize()[0], 744) && w.contentRect().x === 744);
-  await until(() => page2().executeJavaScript(`location.hash === '#spaces' && document.querySelectorAll('#list .line').length === ${d.spaces.length}`), 'section Espaces');
+  await until(() => page2().executeJavaScript(`location.hash === '#spaces' && document.querySelectorAll('#list .col').length === ${d.spaces.length}`), 'section Espaces');
   got = await lib('lib:get', {});
   const row = got.spaces.find((s) => s.id === space.id);
-  check('section « Espaces » : chaque Espace avec son profil et le nombre de ses onglets ; l’Espace affiché est marqué',
-    got.spaces.length === d.spaces.length && !!row && row.name === 'Lecture' && row.icon === '📚' && row.today === space.today.length && row.pinned === 0 && row.current === (w.spaceId === space.id)
-    && got.spaces.filter((s) => s.current).length === 1 && typeof row.profile === 'string' && row.profile.length > 0);
-  check('« Gérer les Espaces… » ouvre cette section, onglet « Espaces » allumé', await page2().executeJavaScript(`document.querySelector('[data-tab].on').dataset.tab === 'spaces' && document.getElementById('clear').textContent === ${JSON.stringify(T('spaces.new'))}`));
+  check('section « Espaces » : chaque Espace avec son profil et ses onglets',
+    got.spaces.length === d.spaces.length && !!row && row.name === 'Lecture' && row.icon === '📚' && row.items.today.length === space.today.length && row.items.pinned.length === 0 && typeof row.profile === 'string' && row.profile.length > 0);
+  check('« Gérer les Espaces… » ouvre cette section, onglet « Espaces » allumé : une colonne par Espace, sans champ de recherche, un + rond pour un nouvel Espace',
+    await page2().executeJavaScript(`document.querySelector('[data-tab].on').dataset.tab === 'spaces' && getComputedStyle(document.getElementById('bar')).display === 'none'
+      && document.querySelector('#list .add-space').title === ${JSON.stringify(T('spaces.new'))} && [...document.querySelectorAll('#list .col .col-name')].map((x) => x.textContent).includes('📚Lecture')`));
   w.switchSpace(space.id);
   check('aller à un Espace depuis la Bibliothèque : l’Espace s’affiche, la Bibliothèque se ferme', (await lib('lib:space', { id: other.id, do: 'focus' })) === true && w.spaceId === other.id && !w.libraryShown);
   const spaces0 = d.spaces.length;

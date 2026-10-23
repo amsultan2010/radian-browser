@@ -11,7 +11,7 @@ const path = require('path');
 const { store, uid } = require('./store');
 const downloads = require('./downloads');
 
-const SECTIONS = ['history', 'archive', 'downloads', 'media', 'easels', 'spaces', 'boosts'];
+const SECTIONS = ['media', 'downloads', 'easels', 'spaces', 'boosts', 'archive', 'history'];
 const HOW = ['manual', 'auto', 'little']; // façon dont un onglet a rejoint l'archive
 const MEDIA = /\.(png|jpe?g|gif|webp|avif|svg|mp4|mov|webm|mp3|wav|m4a)$/i;
 
@@ -255,16 +255,15 @@ function keepCapture(name, png, { incognito = false, done = null } = {}) {
 }
 
 // --- Espaces, Boosts --------------------------------------------------------------
-const count = (nodes) => nodes.reduce((n, x) => n + (x.type === 'folder' ? count(x.children) : 1), 0);
 // A tab in a column of the Space manager: its title over its address, as in the sidebar.
 const tabItem = (id) => { const tab = store.state.tabs[id]; return tab ? { id, title: tab.customTitle || tab.title || tab.url, url: tab.url, favicon: tab.favicon || '' } : null; };
 
-function spaceRows(w, q) {
+function spaceRows(q) {
   const profiles = new Map(store.state.profiles.map((p) => [p.id, p.name]));
   return store.state.spaces
     .filter((s) => !q || s.name.toLowerCase().includes(q))
     .map((s) => ({
-      id: s.id, name: s.name, icon: s.icon, color: s.color, profile: profiles.get(s.profileId) || '', pinned: count(s.pinned), today: s.today.length, current: !!w && w.spaceId === s.id, only: store.state.spaces.length < 2,
+      id: s.id, name: s.name, icon: s.icon, profile: profiles.get(s.profileId) || '',
       // Space manager (Arc): each column in its Space's colours, its top-level pinned items, then its Today tabs.
       theme: { color: s.color, color2: s.color2, color3: s.color3, plain: s.plain, intensity: s.intensity, mode: s.mode },
       items: { pinned: s.pinned.map((n) => (n.type === 'folder' ? { id: n.id, folder: true, title: n.name } : tabItem(n.id))).filter(Boolean), today: s.today.map(tabItem).filter(Boolean) },
@@ -305,7 +304,7 @@ async function action(name, a, sender) {
         // Médias : images, vidéos et sons téléchargés, plus les captures d'Orbe.
         // (`from` : un dossier de l'utilisateur, lu parce qu'il vient d'être choisi.)
         media: FROM.includes(o.from) && o.from !== 'orbe' && fromLibrary(sender) ? await folderRows(o.from, q) : fileRows(s.downloads, q, true),
-        spaces: spaceRows(w, q),
+        spaces: spaceRows(q),
         boosts: boostRows(q),
         // Pour les filtres de l'archive.
         spaceNames: s.spaces.map((sp) => ({ id: sp.id, name: `${sp.icon} ${sp.name}` })),
@@ -314,7 +313,9 @@ async function action(name, a, sender) {
     }
     // Dernière section affichée : la Bibliothèque s'y rouvre (⇧⌘L).
     case 'lib:section':
-      if (SECTIONS.includes(a) && s.window.librarySection !== a) { s.window.librarySection = a; store.save(true); }
+      if (!SECTIONS.includes(a)) return true;
+      if (w) w.setLibrarySection(a);
+      if (s.window.librarySection !== a) { s.window.librarySection = a; store.save(true); }
       return true;
     case 'lib:clear':
       if (a === 'history') { s.history = {}; store.historyCount = 0; store.saveHistory(true); require('./backups').forget({ historyAll: true }); }

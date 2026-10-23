@@ -525,7 +525,7 @@ const fr = {
   'easel.alt': 'Texte alternatif',
   'easel.altHint': 'Décrit l’image pour qui ne la voit pas',
   'easel.zoomReset': 'Taille réelle (⌘0)',
-  'lib.easels': 'Tableaux et notes',
+  'lib.easels': 'Tableaux',
   'lib.search': 'Rechercher…',
   'lib.empty': 'Rien ici pour l’instant.',
   'lib.clearHistory': 'Effacer l’historique',
@@ -1328,6 +1328,23 @@ const fr = {
   'lib.exit': 'Quitter la Bibliothèque',
   // battery saver
   'toast.batterySaverOff': 'Mode économie de batterie désactivé',
+  // Library, as Arc's
+  'lib.archivedTabs': 'Onglets archivés',
+  'lib.filter': 'Filtrer',
+  'lib.searchMedia': 'Rechercher dans les médias…',
+  'lib.searchDownloads': 'Rechercher dans les téléchargements…',
+  'lib.searchEasels': 'Rechercher dans les tableaux…',
+  'lib.searchBoosts': 'Rechercher dans les Boosts…',
+  'lib.searchArchive': 'Rechercher dans l’archive…',
+  'lib.searchHistory': 'Rechercher dans l’historique…',
+  'lib.emptyDownloads': 'Rien ici pour l’instant !',
+  'lib.emptyDownloadsHint': 'Reviens quand tu auras trouvé de quoi enregistrer.',
+  'lib.emptyEasels': 'En panne d’idées !',
+  'lib.emptyEaselsHint': 'Clique sur le + de la barre latérale pour créer un tableau.',
+  'lib.mediaTipTitle': 'Tes médias dans la Bibliothèque',
+  'lib.mediaTip': 'Retrouve en un instant les captures, images et vidéos de ton ordinateur en les affichant dans la Bibliothèque de Radian !',
+  'lib.showMedia': 'Afficher les médias',
+  'lib.mediaPrivate': 'Tes médias ne quittent jamais ton ordinateur et personne d’autre que toi ne peut les voir.',
 };
 
 const en = {
@@ -1838,7 +1855,7 @@ const en = {
   'easel.alt': 'Alt text',
   'easel.altHint': 'Describes the image for those who cannot see it',
   'easel.zoomReset': 'Actual size (⌘0)',
-  'lib.easels': 'Easels & Notes',
+  'lib.easels': 'Easels',
   'lib.search': 'Search…',
   'lib.empty': 'Nothing here yet.',
   'lib.clearHistory': 'Clear History',
@@ -1858,7 +1875,7 @@ const en = {
   'lib.thisMonth': 'Earlier This Month',
   'lib.emptyArchive': 'Nothing here yet!',
   'lib.emptyArchiveHint': 'Tabs you close, or that archive themselves, end up here.',
-  'lib.emptyBoosts': 'No Boosts yet.',
+  'lib.emptyBoosts': 'Nothing Boosted Yet!',
   'lib.emptyBoostsHint': 'A Boost customizes a site: colors, font, hidden elements.',
   'lib.how.all': 'Closed Any Way',
   'lib.how.manual': 'Closed Manually',
@@ -2633,9 +2650,26 @@ const en = {
   // theme texture dial
   'theme.cycleTexture': 'Cycle noise texture',
   // Library panel
-  'lib.exit': 'Exit the Library',
+  'lib.exit': 'Exit Library',
   // battery saver
   'toast.batterySaverOff': 'Battery Saver Mode Deactivated',
+  // Library, as Arc's
+  'lib.archivedTabs': 'Archived Tabs',
+  'lib.filter': 'Filter',
+  'lib.searchMedia': 'Search Media…',
+  'lib.searchDownloads': 'Search Downloads…',
+  'lib.searchEasels': 'Search Easels…',
+  'lib.searchBoosts': 'Search Boosts…',
+  'lib.searchArchive': 'Search Archive…',
+  'lib.searchHistory': 'Search History…',
+  'lib.emptyDownloads': 'Nothing here yet!',
+  'lib.emptyDownloadsHint': 'Come back after you’ve found some cool stuff to save.',
+  'lib.emptyEasels': 'Out of ideas!',
+  'lib.emptyEaselsHint': 'Click the + sign in the Sidebar to create a new Easel.',
+  'lib.mediaTipTitle': 'Your Media in the Library',
+  'lib.mediaTip': 'Quickly grab screenshots, images, and videos from your computer by showing them in the Radian Library!',
+  'lib.showMedia': 'Show Media',
+  'lib.mediaPrivate': 'Media never leaves your computer and is not viewable by anyone but you.',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).

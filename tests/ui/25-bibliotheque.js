@@ -1,6 +1,7 @@
-// Bibliothèque : sections, dernière section rouverte, archive (périodes,
-// filtres, croix, restauration dans l'Espace d'origine, vidage confirmé),
-// Espaces, Boosts, fichiers (menu « ··· », clic droit, glisser hors d'Orbe).
+// Bibliothèque, disposée comme celle d'Arc : sections, dernière section rouverte,
+// archive (périodes, filtres, croix, restauration dans l'Espace d'origine, vidage
+// confirmé), gestionnaire d'Espaces, Boosts, fichiers (menu « ··· », clic droit,
+// glisser hors d'Orbe).
 // Les gestes du système (menu natif, corbeille, glisser réel, boîte de
 // dialogue) sont remplacés par des témoins dans le processus principal : la
 // souris et le clavier, eux, sont vrais.
@@ -39,17 +40,18 @@ module.exports = {
     const noms = () => lib.locator('#list .line .name').allTextContents();
     const ligne = (nom) => lignes().filter({ has: lib.locator('.name', { hasText: new RegExp('^' + nom + '$') }) }).first();
 
-    await t.verifier('⇧⌘L ouvre la Bibliothèque : sept sections, l’historique d’abord', async () => {
-      await jusqua(async () => (await lignes().count()) >= 3, 'historique affiché');
-      assert.deepEqual(await lib.locator('.tabs [data-tab]').allTextContents(), ['Historique', 'Archive', 'Téléchargements', 'Médias', 'Tableaux et notes', 'Espaces', 'Boosts']);
-      assert.equal(await lib.locator('.tabs [data-tab].on').textContent(), 'Historique');
+    await t.verifier('⇧⌘L ouvre la Bibliothèque comme Arc : un panneau de 417 pt, les six sections d’Arc puis l’historique, les Médias d’abord', async () => {
+      await jusqua(async () => (await lib.locator('.tabs [data-tab].on').count()) === 1, 'section affichée');
+      assert.deepEqual(await lib.locator('.tabs [data-tab]').allTextContents(), ['Médias', 'Téléchargements', 'Tableaux', 'Espaces', 'Boosts', 'Onglets archivés', 'Historique']);
+      assert.equal(await lib.locator('.tabs [data-tab].on').textContent(), 'Médias');
+      assert.equal(await lib.locator('#q').getAttribute('placeholder'), 'Rechercher dans les médias…');
       assert.equal(await lib.locator('#filters').isVisible(), false);
-      const barre = await lib.locator('.tabs').boundingBox();
-      const vue = await lib.evaluate(() => innerWidth);
-      assert.ok(barre.x >= 0 && barre.x + barre.width <= vue, 'les onglets tiennent dans la page');
+      assert.equal(await lib.evaluate(() => innerWidth), 417);
+      assert.equal((await lib.locator('#rail').boundingBox()).width, 112);
+      assert.equal(await lib.locator('#exit').getAttribute('title'), 'Quitter la Bibliothèque');
     });
 
-    await t.verifier('section Archive : lignes groupées par période, étiquettes d’Espace et de cause, filtres', async () => {
+    await t.verifier('section Archive : lignes groupées par période, filtres derrière « Filtrer »', async () => {
       await onglet('archive').click();
       await jusqua(async () => (await lignes().count()) === 3, 'trois onglets archivés');
       assert.deepEqual(await noms(), ['Page C', 'Page B', 'Vieille page']);
@@ -57,7 +59,8 @@ module.exports = {
       assert.equal(titres.length, 2);
       assert.equal(titres[0], 'Aujourd’hui');
       assert.notEqual(titres[1], 'Aujourd’hui');
-      assert.deepEqual(await ligne('Vieille page').locator('.tag').allTextContents(), ['🧳 Voyages', 'archivé d’office']);
+      assert.equal(await lib.locator('#filters').isVisible(), false);
+      await lib.locator('#filter').click();
       assert.equal(await lib.locator('#filters').isVisible(), true);
       assert.deepEqual(await lib.locator('#f-how option').allTextContents(), ['Toutes les fermetures', 'Fermés à la main', 'Archivés d’office', 'Petite fenêtre']);
     });
@@ -119,7 +122,7 @@ module.exports = {
     const ligne2 = (nom) => lignes2().filter({ has: lib2.locator('.name', { hasText: new RegExp('^' + nom + '$') }) }).first();
 
     await t.verifier('… ici l’archive, avec ce qu’il en reste', async () => {
-      await jusqua(async () => (await lib2.locator('.tabs [data-tab].on').textContent()) === 'Archive', 'onglet « Archive » allumé');
+      await jusqua(async () => (await lib2.locator('.tabs [data-tab].on').textContent()) === 'Onglets archivés', 'onglet « Onglets archivés » allumé');
       await jusqua(async () => (await lib2.locator('#list .line .name').allTextContents()).join() === 'Page B', 'une entrée');
       assert.match(lib2.url(), /#archive$/);
     });
@@ -132,6 +135,7 @@ module.exports = {
         electron.dialog.showMessageBox = async (...args) => { global.__boites.push(args[args.length - 1].message); return { response: global.__reponse }; };
       });
       try {
+        if (!(await lib2.locator('#filters').isVisible())) await lib2.locator('#filter').click();
         await lib2.locator('#clear').click();
         await jusqua(async () => (await ctx.principal(() => global.__boites.length)) === 1, 'question posée');
         assert.equal(await ctx.principal(() => global.__boites[0]), 'Vider l’archive ?');
@@ -146,14 +150,16 @@ module.exports = {
       }
     });
 
-    await t.verifier('section Espaces : chaque Espace, celui affiché marqué ; un clic sur une ligne l’affiche', async () => {
+    await t.verifier('section Espaces : le gestionnaire d’Arc (panneau de 744 pt, une colonne par Espace, un + rond) ; un clic sur le nom d’une colonne l’affiche', async () => {
       await onglet2('spaces').click();
-      await jusqua(async () => (await lignes2().count()) === 2, 'deux Espaces');
-      assert.equal(await lib2.locator('#clear').textContent(), 'Nouvel Espace…');
-      assert.equal(await ligne2('Voyages').locator('.tag').count(), 0);
-      assert.equal(await lignes2().first().locator('.tag').textContent(), 'affiché');
-      assert.match(await ligne2('Voyages').locator('.sub').textContent(), /0 épinglés, 1 aujourd’hui/);
-      await ligne2('Voyages').locator('.name').click();
+      const colonnes = () => lib2.locator('#list .col');
+      await jusqua(async () => (await colonnes().count()) === 2, 'deux Espaces');
+      await jusqua(async () => (await lib2.evaluate(() => innerWidth)) === 744, 'panneau élargi');
+      assert.equal(await lib2.locator('#list .add-space').getAttribute('title'), 'Nouvel Espace…');
+      const voyages = colonnes().filter({ has: lib2.locator('.col-name', { hasText: 'Voyages' }) });
+      assert.deepEqual(await voyages.locator('.item .name').allTextContents(), ['Page D']);
+      assert.equal(await voyages.locator('[data-do=clear]').textContent(), 'Effacer');
+      await voyages.locator('.col-name').click();
       await jusqua(async () => (await ctx.etat()).espace === 'Voyages', 'Espace « Voyages » affiché');
       assert.equal(await ctx.principal(({ w }) => w.libraryShown), false, 'la Bibliothèque se ferme sur l’Espace');
       await ctx.principal(({ w }) => w.switchSpace(w.data.spaces[0].id));
