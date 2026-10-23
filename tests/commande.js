@@ -258,6 +258,33 @@ module.exports = async function commandeTests(ctx) {
   const refused = [];
   for (const bad of [null, 'https://pagaie.exemple.fr/', { url: 42, deletable: true }, { url: 'https://pagaie.exemple.fr/' }, { url: 'constructor', deletable: true }, { url: 'https://jamais.vu/', deletable: true }]) refused.push(await w.handle('suggestDelete', bad));
   check('demande mal formée, sans marque « oubliable » ou adresse inconnue : rien n’est retiré', refused.every((r) => r === false) && Object.keys(store.state.history).length === size, JSON.stringify(refused));
+
+  // --- Learning (Arc, Oct 2024): the result picked for what was typed comes first next time ---
+  const carnet = dead('carnet-pagaie'); // matches « pagaie » by address only, never completed inline
+  visit(carnet, 'Carnet');
+  suggest.forget();
+  const was = w.activeId;
+  check('rien d’appris : la page qui complète « pagaie » vient en premier', w.suggestLocal('pagaie')[0].url === 'https://pagaie.exemple.fr/');
+  for (let i = 0; i < 3; i++) {
+    w.openCommand('new');
+    const item = (await w.handle('suggest', 'pagaie')).find((x) => x.url === carnet);
+    await w.handle('run', { item });
+    // Closed right away: an open tab at that address would take the row's place.
+    if (item && w.activeId !== was) w.close(w.activeId, { ask: false });
+  }
+  const top = w.suggestLocal('pagaie')[0];
+  check('choisie trois fois pour « pagaie » : la page passe en première ligne, sans complétion dans le champ',
+    top.kind === 'history' && top.url === carnet && !top.complete, titles(w.suggestLocal('pagaie')).join(' | '));
+  check('… notée sur sa propre entrée d’historique (saisie, nombre) : vider l’historique l’efface aussi',
+    JSON.stringify((h[carnet].picks || []).map((p) => p.slice(0, 2))) === '[["pagaie",3]]', JSON.stringify(h[carnet].picks));
+  check('une saisie plus courte (« pag ») n’en profite pas', w.suggestLocal('pag')[0].url === 'https://pagaie.exemple.fr/');
+  const w4 = commands.run(w, 'newIncognito');
+  await w4.handle('suggest', 'carnet');
+  await w4.handle('run', { item: { kind: 'history', url: carnet, title: 'Carnet' } });
+  check('navigation privée : rien n’est appris', (h[carnet].picks || []).length === 1);
+  w4.win.close();
+  if (was && d.tabs[was]) w.activate(was);
+  await until(() => !OrbeWindow.all.includes(w4), 'fenêtre privée refermée');
   store.state.history = history0;
   store.state.archive = archive0;
   suggest.forget();
