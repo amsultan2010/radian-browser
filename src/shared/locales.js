@@ -165,8 +165,8 @@ const fr = {
   'tabs.deleteFolderDetail': 'Les onglets qu’il contient iront dans l’archive.',
   'toast.folderDeleted': 'Dossier supprimé, {n} onglet(s) archivé(s) — ⌘Z pour annuler',
   'dialog.cancel': 'Annuler',
-  'toast.tabMoved': 'Onglet déplacé vers {space} — clique pour y aller',
-  'toast.tabsMoved': '{n} onglets déplacés vers {space} — clique pour y aller',
+  'toast.tabMoved': 'Onglet déplacé — clique pour y aller',
+  'toast.tabsMoved': '{n} onglets déplacés — clique pour y aller',
   'tabs.editPinned': 'Modifier l’adresse épinglée…',
   'undo.editPinned': 'Modifier l’adresse épinglée',
   'view.addSplit.right': 'Ajouter un volet à droite',
@@ -433,7 +433,7 @@ const fr = {
   'find.placeholder': 'Rechercher dans la page',
   'find.none': 'Aucun résultat',
 
-  'toast.urlCopied': 'URL copiée',
+  'toast.urlCopied': 'URL actuelle copiée',
   'toast.share': 'Partager',
   'toast.markdownCopied': 'Lien Markdown copié',
   'toast.pinned': 'Onglet épinglé',
@@ -994,7 +994,7 @@ const fr = {
   'set.sleepAfter': 'Mettre en veille un onglet resté caché depuis',
   'set.batterySaver': 'Économie de batterie',
   'set.batterySaverHint': 'Sur batterie, sous 20 %, un onglet resté caché dix minutes s’endort. Ceux où tu as écrit ou cliqué sont épargnés.',
-  'toast.batterySaver': 'Batterie faible : les onglets cachés s’endorment plus tôt',
+  'toast.batterySaver': 'Mode économie de batterie activé',
   'set.sleepAfterHint': 'Sa ligne reste dans la barre latérale, en plus pâle ; la page se recharge quand tu y reviens.',
   'set.h1': '1 heure',
   'set.h2': '2 heures',
@@ -1326,6 +1326,8 @@ const fr = {
   'theme.cycleTexture': 'Changer de texture',
   // Library panel
   'lib.exit': 'Quitter la Bibliothèque',
+  // battery saver
+  'toast.batterySaverOff': 'Mode économie de batterie désactivé',
 };
 
 const en = {
@@ -1487,8 +1489,8 @@ const en = {
   'tabs.deleteFolderDetail': 'Deleting this folder will archive the tabs inside it.',
   'toast.folderDeleted': 'Folder deleted, {n} tab(s) archived — ⌘Z to undo',
   'dialog.cancel': 'Cancel',
-  'toast.tabMoved': 'Tab moved to {space}! Click to go there.',
-  'toast.tabsMoved': '{n} tabs moved to {space}! Click to go there.',
+  'toast.tabMoved': 'Tab moved! Click to go there.',
+  'toast.tabsMoved': '{n} tabs moved! Click to go there.',
   'tabs.editPinned': 'Edit Pinned URL…',
   'undo.editPinned': 'Edit Pinned URL',
   'view.addSplit.right': 'Add Right Split',
@@ -1663,7 +1665,7 @@ const en = {
   'dock.hideLittle': 'Hide All Little Radian Windows',
   'dock.showLittle': 'Show All Little Radian Windows',
   'toast.favMax': '{n} favorites maximum',
-  'toast.newTabCreated': 'New tab created in {space}',
+  'toast.newTabCreated': 'New Tab Created in {space}',
   'toast.tabsReset': 'Pinned tabs reset',
   'toast.infoCopied': 'Copied Radian info',
   'side.copyLink': 'Copy Link',
@@ -1746,7 +1748,7 @@ const en = {
   'help.whatsNew': 'Release Notes',
   'find.placeholder': 'Find in page',
   'find.none': 'No results',
-  'toast.urlCopied': 'Copied URL',
+  'toast.urlCopied': 'Copied Current URL',
   'toast.share': 'Share',
   'toast.markdownCopied': 'Copied Markdown link',
   'toast.pinned': 'Tab pinned',
@@ -2300,7 +2302,7 @@ const en = {
   'set.sleepAfter': 'Put a tab to sleep once hidden for',
   'set.batterySaver': 'Battery saver',
   'set.batterySaverHint': 'On battery, below 20%, a tab hidden for ten minutes goes to sleep. Tabs you typed or clicked in are spared.',
-  'toast.batterySaver': 'Low battery: hidden tabs go to sleep sooner',
+  'toast.batterySaver': 'Battery Saver Mode Activated',
   'set.sleepAfterHint': 'Its row stays in the sidebar, dimmed; the page reloads when you come back.',
   'set.h1': '1 hour',
   'set.h2': '2 hours',
@@ -2632,6 +2634,8 @@ const en = {
   'theme.cycleTexture': 'Cycle noise texture',
   // Library panel
   'lib.exit': 'Exit the Library',
+  // battery saver
+  'toast.batterySaverOff': 'Battery Saver Mode Deactivated',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).

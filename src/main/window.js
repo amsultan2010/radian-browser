@@ -961,6 +961,7 @@ class OrbeWindow {
     const paneW = n ? panes[Math.max(0, ids.indexOf(this.activeId))].width : 0;
     ids.forEach((id, i) => {
       const rt = this.ensureView(id);
+      if (rt.frozen) OrbeWindow.thaw(rt);
       shown.add(rt.view);
       // Aperçu qui devient un onglet : la carte grandit jusqu'à sa place, par-dessus le reste.
       const grow = this.growing && this.growing.view === rt.view ? this.growing : null;
@@ -1148,7 +1149,7 @@ class OrbeWindow {
       webPreferences: { session: this.sessionFor(id), sandbox: true, contextIsolation: true, nodeIntegrationInSubFrames: true, preload: internal ? UI_PRELOAD : undefined },
     });
     view.setBackgroundColor('#ffffff');
-    rt = { id, view, wc: view.webContents, owner: this, loading: false, lastUsed: Date.now(), internal };
+    rt = { id, view, wc: view.webContents, owner: this, loading: false, progress: 1, lastUsed: Date.now(), internal };
     live.set(id, rt);
     this.wire(rt, tab);
     if (!viewOptions && !existing) {
@@ -1246,8 +1247,13 @@ class OrbeWindow {
       if (!owner.win.isDestroyed()) owner.close(rt.id);
       else live.delete(rt.id);
     });
-    wc.on('did-start-loading', () => { rt.loading = true; OrbeWindow.pushAll(); });
-    wc.on('did-stop-loading', () => { rt.loading = false; OrbeWindow.pushAll(); });
+    // Load progress for the top glow (Arc: GlowProgressLoadingIndicator). Electron has no progress
+    // event, so it steps on load milestones; only the shown tab's steps are sent, small ones dropped.
+    const progress = (p) => { if (p - rt.progress < 0.05) return; rt.progress = p; if (rt.owner.activeRt === rt) OrbeWindow.pushAll(); };
+    wc.on('did-start-loading', () => { rt.loading = true; rt.progress = 0.15; OrbeWindow.pushAll(); });
+    wc.on('did-stop-loading', () => { rt.loading = false; rt.progress = 1; OrbeWindow.pushAll(); });
+    wc.on('dom-ready', () => progress(0.6));
+    wc.on('did-frame-finish-load', (e, isMainFrame) => progress(isMainFrame ? 0.9 : rt.progress + (0.9 - rt.progress) / 4));
     // Share Quote: the page preload says whether the page has selected text (src/preload/page.js).
     wc.ipc.on('orbe-quote', (e, has) => { if (!!rt.quote !== (has === true)) { rt.quote = has === true; OrbeWindow.pushAll(); } });
     wc.on('page-title-updated', (e, title) => {
@@ -1395,9 +1401,42 @@ class OrbeWindow {
     OrbeWindow.consult(rt, 'veille');
   }
 
+  // CPU rule (veille.burning): the page is paused, not unloaded, as Arc does. Chromium's lifecycle
+  // freeze stops its timers, scripts and rendering but keeps the page, its scroll and media position;
+  // `thaw` resumes it once shown. A page that still burns CPU while frozen (a worker the freeze does
+  // not reach) goes to sleep instead.
+  static freezeView(id) {
+    const rt = live.get(id);
+    if (!rt || rt.wc.isDestroyed()) return;
+    if (rt.frozen) { OrbeWindow.sleepView(id); return; }
+    const dbg = rt.wc.debugger;
+    // Held by an extension, a full-page capture or the unload shield: left alone this round.
+    if (dbg.isAttached()) return;
+    try { dbg.attach(); } catch { return; }
+    rt.frozen = true;
+    note(rt, 'frozen (CPU)');
+    dbg.sendCommand('Page.setWebLifecycleState', { state: 'frozen' })
+      .catch(() => { rt.frozen = false; })
+      .finally(() => { try { dbg.detach(); } catch {} });
+  }
+
+  static thaw(rt) {
+    rt.frozen = false;
+    if (rt.wc.isDestroyed()) return Promise.resolve();
+    note(rt, 'thawed');
+    const dbg = rt.wc.debugger;
+    const mine = !dbg.isAttached();
+    try { if (mine) dbg.attach(); } catch { return Promise.resolve(); }
+    return dbg.sendCommand('Page.setWebLifecycleState', { state: 'active' })
+      .catch(() => {})
+      .finally(() => { if (mine) try { dbg.detach(); } catch {} });
+  }
+
   // Consulte la page (beforeunload) avant de la fermer. Le bouclier écarte le délai d'une
   // seconde de Chromium (unload.js) : seul Orbe décide du sort d'une page qui tarde.
   static consult(rt, why) {
+    // A frozen page cannot answer beforeunload: it is resumed first.
+    if (rt.frozen) { OrbeWindow.thaw(rt).then(() => { if (!rt.wc.isDestroyed()) OrbeWindow.consult(rt, why); }); return; }
     note(rt, 'consultée (' + why + ')');
     hooks.shield(rt.wc);
     rt.wc.close({ waitForBeforeUnload: true });
@@ -1516,11 +1555,14 @@ class OrbeWindow {
       };
       say(0);
       OrbeWindow.trimLive({ deep: true });
+    } else if (before && !now) {
+      const target = w || OrbeWindow.focused || OrbeWindow.primary;
+      if (target && !target.win.isDestroyed()) target.toast(t('toast.batterySaverOff'));
     }
     return true;
   }
 
-  static trimLive({ deep = false } = {}) {
+  static trimLive({ deep = false, pressure = false } = {}) {
     const s = store.state.settings;
     if (!deep && live.size <= s.maxLiveTabs) return [];
     const visible = new Set();
@@ -1541,6 +1583,7 @@ class OrbeWindow {
       idleMs: deep ? veille.idleFor(s.sleepAfterHours, veille.saving(OrbeWindow.battery, s.batterySaver !== false)) : 0,
       budgetMb: deep && Number(s.memoryBudget) ? veille.budget(os.totalmem(), Number(s.memoryBudget)) : 0,
       totalMb: mem ? mem.total : 0,
+      pressure,
     });
     lastSweep = { at: now, totalMb: mem ? Math.round(mem.total) : 0, budgetMb: deep && Number(s.memoryBudget) ? veille.budget(os.totalmem(), Number(s.memoryBudget)) : 0, real: !!mem && mem.real };
     // La limite en nombre s'applique tout de suite ; ancienneté et mémoire consultent la page.
@@ -1550,7 +1593,7 @@ class OrbeWindow {
     return picked;
   }
 
-  // CPU rule (veille.burning): hidden tabs that keep burning CPU sleep like idle ones. Sampled only
+  // CPU rule (veille.burning): hidden tabs that keep burning CPU are frozen (`freezeView`). Sampled only
   // while a live tab could sleep, so nothing runs at rest; `trimLive` (each sweep) arms it again.
   static watchCpu(tabs) {
     if (cpuWatch.timer || !tabs.some((t) => !t.kept && !t.typed)) return;
@@ -1576,7 +1619,7 @@ class OrbeWindow {
     tabs.push({ id: '', pids: webContents.getAllWebContents().filter((wc) => !ours.has(wc) && !wc.isDestroyed()).flatMap(pidsOf), kept: true, typed: false });
     const { ids, state } = veille.burning(tabs, readings, cpuWatch.state, { now, saver: veille.saving(OrbeWindow.battery, s.batterySaver !== false) });
     cpuWatch.state = state;
-    for (const id of ids) OrbeWindow.sleepView(id);
+    for (const id of ids) OrbeWindow.freezeView(id);
     if (ids.length) OrbeWindow.pushAll();
     OrbeWindow.watchCpu(tabs);
   }
@@ -1587,7 +1630,9 @@ class OrbeWindow {
     const s = store.state.settings;
     const budgetMb = Number(s.memoryBudget) ? veille.budget(os.totalmem(), Number(s.memoryBudget)) : 0;
     if (empreinte.due({ budgetMb, tabs: live.size, minTabs: veille.MIN_LIVE })) await empreinte.refresh(tabProcesses());
-    return OrbeWindow.trimLive({ deep: true });
+    // Only critical: a busy Mac often sits at warning with plenty of memory still reclaimable.
+    const pressure = live.size > veille.MIN_LIVE && (await empreinte.pressure()) >= empreinte.CRITICAL;
+    return OrbeWindow.trimLive({ deep: true, pressure });
   }
 
   // --- Onglets --------------------------------------------------------------
@@ -4943,6 +4988,7 @@ class OrbeWindow {
         internal: tab ? isInternal(tab.url) : false,
         title: tab ? (tab.title || '') : '',
         loading: !!(this.activeRt && this.activeRt.loading),
+        progress: this.activeRt ? this.activeRt.progress : 1,
         canBack: !!(wc && wc.navigationHistory.canGoBack()),
         canForward: !!(wc && wc.navigationHistory.canGoForward()),
         blocked: wc && settings.adblock ? (adblock.stats().blockedByTab.get(wc.id) || 0) : 0,

@@ -44,8 +44,6 @@
   border-color: var(--cb-edge);
   border-radius: 12px;
   box-shadow: inset 0 0 0 1px var(--cb-rim), 0 24px 85px var(--cb-shadow);
-  /* Lissage du système (texte d'AppKit) : les traits ont l'épaisseur de ceux d'Arc. */
-  -webkit-font-smoothing: subpixel-antialiased;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-scheme="light"]) #command {

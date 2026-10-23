@@ -159,7 +159,7 @@ module.exports = {
       assert.equal(await shell.locator('#today .out').count(), 0);
     });
 
-    await t.avecEcran('verifier', 'chargement : une lueur aux couleurs de l’Espace court le long du bord haut de la page, par transformation', async () => {
+    await t.avecEcran('verifier', 'chargement : une lueur aux couleurs de l’Espace, au bord haut de la page, s’élargit avec la progression, par transformation', async () => {
       await ctx.nouvelOnglet();
       await ctx.taper(ctx.hote + '/lent?ms=1800');
       await ctx.modal.keyboard.press('Enter');
@@ -168,14 +168,15 @@ module.exports = {
         const i = g.firstElementChild;
         const cs = getComputedStyle(g);
         if (!document.body.classList.contains('loading') || Number(cs.opacity) < 0.99) return null;
-        const a = i.getAnimations()[0];
+        const a = i.getAnimations().find((x) => x.animationName);
         const page = S.sidebar.width; // bord gauche de la page
         const r = g.getBoundingClientRect();
-        return { nom: a && a.animationName, etat: a && a.playState, props: a ? [...new Set(a.effect.getKeyframes().flatMap((k) => Object.keys(k)))].filter((k) => k === 'transform' || k === 'left' || k === 'width' || k === 'backgroundPosition') : [], gauche: Math.round(r.left), page, haut: Math.round(r.top), h: Math.round(r.height), pastille: getComputedStyle(document.getElementById('url'), '::after').animationName };
+        return { nom: a && a.animationName, etat: a && a.playState, props: a ? [...new Set(a.effect.getKeyframes().flatMap((k) => Object.keys(k)))].filter((k) => k === 'transform' || k === 'left' || k === 'width' || k === 'backgroundPosition') : [], gauche: Math.round(r.left), page, haut: Math.round(r.top), h: Math.round(r.height), largeur: new DOMMatrix(i.style.transform).a, pastille: getComputedStyle(document.getElementById('url'), '::after').content };
       }), 'lueur affichée pendant le chargement', 5000);
-      assert.deepEqual([m.nom, m.etat, m.props], ['glow-run', reduit ? m.etat : 'running', ['transform']]);
+      assert.deepEqual([m.nom, m.etat, m.props], ['glow-pulse', reduit ? m.etat : 'running', []], 'elle pulse en opacité seulement');
       assert.deepEqual([m.gauche, m.haut, m.h], [m.page, 0, 10], 'dans la marge au-dessus de la page');
-      assert.equal(m.pastille, 'sweep', 'le reflet de la pastille d’adresse est une transformation lui aussi');
+      assert.ok(m.largeur > 0 && m.largeur < 1, 'page lente : la lueur n’a pas encore sa pleine largeur (' + m.largeur + ')');
+      assert.equal(m.pastille, 'none', 'plus de reflet sur la pastille d’adresse (Arc montre le chargement en haut, au centre)');
       const perf = reduit ? null : await mesurer(500);
       if (perf) {
         console.log(`    lueur : ${perf.images} images, médiane ${perf.mediane} ms, 95e centile ${perf.p95} ms, ${perf.misesEnPage} mise(s) en page`);
@@ -183,6 +184,7 @@ module.exports = {
         assert.ok(perf.misesEnPage <= 3, 'pas de mise en page à chaque image pendant que la lueur court : ' + perf.misesEnPage);
       }
       await jusqua(() => shell.evaluate(() => !document.body.classList.contains('loading')), 'fin du chargement', 8000);
+      assert.equal(await shell.evaluate(() => new DOMMatrix(document.getElementById('glow').firstElementChild.style.transform).a), 1, 'chargement fini : la lueur s’emplit avant de s’éteindre');
       await jusqua(() => shell.evaluate(() => Number(getComputedStyle(document.getElementById('glow')).opacity) === 0 && getComputedStyle(document.getElementById('glow').firstElementChild).animationPlayState === 'paused'), 'lueur éteinte et à l’arrêt');
     });
 

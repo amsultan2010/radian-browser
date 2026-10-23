@@ -90,7 +90,8 @@ html, body {
   background: transparent;
   color: var(--fg);
   font: 13px/1.35 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
-  -webkit-font-smoothing: antialiased;
+  /* System smoothing, as AppKit text: Arc's stroke weight (`antialiased` draws thinner). */
+  -webkit-font-smoothing: subpixel-antialiased;
   /* Dessin de la police adapté au corps (SF Text / Display), crénage ; pas de
      « optimizeLegibility », coûteux sur les longues listes. */
   font-optical-sizing: auto;
@@ -130,9 +131,6 @@ input, select {
 }
 
 svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex: none; }
-
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
 
 /* « Réduire les animations » (réglage du système) : plus de mouvement, seulement des changements d'état. */
 @media (prefers-reduced-motion: reduce) {

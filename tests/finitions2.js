@@ -412,7 +412,9 @@ module.exports = async function finitions2Tests(ctx) {
     const over = (id) => ui(`document.getElementById(${JSON.stringify(id)}).dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))`);
     const tip = () => ui(`(() => { const el = document.getElementById('tip'); const r = el.getBoundingClientRect(); return { on: !el.hidden && el.classList.contains('on'), text: document.getElementById('tip-text').textContent, key: document.getElementById('tip-key').hidden ? '' : document.getElementById('tip-key').textContent, left: r.left, right: r.right, top: r.top, sw: S.sidebar.width, events: getComputedStyle(el).pointerEvents }; })()`);
     check('boutons de la barre : plus d’infobulle native (pas de « title »), un nom pour les aides techniques',
-      await ui(`['b-sidebar', 'b-back', 'b-forward', 'b-reload', 'b-library', 'b-clear', 'b-newtab'].every((id) => { const el = document.getElementById(id); return !el.title && el.getAttribute('aria-label') === t(el.dataset.tip); })`));
+      await ui(`['b-sidebar', 'b-back', 'b-forward', 'b-reload', 'b-library', 'b-clear'].every((id) => { const el = document.getElementById(id); return !el.title && el.getAttribute('aria-label') === t(el.dataset.tip); })`));
+    check('« Nouvel onglet » : pas d’infobulle, son raccourci écrit au bout de la ligne (comme dans Arc)',
+      await ui(`(() => { const el = document.getElementById('b-newtab'); return !el.dataset.tip && el.querySelector('kbd').textContent === KEYS.newTab; })()`));
     await over('b-sidebar');
     await sleep(200);
     check('survol bref : pas encore d’infobulle', (await tip()).on === false);
@@ -553,6 +555,7 @@ module.exports = async function finitions2Tests(ctx) {
     w.handle('battery', { level: 0.14, charging: true });
     OrbeWindow.trimLive({ deep: true });
     check('réglage coupé, ou machine rebranchée : le délai choisi revient', asked.join() === `${3 * 36e5},${3 * 36e5}`, asked.join());
+    check('machine rebranchée : un message dit que l’économie de batterie s’arrête', toasts.slice(1).join() === T('toast.batterySaverOff'), toasts.join('|'));
     check('réglage « Économie de batterie » : actif par défaut', require('../src/main/store').DEFAULT_SETTINGS.batterySaver === true);
     veille.pick = pick0;
     w.toast = toast0;
