@@ -1337,6 +1337,7 @@ const fr = {
   'side.copyCurrentUrl': 'Copier l’URL actuelle',
   'side.siteControl': 'Centre de contrôle du site',
   'side.copyQuote': 'Copier la citation en URL',
+  'side.viewLibrary': 'Voir la Bibliothèque',
   // theme editor as Arc's popover
   'theme.autoAppearance': 'Apparence automatique',
   'theme.lightAppearance': 'Apparence claire',
@@ -2659,6 +2660,7 @@ const en = {
   'side.copyCurrentUrl': 'Copy Current URL',
   'side.siteControl': 'Site Control Center',
   'side.copyQuote': 'Copy Quote as URL',
+  'side.viewLibrary': 'View Library',
   // theme editor as Arc's popover
   'theme.autoAppearance': 'Automatic Appearance',
   'theme.lightAppearance': 'Light Appearance',

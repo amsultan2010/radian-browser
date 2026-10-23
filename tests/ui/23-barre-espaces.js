@@ -11,7 +11,7 @@ module.exports = {
     const today = () => ctx.titres('#today');
     const espaces = async () => (await ctx.etat()).espaces.map((s) => s.nom);
     const pastille = (n) => shell.locator('#spaces .sp').nth(n);
-    const ordre = () => shell.locator('#spaces .sp').evaluateAll((els) => els.map((el) => el.title));
+    const ordre = () => shell.locator('#spaces .sp').evaluateAll((els) => els.map((el) => el.dataset.tip));
     const repos = () => jusqua(() => shell.evaluate(() => !slide && !document.querySelector('#pager .ghost')), 'listes au repos'); // eslint-disable-line no-undef
     const nouvelEspace = async (nom) => {
       await ctx.menu('spaces.new');

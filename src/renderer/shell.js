@@ -325,7 +325,7 @@ function drawSpaces(list, current) {
   // Seul l'Espace courant change : les pastilles restent, leur largeur passe au ressort (CSS).
   if (same && list.length > 1) { for (const el of spaces.children) el.classList.toggle('active', el.dataset.space === current); return; }
   spaces.innerHTML = list.length > 1
-    ? list.map((x) => `<button class="sp${x.id === current ? ' active' : ''}" data-space="${esc(x.id)}" title="${esc(x.name)}" draggable="true"><span class="em">${esc(x.icon) || '•'}</span></button>`).join('')
+    ? list.map((x, i) => `<button class="sp${x.id === current ? ' active' : ''}" data-space="${esc(x.id)}" data-tip="${esc(x.name)}"${i < 9 ? ` data-tip-keys="⌃${i + 1}"` : ''} aria-label="${esc(x.name)}" draggable="true"><span class="em">${esc(x.icon) || '•'}</span></button>`).join('')
     : '';
 }
 
@@ -2027,6 +2027,9 @@ document.addEventListener('keydown', (e) => {
 tooltips({
   right: () => (FLOATING || !S || !S.sidebar.visible ? innerWidth : Math.min(innerWidth, S.sidebar.width)),
   blocked: () => !!drag,
+  // Space dock: the Space's own name and its ⌃1…⌃9 shortcut (Arc: "Space 1 ⌃1").
+  text: (el) => (el.classList.contains('sp') ? el.dataset.tip : t(el.dataset.tip)),
+  keys: (el) => (el.classList.contains('sp') ? el.dataset.tipKeys : KEYS[el.dataset.tipKey]),
 });
 
 // Pointeur posé 150 ms sur un onglet en veille : le processus principal prépare

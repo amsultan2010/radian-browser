@@ -415,6 +415,8 @@ module.exports = async function finitions2Tests(ctx) {
       await ui(`['b-sidebar', 'b-back', 'b-forward', 'b-library', 'b-clear', 'url-copy', 'shield'].every((id) => { const el = document.getElementById(id); return !el.title && el.getAttribute('aria-label') === t(el.dataset.tip); })`));
     check('« Actualiser » : pas d’infobulle (Arc), mais un nom pour les aides techniques',
       await ui(`(() => { const el = document.getElementById('b-reload'); return !el.title && !el.dataset.tip && el.getAttribute('aria-label') === t(S.nav.loading ? 'view.stop' : 'side.reload'); })()`));
+    check('Espaces du bas : infobulle maison au nom de l’Espace avec ⌃1…⌃9 (Arc : « Space 1 ⌃1 »), pas de « title »',
+      await ui(`[...document.querySelectorAll('#spaces .sp')].every((b, i) => !b.title && b.dataset.tip === S.spaces[i].name && b.dataset.tipKeys === (i < 9 ? '⌃' + (i + 1) : undefined))`));
     check('« Nouvel onglet » : pas d’infobulle, son raccourci écrit au bout de la ligne (comme dans Arc)',
       await ui(`(() => { const el = document.getElementById('b-newtab'); return !el.dataset.tip && el.querySelector('kbd').textContent === KEYS.newTab; })()`));
     await over('b-sidebar');
@@ -441,7 +443,7 @@ module.exports = async function finitions2Tests(ctx) {
     else {
       await until(() => ui(`KEYS.library === ${JSON.stringify(r.keys)}`), 'raccourci reçu par la coque');
       await over('b-library');
-      await until(async () => { const x = await tip(); return x.on && x.text === T('side.library'); }, 'infobulle de la Bibliothèque');
+      await until(async () => { const x = await tip(); return x.on && x.text === T('side.viewLibrary'); }, 'infobulle de la Bibliothèque');
       const t2 = await tip();
       check('raccourci modifié dans les réglages : l’infobulle montre le nouveau ; au bas de la barre elle se place au-dessus du bouton', t2.key === r.keys
         && await ui(`document.getElementById('tip').getBoundingClientRect().bottom <= document.getElementById('b-library').getBoundingClientRect().top`), JSON.stringify(t2));
