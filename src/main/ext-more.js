@@ -8,7 +8,6 @@
 // Écrit pour Orbe à partir de la documentation publique des API d'extension de
 // Chrome ; aucun code tiers.
 const { app, BrowserWindow } = require('electron');
-const path = require('path');
 const api = require('./ext-api');
 
 const X = api.internals;

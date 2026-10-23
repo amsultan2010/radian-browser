@@ -326,6 +326,6 @@ module.exports = async function importTests(ctx) {
   w.redoStack.length = 0;
   br.configure(real);
   store.save();
-  for (const d of [home, homeWin]) { try { fs.rmSync(d, { recursive: true, force: true }); } catch {} }
+  try { fs.rmSync(home, { recursive: true, force: true }); } catch {}
   if (!ctx.check && failed) throw new Error(`${failed} vérification(s) en échec`);
 };

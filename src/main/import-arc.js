@@ -1,8 +1,6 @@
 // Import depuis Arc : Espaces, onglets épinglés, dossiers et favoris.
 // Lit le fichier de barre latérale d'Arc sur cette machine, sans le modifier.
 const fs = require('fs');
-const os = require('os');
-const path = require('path');
 const { store, uid, SPACE_COLORS } = require('./store');
 
 // ~/Library/Application Support/Arc (voir platform.js).
