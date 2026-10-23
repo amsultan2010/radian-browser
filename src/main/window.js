@@ -117,6 +117,7 @@ function resumed(saved, spaces, on, taken = new Set()) {
 // What a normal window keeps of itself across launches (global flags stay in state.window).
 function keep(into, w) {
   if (!w.win.isFullScreen() && !w.win.isMinimized()) into.bounds = w.win.getBounds();
+  into.fullScreen = w.win.isFullScreen();
   into.spaceId = w.spaceId;
   into.activeBySpace = w.activeBySpace;
   into.sidebarVisible = w.sidebarVisible;
@@ -446,8 +447,9 @@ class OrbeWindow {
     this.toastView = null;
 
     this.win.on('resize', () => this.layout());
-    this.win.on('enter-full-screen', () => { this.layout(); OrbeWindow.pushAll(); });
-    this.win.on('leave-full-screen', () => { this.layout(); OrbeWindow.pushAll(); });
+    // Remembered for the next launch; not while closing, which may take the window out of full screen.
+    this.win.on('enter-full-screen', () => { this.layout(); OrbeWindow.pushAll(); if (!this.closing) this.remember(); });
+    this.win.on('leave-full-screen', () => { this.layout(); OrbeWindow.pushAll(); if (!this.closing) this.remember(); });
     this.win.on('focus', () => { this.focusContent(); hooks.changed(); });
     this.win.on('blur', () => { if (this.peek) this.setPeek(false); });
     this.win.on('close', (e) => {
@@ -674,8 +676,9 @@ class OrbeWindow {
 
   // Nouvelle fenêtre demandée par l'utilisateur (⌘N, navigation privée, fenêtre vierge) :
   // ouverte depuis une fenêtre en plein écran, elle s'ouvre en plein écran elle aussi (comme dans Arc).
+  // A window reopened at launch comes back full screen if it was at quit, as in Arc.
   static open(opts = {}, from = OrbeWindow.focused) {
-    const full = !!from && !!from.win && !from.win.isDestroyed() && from.win.isFullScreen();
+    const full = (!!from && !!from.win && !from.win.isDestroyed() && from.win.isFullScreen()) || (!!opts.saved && opts.saved.fullScreen === true);
     const w = new OrbeWindow(opts);
     if (full) hooks.enterFullScreen(w.win);
     return w;

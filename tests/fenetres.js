@@ -919,14 +919,19 @@ module.exports = async function fenetresTests(ctx) {
     check('session: every normal window is saved, in opening order, with its own Space, tabs and place (private window left out)',
       list.length === OrbeWindow.all.filter((x) => x.shared && !x.gone).length && list.indexOf(w.entry) >= 0 && list.indexOf(w.entry) < list.indexOf(w2.entry) && !iw.entry
       && w.entry.spaceId === space.id && w.entry.activeBySpace[space.id] === Q && w2.entry.spaceId === w2.spaceId && w2.spaceId !== space.id
-      && JSON.stringify(w2.entry.bounds) === JSON.stringify(w2.win.getBounds()),
+      && JSON.stringify(w2.entry.bounds) === JSON.stringify(w2.win.getBounds()) && w2.entry.fullScreen === false,
       JSON.stringify({ list, w: w.entry, w2: w2.entry }));
     check('session: state.window still holds the first window only (an older Radian reads it)', store.state.window.spaceId === space.id && store.state.window.activeBySpace === w.activeBySpace);
 
     // Restore of two windows, as startup does (main.js): both saved on the same tab.
-    const e1 = { bounds: { x: 60, y: 80, width: 800, height: 560 }, spaceId: space.id, activeBySpace: { [space.id]: P }, sidebarVisible: false };
-    const e2 = { bounds: { x: -30000, y: -30000, width: 760, height: 520 }, spaceId: space.id, activeBySpace: { [space.id]: P }, sidebarVisible: true };
+    const e1 = { bounds: { x: 60, y: 80, width: 800, height: 560 }, spaceId: space.id, activeBySpace: { [space.id]: P }, sidebarVisible: false, fullScreen: true };
+    const e2 = { bounds: { x: -30000, y: -30000, width: 760, height: 520 }, spaceId: space.id, activeBySpace: { [space.id]: P }, sidebarVisible: true, fullScreen: 'yes' };
+    const enter0 = win.hooks.enterFullScreen;
+    const entered = [];
+    win.hooks.enterFullScreen = (bw) => { entered.push(bw); };
     const [r1, r2] = OrbeWindow.reopening({ settings: {}, windows: [e1, e2] }).map((o) => OrbeWindow.open(o));
+    win.hooks.enterFullScreen = enter0;
+    check('session: a window full screen at quit comes back full screen; a garbled flag does not count', entered.length === 1 && entered[0] === r1.win, entered.length);
     const inside = (b) => screen.getAllDisplays().some(({ workArea: a }) => b.x >= a.x && b.y >= a.y && b.x + b.width <= a.x + a.width && b.y + b.height <= a.y + a.height);
     check('session: a saved window reopens with its place, Space, active tab and sidebar, and stays in the list',
       r1.entry === e1 && r1.spaceId === space.id && r1.activeId === P && r1.sidebarVisible === false && r1.win.getSize().join('x') === '800x560' && win.live.get(P).owner === r1
