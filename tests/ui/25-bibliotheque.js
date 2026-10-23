@@ -41,7 +41,7 @@ module.exports = {
 
     await t.verifier('⇧⌘L ouvre la Bibliothèque : sept sections, l’historique d’abord', async () => {
       await jusqua(async () => (await lignes().count()) >= 3, 'historique affiché');
-      assert.deepEqual(await lib.locator('.tabs [data-tab]').allTextContents(), ['Historique', 'Archive', 'Téléchargements', 'Médias', 'Tableaux', 'Espaces', 'Boosts']);
+      assert.deepEqual(await lib.locator('.tabs [data-tab]').allTextContents(), ['Historique', 'Archive', 'Téléchargements', 'Médias', 'Tableaux et notes', 'Espaces', 'Boosts']);
       assert.equal(await lib.locator('.tabs [data-tab].on').textContent(), 'Historique');
       assert.equal(await lib.locator('#filters').isVisible(), false);
       const barre = await lib.locator('.tabs').boundingBox();

@@ -195,7 +195,7 @@ function drawFile(line, r, now) {
   line.appendChild(more);
 }
 
-// Tableaux : vignette, titre, date ; un clic ouvre le tableau dans un onglet.
+// Tableaux et notes : vignette (ou début du texte), titre, date ; un clic ouvre en aperçu (Peek), comme dans Arc.
 function drawBoards() {
   const grid = document.createElement('div');
   grid.className = 'boards';
@@ -204,16 +204,17 @@ function drawBoards() {
     card.className = 'card board';
     card.dataset.i = i;
     const thumb = document.createElement('div');
-    thumb.className = 'thumb';
+    thumb.className = r.note ? 'thumb text' : 'thumb';
+    if (r.note) thumb.textContent = r.text;
     if (r.thumb) { const img = document.createElement('img'); img.src = r.thumb; img.alt = ''; img.draggable = false; thumb.appendChild(img); }
     const meta = document.createElement('div');
     meta.className = 'meta';
     const name = document.createElement('div');
     name.className = 'name';
-    name.textContent = r.title || t('easel.untitled');
+    name.textContent = r.title || t(r.note ? 'notes.untitled' : 'easel.untitled');
     const sub = document.createElement('div');
     sub.className = 'sub muted';
-    sub.textContent = `${period(r.updated)} · ${t('easel.items', { n: r.count })}`;
+    sub.textContent = r.note ? period(r.updated) : `${period(r.updated)} · ${t('easel.items', { n: r.count })}`;
     meta.append(name, sub);
     const del = document.createElement('button');
     del.className = 'btn del';
@@ -267,7 +268,14 @@ async function load() {
   O.send('lib:section', kind);
   if (kind === 'easels') {
     const needle = q.value.trim().toLowerCase();
-    rows = ((await O.send('easel:list')) || []).filter((b) => !needle || (b.title || t('easel.untitled')).toLowerCase().includes(needle));
+    const [boards, notes] = await Promise.all([O.send('easel:list'), O.send('notes:list')]);
+    // A Note: its first line as title, the start of its text as thumbnail (plain text, never HTML).
+    const noteRows = (notes || []).map((n) => {
+      const lines = String(n.text || '').split('\n').filter((l) => l.trim());
+      return { note: true, id: n.id, title: (lines[0] || '').replace(/^(- |\d+\. |\[[ x]\] )/, '').slice(0, 80), text: lines.slice(1).join('\n').slice(0, 300), updated: n.at };
+    });
+    rows = [...(boards || []), ...noteRows].filter((b) => !needle || (b.title || t(b.note ? 'notes.untitled' : 'easel.untitled')).toLowerCase().includes(needle))
+      .sort((a, b) => b.updated - a.updated);
     draw();
     return;
   }
@@ -302,7 +310,8 @@ list.addEventListener('click', async (e) => {
   const board = e.target.closest('.board');
   if (board && kind === 'easels') {
     const b = rows[Number(board.dataset.i)];
-    if (e.target.closest('[data-do=delete]')) { await O.send('easel:delete', b.id); load(); } else O.send('easel:open', b.id);
+    if (e.target.closest('[data-do=delete]')) { await O.send(b.note ? 'notes:delete' : 'easel:delete', b.id); load(); }
+    else O.send('lib:peek', { [b.note ? 'note' : 'easel']: b.id, x: e.clientX, y: e.clientY });
     return;
   }
   const line = e.target.closest('.line');

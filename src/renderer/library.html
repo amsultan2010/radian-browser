@@ -31,6 +31,8 @@ html, body { background: transparent; overflow: hidden; }
 .board .thumb img { max-width: 100%; max-height: 132px; display: block; }
 .board .meta { padding: 9px 12px 10px; }
 .board .del { position: absolute; top: 8px; right: 8px; opacity: 0; background: var(--panel); }
+/* A Note: the start of its text in place of a thumbnail. */
+.board .thumb.text { place-items: start; padding: 10px 12px; overflow: hidden; color: var(--dim); font-size: 12px; white-space: pre-line; }
 .board:hover .del { opacity: 1; }
 .line .sub.danger { color: #c2410c; }
 .tabs { flex-direction: column; gap: 2px; margin: 0; }

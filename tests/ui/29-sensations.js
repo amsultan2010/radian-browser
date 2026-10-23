@@ -200,7 +200,7 @@ module.exports = {
       if (process.env.ORBE_UI_SHOTS) await ctx.capture('bibliotheque-icones', lib);
       const vu = await lib.evaluate(() => { const bs = [...document.querySelectorAll('.tabs [data-tab]')]; return { icones: bs.filter((b) => b.querySelector('svg.ti')).length, textes: bs.map((b) => b.textContent), hauts: [...new Set([...document.querySelectorAll('.tabs button')].map((b) => Math.round(b.getBoundingClientRect().top)))].length, large: document.documentElement.scrollWidth <= innerWidth }; });
       assert.equal(vu.icones, 7);
-      assert.deepEqual(vu.textes, ['Historique', 'Archive', 'Téléchargements', 'Médias', 'Tableaux', 'Espaces', 'Boosts']);
+      assert.deepEqual(vu.textes, ['Historique', 'Archive', 'Téléchargements', 'Médias', 'Tableaux et notes', 'Espaces', 'Boosts']);
       assert.equal(vu.hauts, 7, 'une section par ligne : ' + vu.hauts);
       assert.ok(vu.large);
     });

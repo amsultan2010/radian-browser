@@ -4353,6 +4353,14 @@ class OrbeWindow {
     if (this.libraryShown) this.closeLibrary(); else this.openLibrary(section);
   }
 
+  // Easels and Notes opened from the Library show in Peek, as in Arc. `page`: built by
+  // library.js from known ids; `at`: the click, in the panel's coordinates.
+  peekPage(page, at) {
+    const b = this.libraryShown ? boundsOf(this.libraryView) : null;
+    const point = b && at && Number.isFinite(at.x) && Number.isFinite(at.y) ? { x: b.x + at.x, y: b.y + at.y } : undefined;
+    return this.openPeek(INTERNAL + page, this.activeId, undefined, point, true);
+  }
+
   // Active ou coupe le bloqueur pour le site affiché, puis recharge la page.
   toggleSiteBlocking() {
     const tab = this.activeId && this.data.tabs[this.activeId];

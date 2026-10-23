@@ -471,6 +471,22 @@ module.exports = async function bibliothequeTests(ctx) {
       const brute = await nwc.executeJavaScript(`(() => { const e = document.getElementById('editor'); return { tags: [...e.querySelectorAll('*')].map((x) => x.tagName).join(), a: e.querySelectorAll('a').length, text: e.textContent }; })()`);
       check('note altérée sur le disque (type inconnu, lien « javascript: ») : le bloc inconnu est ignoré, le lien n’est pas créé', brute.tags === 'P' && brute.a === 0 && brute.text === 'clic', JSON.stringify(brute));
       w.close(tab.id);
+      // Bibliothèque → Tableaux et notes : une note s'ouvre en aperçu (Peek), comme dans Arc.
+      w.openLibrary('easels');
+      const lwc = w.libraryView.webContents;
+      await until(() => lwc.executeJavaScript(`location.hash === '#easels' && rows.filter((r) => r.note).length === 2 && document.querySelectorAll('#list .board .thumb.text').length === 2`), 'notes listées dans la Bibliothèque');
+      const tabs1 = Object.keys(d.tabs).length;
+      await lwc.executeJavaScript(`document.querySelector('#list .board[data-i="' + rows.findIndex((r) => r.id === 'n-hostile') + '"] .meta').click()`);
+      await until(() => w.peekState && w.peekState.url === 'orbe://app/notes.html#n-hostile', 'note ouverte en aperçu');
+      const pwc = w.peekState.view.webContents;
+      await until(() => pwc.executeJavaScript('document.querySelector("#editor h1") !== null').catch(() => false), 'note affichée dans l’aperçu');
+      check('Bibliothèque : une note s’ouvre en aperçu (Peek), pas en onglet ; la Bibliothèque reste dessous',
+        w.peekState.internal === true && Object.keys(d.tabs).length === tabs1 && w.libraryShown && (await pwc.executeJavaScript('window.__pwn || 0')) === 0);
+      w.dismissPeek();
+      check('aperçu fermé : retour à la Bibliothèque', !w.peekState && w.libraryShown);
+      check('aperçu demandé pour une note inconnue, ou par une autre page que la Bibliothèque : refusé',
+        (await library.action('lib:peek', { note: 'inconnue' }, lwc)) === false && (await library.action('lib:peek', { note: 'n-hostile' }, w.ui.webContents)) === false && !w.peekState);
+      w.closeLibrary();
     }
     store.state.notes = notes0;
     notes.env.pickFolder = pick0;

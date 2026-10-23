@@ -312,28 +312,38 @@ module.exports = async function easelTests(ctx) {
   check('le processus principal ne garde d’un tableau que les champs connus', clean.evil === undefined && clean.items.length === 2 && !clean.items[0].sourceUrl && !clean.items[0].html
     && clean.items[1].x === 0 && clean.items[1].color === undefined, JSON.stringify(clean.items));
 
-  // --- Bibliothèque : liste, ouverture, suppression ----------------------------------------
+  // --- Bibliothèque : liste, ouverture en aperçu (Peek), suppression ------------------------
   w.run('easels');
   const lwc = w.libraryView.webContents;
   const lib = (code) => lwc.executeJavaScript(code);
-  await until(() => lib('document.querySelectorAll("#list .board").length === 1 && !!document.querySelector("#list .board .thumb img")'), 'tableau listé dans la bibliothèque');
-  const card = await lib('JSON.stringify({ name: document.querySelector("#list .board .name").textContent, thumb: document.querySelector("#list .board .thumb img").src.slice(0, 22), tab: document.querySelector(".tabs .on").dataset.tab })').then(JSON.parse);
-  check('bibliothèque : onglet Tableaux avec vignette, titre et date', card.name === 'Idées de voyage' && card.thumb === 'data:image/png;base64,' && card.tab === 'easels', JSON.stringify(card));
+  const card = (sel) => `document.querySelector('#list .board[data-i="' + rows.findIndex((r) => r.id === ${JSON.stringify(id)}) + '"] ${sel}')`;
+  await until(() => lib(`rows.filter((r) => !r.note).length === 1 && !!${card('.thumb img')}`), 'tableau listé dans la bibliothèque');
+  const shown = await lib(`JSON.stringify({ name: ${card('.name')}.textContent, thumb: ${card('.thumb img')}.src.slice(0, 22), tab: document.querySelector(".tabs .on").dataset.tab })`).then(JSON.parse);
+  check('bibliothèque : section Tableaux et notes, avec vignette, titre et date', shown.name === 'Idées de voyage' && shown.thumb === 'data:image/png;base64,' && shown.tab === 'easels', JSON.stringify(shown));
   if (shots) { await sleep(300); fs.writeFileSync(path.join(shots, 'tableaux-bibliotheque.png'), (await lwc.capturePage()).toPNG()); }
-  await lib('document.querySelector("#list .board .meta").click()');
+  const tabs0 = Object.keys(w.data.tabs).length;
   const under = w.activeId;
-  await until(() => w.activeId !== under && w.data.tabs[w.activeId].url.endsWith('easel.html?id=' + id) && !w.libraryShown, 'tableau rouvert depuis la bibliothèque');
+  await lib(`${card('.meta')}.click()`);
+  await until(() => w.peekState && w.peekState.url.endsWith('easel.html?id=' + id), 'tableau ouvert en aperçu depuis la bibliothèque');
+  const pwc = w.peekState.view.webContents;
+  await until(() => pwc.executeJavaScript(`typeof E === "object" && E.ready.then(() => E.items.length === ${kept})`), 'tableau ouvert avec la capture ajoutée');
+  check('un clic dans la bibliothèque ouvre le tableau en aperçu (Peek), capture comprise : aucun onglet, la Bibliothèque reste dessous',
+    w.peekState.internal === true && Object.keys(w.data.tabs).length === tabs0 && w.activeId === under && w.libraryShown);
+  // L'aperçu devient un onglet (⌘O) : même page, sans rechargement, toujours reliée à Orbe.
+  w.expandPeek();
   const reopened = w.activeId;
-  await until(() => win.live.get(reopened).wc.executeJavaScript(`typeof E === "object" && E.ready.then(() => E.items.length === ${kept})`), 'tableau rouvert avec la capture ajoutée');
-  check('un clic dans la bibliothèque rouvre le tableau, capture comprise', true);
+  check('aperçu du tableau agrandi : un onglet interne, la même page, la Bibliothèque fermée',
+    !w.peekState && reopened !== under && w.data.tabs[reopened].internal === true && w.data.tabs[reopened].url.endsWith('easel.html?id=' + id) && win.live.get(reopened).wc === pwc && !w.libraryShown);
+  check('… la page du tableau parle toujours au processus principal', await pwc.executeJavaScript(`window.orbe.send('easel:load', ${JSON.stringify(id)}).then((doc) => !!doc, () => false)`));
   w.openLibrary('easels');
-  await lib('document.querySelector("#list .board [data-do=delete]").click()');
+  await until(() => lib(`!!${card('[data-do=delete]')}`), 'tableau listé de nouveau');
+  await lib(`${card('[data-do=delete]')}.click()`);
   // La suppression peut tarder (verrous, antivirus) : marge élargie.
   await until(() => !fs.existsSync(file) && !fs.existsSync(dir), 'fichiers du tableau supprimés', 30000);
   await until(() => win.live.get(reopened).wc.executeJavaScript('!document.getElementById("gone").hidden'), 'page du tableau prévenue');
   await sleep(900);
   check('suppression : fichier et images retirés, la page ouverte ne le recrée pas', easels.list().every((b) => b.id !== id) && !fs.existsSync(file)
-    && (await lib('document.querySelectorAll("#list .board").length')) === 0);
+    && (await lib('rows.filter((r) => !r.note).length')) === 0);
   w.close(reopened);
   w.closeLibrary();
   if (back && w.data.tabs[back]) w.activate(back);
