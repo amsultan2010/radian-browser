@@ -3519,7 +3519,7 @@ class OrbeWindow {
       const ids = this.orderedIds()
         .filter((id) => live.has(id) || this.space.today.includes(id))
         .sort((a, b) => (this.data.tabs[b].lastActiveAt || 0) - (this.data.tabs[a].lastActiveAt || 0))
-        .slice(0, 8);
+        .slice(0, 5); // Arc's switcher shows the last 5 tabs
       if (ids.length < 2) return;
       this.switcher = { ids, index: 0 };
     }
