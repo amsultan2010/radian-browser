@@ -996,13 +996,14 @@ class OrbeWindow {
     if (this.modalMode) this.modal.setBounds(full);
     if (this.findOpen && this.findView) {
       const i = Math.max(0, ids.indexOf(this.activeId));
-      const right = panes[i] ? panes[i].x + panes[i].width : rect.x + paneW;
+      // (Library open: the card runs off the window; the bar stays on the part that shows.)
+      const right = Math.min(panes[i] ? panes[i].x + panes[i].width : rect.x + paneW, W - PAD);
       this.findView.setBounds({ x: Math.round(right - 372), y: (panes[i] ? panes[i].y + panes[i].bar : rect.y) + 10, width: 360, height: this.findReplace ? 90 : 50 });
     }
     if (this.toastView) {
       // Au-dessus du volet concerné (le volet actif), pas au milieu de la vue scindée.
       const i = this.toastPane && ids.includes(this.toastPane) ? ids.indexOf(this.toastPane) : Math.max(0, ids.indexOf(this.activeId));
-      const zone = panes[i] ? this.pageRect(panes[i]) : rect;
+      const zone = this.shownRect(panes[i] ? this.pageRect(panes[i]) : rect);
       // En haut à droite de la page, comme dans Arc (le message s'aligne à droite dans sa vue).
       const width = Math.min(380, Math.max(160, zone.width - 16));
       this.toastView.setBounds({ x: Math.round(zone.x + zone.width - width - 6), y: zone.y + 6, width, height: 52 });
