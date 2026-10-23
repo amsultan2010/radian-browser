@@ -4953,7 +4953,7 @@ class OrbeWindow {
         ...hooks.navState(this, this.activeRt, tab),
       },
       update: this.incognito ? null : hooks.updateNote(),
-      // Boutons des extensions, sous l'adresse.
+      // Pinned extensions' buttons, inside the address pill.
       extensions: (() => {
         try { return (require('./ext-host').actionsFor(this) || []).filter((x) => !(settings.extHidden || []).includes(x.id)).map((x) => ({ id: x.id, title: x.title, icon: typeof x.icon === 'string' ? x.icon : '', badge: x.badgeText, badgeColor: x.badgeColor, badgeTextColor: x.badgeTextColor, enabled: x.enabled })); } catch { return []; }
       })(),
