@@ -144,4 +144,4 @@ function start() {
 
 if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && window.top === window) start();
 
-module.exports = { parse, render, MAX };
+if (typeof module !== 'undefined') module.exports = { parse, render, MAX }; // sandboxed preloads may have no `module`
