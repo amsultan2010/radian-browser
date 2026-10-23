@@ -43,6 +43,9 @@ jobs:
           node tests/capture-state.test.js
           node tests/media-tracks.test.js
 
+      - name: Notification click hook
+        run: node tests/notifications.test.js
+
       - name: Screenshot folder
         run: |
           mkdir -p "$RUNNER_TEMP/captures"

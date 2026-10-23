@@ -6,7 +6,7 @@
 // rapporte (origine du cadre demandeur, session) : jamais d'après un texte
 // fourni par la page. Une réponse est retenue par origine, dans le profil
 // (store.state.permissions) ou, en navigation privée, en mémoire seulement.
-const { app, dialog, BaseWindow, systemPreferences, shell, webContents } = require('electron');
+const { app, dialog, BaseWindow, systemPreferences, shell, webContents, ipcMain } = require('electron');
 const { store } = require('./store');
 const sheets = require('./sheets');
 const capture = require('./capture-state');
@@ -33,6 +33,8 @@ const env = {
   // Temps écoulé (ms) depuis la dernière vraie entrée de l'utilisateur dans cet
   // onglet ; Infinity s'il n'y en a pas eu ; null si ce n'est pas un onglet.
   gesture: () => null,
+  // Brings a page forward: Radian, its window, its Space, its tab (or its Little Radian window).
+  showPage: () => false,
 };
 const GESTURE = 5000; // durée de l'activation passagère de Chromium
 
@@ -404,6 +406,15 @@ function attach(ses, { persist, profileOf = () => 'default' }) {
   return entry;
 }
 
+// A click on one of a page's notifications (src/preload/page.js): the page comes forward, as in
+// Arc ("Clicking on a notification now takes you the tab that sent it", July 2023). Believed only
+// from a top frame whose site may show notifications.
+function notificationClicked(e) {
+  const frame = e.senderFrame;
+  if (!frame || frame.parent || get(e.sender.session, originOf(frame.url), 'notifications') !== true) return false;
+  return env.showPage(e.sender);
+}
+
 function setup({ test = false, ...options } = {}) {
   Object.assign(env, options);
   // Tests : ni question du système, ni application lancée.
@@ -413,6 +424,7 @@ function setup({ test = false, ...options } = {}) {
   app.on('web-contents-created', (e, wc) => {
     wc.on('select-bluetooth-device', (event, devices, callback) => { event.preventDefault(); denyDevice('bluetooth', wc, callback, ''); });
   });
+  ipcMain.on('orbe-notify', (e) => { try { notificationClicked(e); } catch {} });
 }
 
 // --- Vue des autorisations d'un site ------------------------------------------
@@ -455,4 +467,4 @@ function forgetProfile(id) {
   if (all && all[id]) { delete all[id]; store.save(); }
 }
 
-module.exports = { attach, setup, list, reset, set, get, downloadGate, resetAll, forgetProfile, noteDisplay, originOf, siteName, labelOf, os, env, internals: { request, check, external, osAccess, memories, BLOCKED_SCHEMES, lastExternal, pages, display, stillThere, keyFor } };
+module.exports = { attach, setup, list, reset, set, get, downloadGate, resetAll, forgetProfile, noteDisplay, originOf, siteName, labelOf, os, env, internals: { request, check, external, osAccess, memories, BLOCKED_SCHEMES, lastExternal, pages, display, stillThere, keyFor, notificationClicked } };

@@ -9,9 +9,11 @@
 //   - signaler l'envoi d'un formulaire, pour proposer d'enregistrer.
 // Il n'insère rien dans le DOM de la page. Le processus principal ne croit
 // rien de ce qu'il dit sur l'origine : voir src/main/passwords.js.
-const { ipcRenderer } = require('electron');
+// It also reports a click on one of the page's notifications (`notificationHook`).
+const { ipcRenderer, contextBridge } = require('electron');
 
 const CHANNEL = 'orbe-pw';
+const NOTIFY_CHANNEL = 'orbe-notify';
 
 function start() {
   const send = (msg) => { try { ipcRenderer.send(CHANNEL, msg); } catch {} };
@@ -323,8 +325,32 @@ function watchSelection() {
   });
 }
 
+// Runs in the page's own world, before its scripts: Electron tells the main process nothing
+// when a web notification is clicked, so every Notification the page builds gets a click
+// listener. Only a real click counts (`isTrusted`: the page cannot fake one), and `clicked`
+// lives in this closure alone. Functions are taken now, before the page can replace them.
+function notificationHook(clicked) {
+  const desc = Object.getOwnPropertyDescriptor(window, 'Notification');
+  if (!desc || typeof desc.value !== 'function') return;
+  const construct = Reflect.construct;
+  const listen = EventTarget.prototype.addEventListener;
+  const onClick = (e) => { if (e.isTrusted) clicked(); };
+  desc.value = new Proxy(desc.value, {
+    construct(target, args, newTarget) {
+      const n = construct(target, args, newTarget);
+      listen.call(n, 'click', onClick);
+      return n;
+    },
+  });
+  Object.defineProperty(window, 'Notification', desc);
+}
+
 // Pages web seulement : ni l'interface d'Orbe, ni les extensions, ni about:blank.
 if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol)) {
+  // The clicked notification's tab comes forward (src/main/permissions.js).
+  if (process.isMainFrame) {
+    try { contextBridge.executeInMainWorld({ func: notificationHook, args: [() => ipcRenderer.send(NOTIFY_CHANNEL)] }); } catch {}
+  }
   start();
   // Main frame only: the quote is copied from it (window.js `copyQuote`).
   if (process.isMainFrame) watchSelection();
