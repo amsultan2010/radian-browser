@@ -1,7 +1,8 @@
-// CPU rule of the tab sleep policy (veille.burning): pure logic, no Electron.
+// CPU rule of the tab sleep policy (veille.burning), and the memory pressure rule of veille.pick:
+// pure logic, no Electron.
 //   node tests/veille.test.js
 const assert = require('node:assert/strict');
-const { burning, CPU, CPU_SAVER } = require('../src/main/veille');
+const { burning, pick, MIN_LIVE, CPU, CPU_SAVER } = require('../src/main/veille');
 
 const tab = (id, pids, extra = {}) => ({ id, pids, kept: false, typed: false, ...extra });
 
@@ -64,4 +65,29 @@ assert.ok(CPU_SAVER.everyMs < CPU.everyMs && CPU_SAVER.pct < CPU.pct);
 // Only processes still in use are remembered.
 assert.deepEqual([...burning([tab('a', [1])], new Map([[1, 1], [2, 1]]), new Map([[3, { cum: 0, at: 0, streak: 1 }]]), { now: 1 }).state.keys()], [1]);
 
-console.log('veille.test.js: ok');
+// Memory pressure: one tab per sweep, the oldest one not typed in and not kept, never below MIN_LIVE.
+{
+  const tabs = ['a', 'b', 'c', 'd', 'e', 'f'].map((id, i) => ({ id, lastUsed: i, mb: 0, kept: false, typed: false }));
+  assert.deepEqual(pick(tabs, { pressure: true }), [{ id: 'a', why: 'memory' }]);
+  assert.deepEqual(pick(tabs, {}), []);
+  tabs[0].typed = true;
+  tabs[1].kept = true;
+  assert.deepEqual(pick(tabs, { pressure: true }).map((x) => x.id), ['c']);
+  assert.deepEqual(pick(tabs.slice(0, MIN_LIVE), { pressure: true }), []);
+  // A tab another rule already put to sleep is not counted twice.
+  assert.deepEqual(pick(tabs, { pressure: true, idleMs: 97.5, now: 100 }), [{ id: 'c', why: 'idle' }, { id: 'd', why: 'memory' }]);
+}
+
+// The pressure level is read from sysctl (empreinte.pressure); unreadable means 0, no pressure.
+(async () => {
+  const e = require('../src/main/empreinte');
+  const exec0 = e.state.exec;
+  let asked = null;
+  e.state.exec = (file, args, opts, cb) => { asked = file; cb(null, '4\n'); };
+  assert.equal(await e.pressure(), e.CRITICAL);
+  assert.equal(asked, '/usr/sbin/sysctl');
+  e.state.exec = (file, args, opts, cb) => cb(new Error('absent'), '');
+  assert.equal(await e.pressure(), 0);
+  e.state.exec = exec0;
+  console.log('veille.test.js: ok');
+})();

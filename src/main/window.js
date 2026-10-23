@@ -1541,7 +1541,7 @@ class OrbeWindow {
     return true;
   }
 
-  static trimLive({ deep = false } = {}) {
+  static trimLive({ deep = false, pressure = false } = {}) {
     const s = store.state.settings;
     if (!deep && live.size <= s.maxLiveTabs) return [];
     const visible = new Set();
@@ -1562,6 +1562,7 @@ class OrbeWindow {
       idleMs: deep ? veille.idleFor(s.sleepAfterHours, veille.saving(OrbeWindow.battery, s.batterySaver !== false)) : 0,
       budgetMb: deep && Number(s.memoryBudget) ? veille.budget(os.totalmem(), Number(s.memoryBudget)) : 0,
       totalMb: mem ? mem.total : 0,
+      pressure,
     });
     lastSweep = { at: now, totalMb: mem ? Math.round(mem.total) : 0, budgetMb: deep && Number(s.memoryBudget) ? veille.budget(os.totalmem(), Number(s.memoryBudget)) : 0, real: !!mem && mem.real };
     // La limite en nombre s'applique tout de suite ; ancienneté et mémoire consultent la page.
@@ -1608,7 +1609,9 @@ class OrbeWindow {
     const s = store.state.settings;
     const budgetMb = Number(s.memoryBudget) ? veille.budget(os.totalmem(), Number(s.memoryBudget)) : 0;
     if (empreinte.due({ budgetMb, tabs: live.size, minTabs: veille.MIN_LIVE })) await empreinte.refresh(tabProcesses());
-    return OrbeWindow.trimLive({ deep: true });
+    // Only critical: a busy Mac often sits at warning with plenty of memory still reclaimable.
+    const pressure = live.size > veille.MIN_LIVE && (await empreinte.pressure()) >= empreinte.CRITICAL;
+    return OrbeWindow.trimLive({ deep: true, pressure });
   }
 
   // --- Onglets --------------------------------------------------------------
