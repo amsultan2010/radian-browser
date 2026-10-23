@@ -25,6 +25,7 @@ function fill(s) {
   drawDownloadDir();
   drawDev();
   drawSleep();
+  drawSites();
 }
 
 // --- Volets -------------------------------------------------------------------
@@ -183,6 +184,56 @@ function drawProfiles(list) {
   for (const p of list) dest.append(new Option(p.name, p.id));
   dest.value = list.some((p) => p.id === chosen) ? chosen : 'default';
 }
+
+// --- Site Search ------------------------------------------------------------------
+// The user's own sites for the Command Bar: one row of inputs each, saved on change.
+// The rows on screen are the list; prefs.js validates it, and a refused list is drawn back as stored.
+const SITE_FIELDS = ['name', 'keyword', 'url'];
+const siteSig = (list) => lang + JSON.stringify(list);
+let sitesShown = '';
+const siteEntry = (row) => {
+  const [name, keyword, url] = SITE_FIELDS.map((f) => row.querySelector('.s-' + f).value.trim());
+  return { name, keyword: keyword.toLowerCase(), url };
+};
+const siteRows = () => [...el('site-list').children].map(siteEntry);
+async function saveSites(list, redraw) {
+  sitesShown = siteSig(list); // the broadcast that follows must not redraw the rows (and steal the focus)
+  const s = await O.send('settings:set', { siteSearch: list });
+  const ok = JSON.stringify(s.siteSearch || []) === JSON.stringify(list);
+  el('site-msg').hidden = ok;
+  if (!ok || redraw) { S = s; sitesShown = ''; drawSites(); }
+  return ok;
+}
+function drawSites() {
+  const list = S.siteSearch || [];
+  if (siteSig(list) === sitesShown) return;
+  sitesShown = siteSig(list);
+  const box = el('site-list');
+  box.textContent = '';
+  for (const entry of list) {
+    const line = make('div', 'line site-row');
+    for (const f of SITE_FIELDS) {
+      const input = make('input', 'search s-' + f);
+      input.value = entry[f];
+      input.maxLength = el('site-' + f).maxLength;
+      input.spellcheck = false;
+      input.placeholder = t('siteSearch.' + f);
+      input.setAttribute('aria-label', t('siteSearch.' + f));
+      input.addEventListener('change', () => saveSites(siteRows()));
+      line.appendChild(input);
+    }
+    const del = make('button', 'btn', t('set.remove'));
+    del.onclick = () => { line.remove(); saveSites(siteRows()); };
+    line.appendChild(del);
+    box.appendChild(line);
+  }
+}
+el('site-add').onclick = async () => {
+  const entry = siteEntry(el('site-add').parentElement);
+  if (!entry.name && !entry.keyword && !entry.url) return;
+  if (await saveSites([...siteRows(), entry], true)) for (const f of SITE_FIELDS) el('site-' + f).value = '';
+};
+for (const f of SITE_FIELDS) el('site-' + f).addEventListener('keydown', (e) => { if (e.key === 'Enter') el('site-add').click(); });
 
 // --- Liens ------------------------------------------------------------------------
 // Aiguillage des liens venus d'autres applications
