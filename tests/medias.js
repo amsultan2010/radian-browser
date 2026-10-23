@@ -83,6 +83,7 @@ function serve(cover) {
       </script>`));
     }
     if (url.pathname === '/calme') return res.end(page('Calme', '<h1>Calme</h1>'));
+    if (url.pathname === '/appel') return res.end(page('Appel', '<h1>Appel</h1>'));
     res.statusCode = 404;
     return res.end(page('404', 'introuvable'));
   });
@@ -395,6 +396,32 @@ module.exports = async function mediasTests(ctx) {
     w.close(p1, { silent: true, ask: false });
     check('onglet fermé : son lecteur part avec lui', players().length === 0);
     if (d.tabs[p2]) w.close(p2, { silent: true, ask: false });
+  }
+
+  // --- A call left while silent: a player with microphone and camera buttons (BIB-25) ------
+  {
+    const permissions = require('../src/main/permissions');
+    const call = await load('/appel', 'Appel');
+    for (const k of ['microphone', 'camera']) permissions.set(wcOf(call).session, base, k, true);
+    const got = await js(call, 'navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then((s) => { window.flux = s; return s.getTracks().length; }, (e) => "err:" + e.name)');
+    if (got !== 2) outils.ignorer('appel : boutons du micro et de la caméra', 'pas de micro ni de caméra factices : ' + got);
+    else {
+      w.activate(calme);
+      const mine = () => players().find((p) => p.id === call);
+      await until(() => mine() && mine().mic === 'on' && mine().cam === 'on', 'lecteur de l’appel');
+      await w.mediaAct({ id: call, act: 'mic' });
+      await until(() => mine().mic === 'off', 'micro coupé');
+      check('appel quitté : un lecteur ; « Toggle Microphone » coupe la piste audio de la page, pas sa caméra',
+        (await js(call, 'flux.getAudioTracks()[0].enabled')) === false && (await js(call, 'flux.getVideoTracks()[0].enabled')) === true && mine().cam === 'on');
+      await w.mediaAct({ id: call, act: 'cam' });
+      await until(() => mine().cam === 'off', 'caméra coupée');
+      await js(call, 'flux.getAudioTracks()[0].enabled = true');
+      await until(() => mine().mic === 'on', 'micro rallumé par la page', 5000);
+      win.OrbeWindow.pushAll();
+      const shown = await until(() => ui(`(() => { const el = document.querySelector('#media .mp[data-id="${call}"]'); return el && !el.querySelector('.mp-mic').hidden && el.querySelector('.mp-cam use').getAttribute('href'); })()`), 'boutons dans la barre');
+      check('le bouton suit l’état réel de la page (micro rallumé par elle) ; caméra coupée : icône barrée', mine().mic === 'on' && shown === '#i-camera-off', shown);
+    }
+    w.close(call, { silent: true, ask: false });
   }
   for (const id of [p1, calme]) if (d.tabs[id]) w.close(id, { silent: true, ask: false });
   store.state.settings.mediaControls = mediaControls0;

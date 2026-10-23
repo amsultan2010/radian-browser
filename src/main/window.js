@@ -1617,6 +1617,9 @@ class OrbeWindow {
         prevRt.playing = true;
         media.add(this, prevId);
         if (!(this.groupOf(id) || []).includes(prevId) && !this.data.tabs[prevId].muted) this.pip(prevRt, true);
+      } else if (prevId !== id && prevRt && !prevRt.wc.isDestroyed() && hooks.tabState(prevRt).some((k) => k !== 'screen')) {
+        // A tab in a call, even silent, gets a player too: its microphone and camera buttons.
+        media.add(this, prevId);
       }
     }
     media.drop(this, id);
