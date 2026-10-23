@@ -1326,6 +1326,11 @@ const fr = {
   'theme.cycleTexture': 'Changer de texture',
   // Library panel
   'lib.exit': 'Quitter la Bibliothèque',
+  // theme editor as Arc's popover
+  'theme.autoAppearance': 'Apparence automatique',
+  'theme.lightAppearance': 'Apparence claire',
+  'theme.darkAppearance': 'Apparence sombre',
+  'theme.tapToPick': 'Cliquez pour choisir une couleur pour cet Espace',
 };
 
 const en = {
@@ -2632,6 +2637,11 @@ const en = {
   'theme.cycleTexture': 'Cycle noise texture',
   // Library panel
   'lib.exit': 'Exit the Library',
+  // theme editor as Arc's popover
+  'theme.autoAppearance': 'Automatic Appearance',
+  'theme.lightAppearance': 'Light Appearance',
+  'theme.darkAppearance': 'Dark Appearance',
+  'theme.tapToPick': 'Tap to pick a color for this space',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).
