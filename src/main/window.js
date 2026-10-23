@@ -4256,8 +4256,8 @@ class OrbeWindow {
     ];
   }
 
-  share() {
-    const tab = this.activeId && this.data.tabs[this.activeId];
+  share(id = this.activeId) {
+    const tab = id && this.data.tabs[id];
     if (!tab || !webUrl(tab.url) || !platform.isMac) return;
     try { new (require('electron').ShareMenu)({ urls: [cleanUrl(tab.url)] }).popup({ window: this.win }); } catch {}
   }
@@ -4353,6 +4353,7 @@ class OrbeWindow {
     const tpl = [
       { label: t('tabs.copyLink'), click: () => { clipboard.writeText(cleanUrl(tab.url)); this.toast(t('toast.urlCopied')); } },
       { label: t('tabs.copyLinkMarkdown'), click: () => { clipboard.writeText(mdLink(tab.customTitle || tab.title, cleanUrl(tab.url))); this.toast(t('toast.markdownCopied')); } },
+      ...(platform.isMac && webUrl(tab.url) ? [{ label: t('tb.share'), click: () => this.share(id) }] : []),
       { label: t('tabs.duplicate'), click: () => this.duplicate(id) },
       { label: t('tabs.rename'), visible: !fav, click: () => this.askRename(id) },
       { label: t('tabs.changeIcon'), click: () => this.openIcons('tab', id) },
