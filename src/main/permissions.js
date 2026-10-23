@@ -36,15 +36,14 @@ const env = {
 };
 const GESTURE = 5000; // durée de l'activation passagère de Chromium
 
-// Accès accordé à Orbe par le système (macOS, Windows). Remplacé pendant les
+// Accès accordé à Orbe par le système (macOS). Remplacé pendant les
 // tests : aucune vraie demande au système n'y est faite.
 const SETTINGS_URL = {
   darwin: { camera: 'x-apple.systempreferences:com.apple.preference.security?Privacy_Camera', microphone: 'x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone', screen: 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture' },
-  win32: { camera: 'ms-settings:privacy-webcam', microphone: 'ms-settings:privacy-microphone', screen: 'ms-settings:privacy' },
 };
 const os = {
   status(kind) {
-    if (process.platform !== 'darwin' && process.platform !== 'win32') return 'granted';
+    if (process.platform !== 'darwin') return 'granted';
     try { return systemPreferences.getMediaAccessStatus(kind); } catch { return 'unknown'; }
   },
   async ask(kind) {
@@ -173,7 +172,7 @@ async function osAccess(wc, keys) {
   }
   if (!missing.length) return true;
   const what = missing.map((k) => t('os.name.' + k)).join(t('os.and'));
-  const text = t(process.platform === 'darwin' ? 'os.deniedMac' : 'os.deniedWin', { what });
+  const text = t('os.deniedMac', { what });
   const sheet = wc && !wc.isDestroyed() ? sheets.open(wc, 'os', { title: t('os.title', { what }), text, settings: true, icon: missing[0] === 'camera' ? 'camera' : 'mic' }, { onAction: (name) => { if (name === 'settings') os.openSettings(missing[0]); } }) : null;
   if (!sheet && wc && !wc.isDestroyed()) env.toast(wc, t('os.title', { what }));
   return false;

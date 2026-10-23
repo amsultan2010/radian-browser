@@ -41,7 +41,7 @@ module.exports = async function easelTests(ctx) {
   const js = (code) => page().executeJavaScript(code);
   const disk = () => JSON.parse(fs.readFileSync(file, 'utf8'));
   await until(() => js('typeof E === "object" && E.ready.then(() => true)'), 'page du tableau prête');
-  check('⌃⇧E crée un tableau : fichier à part, onglet interne', accels.includes(platform.accel('Ctrl+Shift+E')) && easels.list().length === before + 1
+  check('⌃⇧E crée un tableau : fichier à part, onglet interne', accels.includes('Ctrl+Shift+E') && easels.list().length === before + 1
     && fs.existsSync(file) && tab.internal === true && /^[a-f0-9]{16}$/.test(id) && !Object.prototype.hasOwnProperty.call(ctx.store.state, 'easels'), tab.url);
 
   // --- Éléments, par les vrais gestes ----------------------------------------------
@@ -87,7 +87,7 @@ module.exports = async function easelTests(ctx) {
   await until(() => js('E.items.length === 7'), 'rétablissement');
   easels.history(wc, 'undo');
   await until(() => js('E.items.length === 6'), 'annulation');
-  check('Annuler et Rétablir du menu agissent sur le tableau', commands.byName.get('redo').accel === platform.accel('Shift+Cmd+Z') && easels.history(win.live.get(back) ? win.live.get(back).wc : null, 'undo') === false);
+  check('Annuler et Rétablir du menu agissent sur le tableau', commands.byName.get('redo').accel === 'Shift+Cmd+Z' && easels.history(win.live.get(back) ? win.live.get(back).wc : null, 'undo') === false);
 
   // --- Images : des fichiers, jamais du base64 dans le JSON ---------------------------
   const png = await js(`(async () => {
@@ -327,7 +327,7 @@ module.exports = async function easelTests(ctx) {
   check('un clic dans la bibliothèque rouvre le tableau, capture comprise', true);
   w.activate(libId);
   await lib('document.querySelector("#list .board [data-do=delete]").click()');
-  // Sous Windows, la suppression peut tarder (verrous, antivirus) : marge élargie.
+  // La suppression peut tarder (verrous, antivirus) : marge élargie.
   await until(() => !fs.existsSync(file) && !fs.existsSync(dir), 'fichiers du tableau supprimés', 30000);
   await until(() => win.live.get(reopened).wc.executeJavaScript('!document.getElementById("gone").hidden'), 'page du tableau prévenue');
   await sleep(900);

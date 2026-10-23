@@ -171,7 +171,7 @@
   }
 
   // Barre translucide : ce qui peut se trouver derrière elle. Le matériau du système
-  // (barre latérale de macOS, mica de Windows) suit l'apparence du système, pas le mode
+  // (barre latérale de macOS) suit l'apparence du système, pas le mode
   // de l'Espace : sombre, il va du noir à un gris foncé ; clair, d'un gris moyen au blanc.
   // (Bornes posées par hypothèse, non mesurées sur un bureau réel.)
   const BACKDROP = { dark: [[0, 0, 0], [96, 96, 96]], light: [[128, 128, 128], [255, 255, 255]] };

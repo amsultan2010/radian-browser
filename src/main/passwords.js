@@ -10,7 +10,7 @@
 //   3. Ce qui décide « quels comptes pour ce cadre » est l'origine réelle du
 //      cadre émetteur, donnée par Electron (`senderFrame.origin`), jamais un
 //      champ du message.
-const { app, ipcMain, safeStorage, session, dialog, clipboard, systemPreferences, shell, screen, nativeTheme, BaseWindow, BrowserWindow, WebContentsView } = require('electron');
+const { app, ipcMain, safeStorage, session, dialog, clipboard, systemPreferences, shell, screen, BaseWindow, BrowserWindow, WebContentsView } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -920,7 +920,7 @@ function openManager() {
     minWidth: 520,
     minHeight: 420,
     fullscreenable: false,
-    ...platform.windowChrome({ inset: true, dark: nativeTheme.shouldUseDarkColors }),
+    ...platform.windowChrome({ inset: true }),
     show: false,
     webPreferences: { preload: env.uiPreload, sandbox: true, contextIsolation: true },
   });

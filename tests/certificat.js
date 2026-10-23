@@ -1,7 +1,6 @@
 // Certificat X.509 auto-signé pour les serveurs HTTPS des tests, fabriqué avec
 // le seul module `crypto` de Node (aucune dépendance, pas d'openssl) : une clé
-// ECDSA P-256 et un certificat écrit en DER à la main. Fonctionne à l'identique
-// sous macOS et sous Windows.
+// ECDSA P-256 et un certificat écrit en DER à la main.
 const crypto = require('crypto');
 
 function der(tag, ...parts) {

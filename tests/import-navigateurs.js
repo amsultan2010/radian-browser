@@ -25,8 +25,8 @@ module.exports = async function importTests(ctx) {
   // --- Profils d'essai, à la manière de macOS ------------------------------------------
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'orbe-nav-'));
   const sqlite = ['/usr/bin/sqlite3', '/bin/sqlite3'].find((p) => fs.existsSync(p)) || '';
-  const made = fx.profils(home, { platform: 'darwin', sqlite });
-  br.configure({ home, platform: 'darwin', sqlite, local: '', roaming: '' });
+  const made = fx.profils(home, { sqlite });
+  br.configure({ home, platform: 'darwin', sqlite });
   const found = br.detect();
   const ids = found.map((b) => b.id).join();
   const chrome = found.find((b) => b.id === 'chrome');
@@ -111,7 +111,7 @@ module.exports = async function importTests(ctx) {
   const s = (await br.read('safari', '.'));
   check('Safari : liste de propriétés binaire décodée (chaînes ASCII et UTF-16), barre au premier niveau, liste de lecture et « file: » écartés',
     outline(s.nodes) === 'Apple,[Sénégal:Présidence — République du Sénégal,APS],[Menu des signets:iCloud],[Voyages:SNCF]' && s.bookmarks === 5 && s.dropped === 1 && s.source === 'plist', outline(s.nodes || []) + JSON.stringify({ ...s, nodes: 0 }));
-  if (process.platform !== 'win32' && process.getuid && process.getuid() !== 0) {
+  if (process.getuid && process.getuid() !== 0) {
     fs.chmodSync(made.safari, 0o000);
     const blocked = br.detect().find((b) => b.id === 'safari');
     const refused = (await br.read('safari', '.'));
@@ -176,15 +176,6 @@ module.exports = async function importTests(ctx) {
   const empty = (await br.read('chrome', 'Profile 1'));
   fs.writeFileSync(junkFile, fx.chromeBookmarks([fx.url('Intranet', 'http://intranet.exemple/')]));
   check('fichier de signets abîmé ou sans adresse web : dit, rien n’est importé', junk.error === 'unreadable' && empty.error === 'empty');
-
-  // --- Chemins de Windows -----------------------------------------------------------------
-  const homeWin = fs.mkdtempSync(path.join(os.tmpdir(), 'orbe-nav-win-'));
-  fx.profils(homeWin, { platform: 'win32' });
-  br.configure({ home: homeWin, platform: 'win32', sqlite: '' });
-  const win = br.detect();
-  check('Windows : Chrome, Brave et Opera sous AppData, Firefox par sa sauvegarde, pas de Safari',
-    win.map((b) => b.id).join() === 'chrome,brave,opera,firefox' && outline((await br.read('chrome', 'Default')).nodes).startsWith('Wikipédia,') && (await br.read('firefox', 'Profiles/abcd1234.default-release')).source === 'backup' && (await br.read('safari', '.')).error === 'missing', JSON.stringify(win));
-  br.configure({ home, platform: 'darwin', sqlite });
 
   // --- Aperçu, import, annulation ------------------------------------------------------------
   const spaces0 = w.data.spaces.length;
@@ -307,7 +298,7 @@ module.exports = async function importTests(ctx) {
   check('le volet dit ce qui n’est pas repris : mots de passe par CSV, ni cookies ni historique', /mots de passe/i.test(await js('document.getElementById("import-msg").textContent')) && /cookies/.test(await js('document.getElementById("import-msg").textContent')));
 
   // Safari protégé : explication et bouton vers les réglages du système.
-  if (process.platform !== 'win32' && process.getuid && process.getuid() !== 0) {
+  if (process.getuid && process.getuid() !== 0) {
     const opened = [];
     const realOpen = imports.hooks.openExternal;
     imports.hooks.openExternal = (u) => opened.push(u);
@@ -335,6 +326,6 @@ module.exports = async function importTests(ctx) {
   w.redoStack.length = 0;
   br.configure(real);
   store.save();
-  for (const d of [home, homeWin]) { try { fs.rmSync(d, { recursive: true, force: true }); } catch {} }
+  try { fs.rmSync(home, { recursive: true, force: true }); } catch {}
   if (!ctx.check && failed) throw new Error(`${failed} vérification(s) en échec`);
 };

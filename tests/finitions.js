@@ -211,7 +211,7 @@ module.exports = async function finitionsTests(ctx) {
   const menuItem = (key, vars) => find(appMenu().items, T(key, vars));
   menu.refresh(true);
   await until(() => !!menuItem('file.newBlank'), 'menu reconstruit');
-  check('Fichier → « Nouvelle fenêtre vierge », avec ⌃⌘N', menuItem('file.newBlank').accelerator === platform.accel('Ctrl+Cmd+N') && commands.byName.get('newBlank').global === true);
+  check('Fichier → « Nouvelle fenêtre vierge », avec ⌃⌘N', menuItem('file.newBlank').accelerator === 'Ctrl+Cmd+N' && commands.byName.get('newBlank').global === true);
   const n0 = OrbeWindow.all.length;
   const saved0 = JSON.stringify(store.state.window);
   menuItem('file.newBlank').click();
@@ -279,7 +279,7 @@ module.exports = async function finitionsTests(ctx) {
   menu.refresh(true);
   await until(() => !!menuItem('edit.jumpToSelection'), 'menu Édition');
   const sub = (key) => menuItem(key).submenu.items.filter((x) => x.type !== 'separator').map((x) => x.label).join('|');
-  check('Édition → « Aller à la sélection » (⌘J)', menuItem('edit.jumpToSelection').accelerator === platform.accel('Cmd+J'));
+  check('Édition → « Aller à la sélection » (⌘J)', menuItem('edit.jumpToSelection').accelerator === 'Cmd+J');
   check('Édition → Orthographe et grammaire, Transformations, Format → Police',
     sub('edit.spelling') === T('edit.spellCheck') && menuItem('edit.spellCheck').role.toLowerCase() === 'togglespellchecker'
     && sub('edit.transformations') === [T('edit.upper'), T('edit.lower'), T('edit.capitalize')].join('|')
@@ -493,7 +493,7 @@ module.exports = async function finitionsTests(ctx) {
   w.win.setFullScreen = (v) => asked2.push(v);
   commands.run(w, 'fullscreen');
   w.win.setFullScreen = full0;
-  check('« Plein écran » (⌃⌘F) demande le plein écran de la fenêtre', asked2.length === 1 && asked2[0] === !w.win.isFullScreen() && commands.byName.get('fullscreen').accel === platform.accel('Ctrl+Cmd+F'));
+  check('« Plein écran » (⌃⌘F) demande le plein écran de la fenêtre', asked2.length === 1 && asked2[0] === !w.win.isFullScreen() && commands.byName.get('fullscreen').accel === 'Ctrl+Cmd+F');
   const noticed0 = store.state.window.archiveNoticed;
   delete store.state.window.archiveNoticed;
   const hours = require('../src/main/prefs').get('archiveAfterHours', space.profileId);
@@ -642,7 +642,7 @@ module.exports = async function finitionsTests(ctx) {
   const fv = (code) => w.findView.webContents.executeJavaScript(code);
   await until(() => fv('!document.getElementById("find").hidden && !document.getElementById("find-replace").hidden'), 'ligne « Remplacer par » affichée');
   check('« Rechercher et remplacer… » (⌥⌘F) : la barre de recherche gagne une ligne « Remplacer par », avec « Remplacer » et « Tout »',
-    menuItem('edit.findReplace').accelerator === platform.accel('Alt+Cmd+F') && w.findView.getBounds().height === 90 && await fv('document.getElementById("find-with").placeholder') === T('find.replaceWith')
+    menuItem('edit.findReplace').accelerator === 'Alt+Cmd+F' && w.findView.getBounds().height === 90 && await fv('document.getElementById("find-with").placeholder') === T('find.replaceWith')
     && await fv('[...document.querySelectorAll("#find-replace .fr")].map((b) => b.textContent).join("|")') === [T('find.replace'), T('find.replaceAll')].join('|'));
   check('… la ligne tient dans la barre, sous le champ de recherche', await fv('(() => { const a = document.getElementById("find-input").getBoundingClientRect(); const b = document.getElementById("find-with").getBoundingClientRect(); return b.top >= a.bottom && b.bottom <= innerHeight && b.height > 10; })()'));
   w.handle('find', { text: 'chat' });

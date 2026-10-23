@@ -26,7 +26,7 @@
 //    à un interpréteur de commandes.
 //  - Les mots de passe entrent par le coffre d'Orbe (passwords.js, chiffré, par profil),
 //    les cookies par la session Chromium du profil : rien n'est gardé ailleurs.
-//  - macOS seulement : sous Windows, Arc chiffre avec une clé liée à son propre programme.
+//  - macOS seulement.
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
@@ -70,7 +70,7 @@ const available = () => profiles().length > 0;
 
 function run(file, args, { timeout, maxBuffer = 256 * 1024 * 1024 } = {}) {
   return new Promise((resolve, reject) => {
-    execFile(file, args, { timeout, maxBuffer, encoding: 'utf8', windowsHide: true }, (err, stdout) => (err ? reject(err) : resolve(stdout)));
+    execFile(file, args, { timeout, maxBuffer, encoding: 'utf8' }, (err, stdout) => (err ? reject(err) : resolve(stdout)));
   });
 }
 

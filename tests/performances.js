@@ -465,9 +465,8 @@ module.exports = async function performancesTests(ctx) {
         const ok = await e.refresh(procs);
         const after = win.tabMemory();
         check('empreinte : relevée par un processus à part (top, un -pid par processus d’onglet), puis utilisée à la place de la mémoire résidente',
-          // Sous Windows, `privateBytes` est déjà l'empreinte réelle : le relevé de top n'y est jamais consulté.
-          (realPlatform.value !== 'darwin' && d0 && ok && before.real && after.real && Math.round(after.total) !== 1024 * procs.length) || (d0 && ok && asked.file === '/usr/bin/top' && asked.args.filter((x) => x === '-pid').length === procs.length && procs.length > 0
-          && !before.real && after.real && Math.round(after.total) === 1024 * procs.length), JSON.stringify({ d0, ok, n: procs.length, total: after.total }));
+          d0 && ok && asked.file === '/usr/bin/top' && asked.args.filter((x) => x === '-pid').length === procs.length && procs.length > 0
+          && !before.real && after.real && Math.round(after.total) === 1024 * procs.length, JSON.stringify({ d0, ok, n: procs.length, total: after.total }));
         const now = Date.now();
         check('empreinte : pas de nouveau relevé avant cinq minutes loin du budget, toutes les minutes près du budget, jamais sans budget ni au-dessous de quatre onglets',
           !e.due({ budgetMb: 1e6, tabs: 9, minTabs: 4, now: now + 2 * 60e3 }) && e.due({ budgetMb: 1e6, tabs: 9, minTabs: 4, now: now + 5 * 60e3 + 10 })
@@ -480,7 +479,7 @@ module.exports = async function performancesTests(ctx) {
         e.state.exec = (file, args, opts, cb) => setImmediate(() => cb(new Error('absent'), ''));
         const r1 = await e.refresh(procs); await e.refresh(procs); await e.refresh(procs);
         check('empreinte : top absent ou muet, rien ne casse — la mémoire résidente sert, et on n’insiste pas',
-          r1 === false && win.tabMemory().real === (realPlatform.value === 'win32') && win.tabMemory().total > 0 && !e.due({ budgetMb: 4000, tabs: 9, minTabs: 4 }));
+          r1 === false && win.tabMemory().real === false && win.tabMemory().total > 0 && !e.due({ budgetMb: 4000, tabs: 9, minTabs: 4 }));
         reset();
         e.state.exec = realExec;
         if (realPlatform.value === 'darwin') {

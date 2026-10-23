@@ -28,8 +28,7 @@
     "test:ui": "node scripts/test-ui.js",
     "test:ext": "node scripts/test-ext.js",
     "build": "node scripts/build-mac.js",
-    "dist": "node scripts/build-mac.js --dmg",
-    "build:win": "node scripts/build-win.js"
+    "dist": "node scripts/build-mac.js --dmg"
   },
   "orbe": {
     "electron": "44.7.0",

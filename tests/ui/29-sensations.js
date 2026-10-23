@@ -242,7 +242,7 @@ module.exports = {
     // --- Médias d'un dossier de l'utilisateur (« Afficher les médias de : ») ------------------
     const bureau = path.join(ctx.userData, 'bureau-essai');
     fs.mkdirSync(bureau, { recursive: true });
-    const HOSTILE_MEDIA = process.platform === 'win32' ? '&lt;b&gt;gras.png' : '<b onclick="window.pwned=1">gras.png';
+    const HOSTILE_MEDIA = '<b onclick="window.pwned=1">gras.png';
     for (const n of ['vacances.jpg', HOSTILE_MEDIA, 'liste.txt']) fs.writeFileSync(path.join(bureau, n), 'x');
     await ctx.principal(({ req }, dir) => {
       const library = req('library.js');

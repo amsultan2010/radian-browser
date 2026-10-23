@@ -484,7 +484,6 @@ module.exports = async function extApiTest({ first: w, OrbeWindow, win, extApi, 
     await until(() => rec && rec.state === 'completed', 'téléchargement marqué puis annoncé');
     let marked = !!rec && rec.marked === true;
     if (marked && process.platform === 'darwin') { try { marked = /^0081;/.test(require('child_process').execFileSync('/usr/bin/xattr', ['-p', 'com.apple.quarantine', got.filename]).toString()); } catch { marked = false; } }
-    if (marked && process.platform === 'win32') { try { marked = /ZoneId=3/.test(fs.readFileSync(got.filename + ':Zone.Identifier', 'utf8')); } catch { marked = false; } }
     check('téléchargement d’une extension sous un nom imposé : la liste d’Orbe décrit le fichier réellement écrit, et c’est lui qui est marqué « venu d’Internet »',
       !!rec && rec.name === 'essai.txt' && rec.state === 'completed' && marked, JSON.stringify(rec || store.state.downloads.slice(0, 2)));
     const dl2 = await call('downloads.download', { url: base + '/fichier.txt', filename: 'sous/dossier/orbe-essai-outil.command' });
@@ -671,7 +670,7 @@ module.exports = async function extApiTest({ first: w, OrbeWindow, win, extApi, 
       check('⌘E avec les extensions installées : chacune à son tour, puis le tour se referme et recommence ; passé quelques secondes il repart du début',
         ids.includes(ext.id) && seen.join() === ids.join() && end === '' && restart === ids[0] && late === ids[0] && opened.join() === [...ids, ids[0], ids[0]].join(), JSON.stringify({ ids, seen, end, restart, late, opened }));
       check('⌘E est une commande d’Orbe : au menu Extensions, modifiable dans Réglages → Raccourcis, libre de tout conflit',
-        !!cmd && cmd.accel === require('../src/main/platform').accel('Cmd+E') && require('../src/main/shortcuts').keysOf('cycleExtensions') !== ''
+        !!cmd && cmd.accel === 'Cmd+E' && require('../src/main/shortcuts').keysOf('cycleExtensions') !== ''
         && [...commands.byName.values()].filter((c) => c.accel === cmd.accel).length === 1);
       const priv = { win: w.win, incognito: true };
       check('⌘E en navigation privée (aucune extension) : rien à ouvrir', extHost.cycle(priv, open) === null && realActions(priv).length === 0);

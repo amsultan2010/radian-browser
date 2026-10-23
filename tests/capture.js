@@ -1,8 +1,7 @@
 // Captures d'écran des tests, pour relecture visuelle (ORBE_SHOTS=<dossier>).
 // macOS : `screencapture` photographie la vraie fenêtre.
-// Ailleurs : la fenêtre est recomposée à partir de ses vues (coque, pages,
-// vues flottantes), chacune capturée par Chromium ; s'y ajoute, sous Windows,
-// une photo de l'écran entier, où l'on voit les vrais boutons de fenêtre.
+// Essais discrets : la fenêtre est recomposée à partir de ses vues (coque, pages,
+// vues flottantes), chacune capturée par Chromium.
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -31,6 +30,16 @@ function blit(dst, W, H, src, sw, sh, x0, y0) {
   }
 }
 
+// Shell background, as base.css computes it: the Space colour mixed into the light
+// or dark base. Background of recomposed windows.
+function tint(color, dark) {
+  const base = dark ? [0x16, 0x16, 0x1a] : [0xf3, 0xf3, 0xf5];
+  const k = dark ? 0.24 : 0.18;
+  const m = /^#([0-9a-f]{6})$/i.exec(color || '');
+  const c = m ? [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16)) : base;
+  return '#' + base.map((b, i) => Math.round(c[i] * k + b * (1 - k)).toString(16).padStart(2, '0')).join('');
+}
+
 // Recompose la fenêtre : fond, puis chaque vue visible dans l'ordre d'empilement.
 async function compose(win, background) {
   const [W, H] = win.getContentSize();
@@ -54,13 +63,7 @@ async function compose(win, background) {
   return nativeImage.createFromBitmap(out, { width: W, height: H }).toPNG();
 }
 
-// Photo de l'écran entier (Windows), par PowerShell et System.Drawing.
-function screenWindows(file) {
-  const ps = `Add-Type -AssemblyName System.Windows.Forms,System.Drawing; $b=[System.Windows.Forms.SystemInformation]::VirtualScreen; $bmp=New-Object System.Drawing.Bitmap $b.Width,$b.Height; $g=[System.Drawing.Graphics]::FromImage($bmp); $g.CopyFromScreen($b.Left,$b.Top,0,0,$bmp.Size); $bmp.Save('${file.replace(/'/g, "''")}'); $g.Dispose(); $bmp.Dispose()`;
-  execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', ps], { stdio: 'ignore', timeout: 20000 });
-}
-
-// Enregistre <dossier>/<nom>.png (et <nom>-ecran.png sous Windows).
+// Enregistre <dossier>/<nom>.png.
 async function shoot(win, dir, name, background) {
   const file = path.join(dir, name + '.png');
   // Essais discrets (tests/discret.js) : la fenêtre est transparente à l'écran,
@@ -71,7 +74,6 @@ async function shoot(win, dir, name, background) {
     return;
   }
   try { fs.writeFileSync(file, await compose(win, background)); } catch (err) { console.log('  (capture impossible : ' + err.message + ')'); }
-  if (process.platform === 'win32') { try { screenWindows(path.join(dir, name + '-ecran.png')); } catch {} }
 }
 
-module.exports = { shoot, compose };
+module.exports = { shoot, compose, tint };

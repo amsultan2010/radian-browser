@@ -16,7 +16,7 @@ module.exports = {
     const { shell, jusqua } = ctx;
     const home = fs.mkdtempSync(path.join(os.tmpdir(), 'orbe-ui-nav-'));
     const dl = fs.mkdtempSync(path.join(os.tmpdir(), 'orbe-ui-maj-'));
-    fx.profils(home, { platform: 'darwin' });
+    fx.profils(home);
     await ctx.principal(({ req }, h) => {
       req('import-browsers.js').configure({ home: h, platform: 'darwin', sqlite: '' });
       // Le navigateur par défaut du système n'est jamais changé par un test.
@@ -164,7 +164,7 @@ module.exports = {
       assert.ok(fs.readFileSync(fichier).equals(zip));
       assert.deepEqual(await ctx.principal(() => global.__maj.montres), [fichier]);
       assert.match(await r.textContent('#update-dl-state'), /Empreinte SHA-256 vérifiée ; l’archive est marquée comme venue d’Internet/);
-      assert.match(await r.textContent('#update-how'), process.platform === 'darwin' ? /Ouvrir quand même/ : /SmartScreen/);
+      assert.match(await r.textContent('#update-how'), /Ouvrir quand même/);
       assert.deepEqual(fs.readdirSync(dl), [serveur.archive]);
     });
 

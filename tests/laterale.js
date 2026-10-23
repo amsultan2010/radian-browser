@@ -358,7 +358,7 @@ module.exports = async function lateraleTests(ctx) {
   check('glisser la pastille d’un Espace : il prend le rang visé', d.spaces[0] === other && w.pendingLabel('undo') === 'undo.moveSpace' && w.spaceId === space.id, order());
   await until(() => ui(`document.querySelector('#spaces .sp').dataset.space === ${JSON.stringify(other.id)}`), 'pastilles dans le nouvel ordre');
   menu.build();
-  check('… le menu Espaces et ⌃1 suivent le nouvel ordre', (() => { const m = Menu.getApplicationMenu().items.find((x) => x.label === T('menu.spaces')); const it = m.submenu.items.find((x) => x.label === `${other.icon}  ${other.name}`); return !!it && it.accelerator === require('../src/main/platform').accel('Ctrl+1'); })());
+  check('… le menu Espaces et ⌃1 suivent le nouvel ordre', (() => { const m = Menu.getApplicationMenu().items.find((x) => x.label === T('menu.spaces')); const it = m.submenu.items.find((x) => x.label === `${other.icon}  ${other.name}`); return !!it && it.accelerator === 'Ctrl+1'; })());
   w.replay('undo');
   check('⌘Z remet les Espaces dans leur ordre', order() === order0);
   w.replay('redo');
@@ -526,7 +526,7 @@ module.exports = async function lateraleTests(ctx) {
     await w.run('pasteUrl');
   }
   check('… jamais une adresse file:, orbe: ou javascript:, ni un presse-papiers vide', space.today.length === n1 && w.activeId === pastedTab);
-  check('⌥⌘V figure au menu Édition, sous le raccourci du système', menuItem('edit.pasteUrl').accelerator === require('../src/main/platform').accel('Alt+Cmd+V'));
+  check('⌥⌘V figure au menu Édition, sous le raccourci du système', menuItem('edit.pasteUrl').accelerator === 'Alt+Cmd+V');
 
   toasts.length = 0;
   w.newTab(base + '/p1', { background: true });
@@ -814,7 +814,7 @@ module.exports = async function lateraleTests(ctx) {
   const inGroup = (title, name) => (groups.find((g) => g.title === T(title)) || { items: [] }).items.some((x) => x.name === name);
   check('volet Raccourcis : les nouvelles commandes sont rangées dans leur menu',
     inGroup('menu.edit', 'pasteUrl') && inGroup('menu.view', 'collapsePinned') && inGroup('menu.view', 'separateSplit') && inGroup('menu.tabs', 'revealTab') && inGroup('menu.tabs', 'resetTabs') && inGroup('menu.window', 'stayOnTop'));
-  const custom = require('../src/main/platform').isMac ? 'Ctrl+Cmd+R' : 'Ctrl+Alt+R';
+  const custom = 'Ctrl+Cmd+R';
   const given = shortcuts.assign('revealTab', custom);
   await until(() => menuItem('tabs.reveal') && menuItem('tabs.reveal').accelerator === custom, 'menu reconstruit avec le nouveau raccourci');
   check('un raccourci donné à « Afficher l’onglet dans la barre latérale » arrive au menu', given.ok === true);

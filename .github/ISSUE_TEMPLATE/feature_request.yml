@@ -9,7 +9,7 @@ body:
         Thanks for the idea. Before you submit:
 
         - If Arc already does this, use the **Radian differs from Arc** template instead.
-        - Accounts, sync, AI features and Windows support are out of scope for now.
+        - Accounts, sync and AI features are out of scope for now, and Radian is Mac only.
         - Search [existing issues](https://github.com/amsultan2010/radian-browser/issues) first.
 
   - type: textarea

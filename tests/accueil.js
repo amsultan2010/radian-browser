@@ -16,7 +16,7 @@ module.exports = async function accueilTests(ctx) {
   const platform = require('../src/main/platform');
   const real = { ...br.conf };
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'orbe-accueil-'));
-  fx.profils(home, { platform: 'darwin' });
+  fx.profils(home);
   br.configure({ home, platform: 'darwin', sqlite: '' });
   // Le navigateur par défaut du système n'est jamais changé par un essai.
   const realDefault = platform.makeDefault;

@@ -38,7 +38,6 @@ body.menu #bar { background: var(--paint, color-mix(in srgb, var(--accent) var(-
 #space-list button { height: 30px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 8px; border-radius: 7px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #space-list button.sel, #space-list button:hover { background: var(--hover); }
 #space-none { color: var(--dim); font-size: 12px; padding: 4px 8px; }
-html.win #spaces { right: 146px; }
 /* Première petite fenêtre : un bandeau d'explication entre la barre et la page. */
 #hint { position: fixed; top: 42px; left: 6px; right: 6px; height: 28px; display: flex; align-items: center; gap: 8px; padding: 0 4px 0 12px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 16%, transparent); font-size: 12px; color: var(--fg); animation: hint-in var(--spring-smooth) both; }
 #hint span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -46,8 +45,6 @@ html.win #spaces { right: 146px; }
 #hint button:hover { background: var(--hover); color: var(--fg); }
 @keyframes hint-in { from { opacity: 0; transform: translateY(-6px); } }
 [hidden] { display: none !important; }
-/* Windows : boutons de fenêtre à droite, rien à gauche. */
-html.win #bar { padding: 0 146px 0 8px; }
 </style>
 </head>
 <body>

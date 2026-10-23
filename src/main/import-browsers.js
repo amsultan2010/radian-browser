@@ -31,24 +31,23 @@ const MAX_TEXT = 64 * 1024 * 1024; // caractères décodés d'une liste de propr
 const SQLITE_TIMEOUT = 10000;
 const MAX_NEST = 120; // au-delà, le sous-arbre est abandonné (fichier hostile)
 
-// Dossier de chaque navigateur. macOS et Linux : sous le dossier personnel.
-// Windows : sous AppData\Local (« local ») ou AppData\Roaming (« roaming »).
+// Dossier de chaque navigateur, sous le dossier personnel (macOS et Linux).
 const BROWSERS = [
-  { id: 'chrome', name: 'Google Chrome', kind: 'chromium', darwin: 'Library/Application Support/Google/Chrome', win32: ['local', 'Google/Chrome/User Data'], linux: '.config/google-chrome' },
-  { id: 'brave', name: 'Brave', kind: 'chromium', darwin: 'Library/Application Support/BraveSoftware/Brave-Browser', win32: ['local', 'BraveSoftware/Brave-Browser/User Data'], linux: '.config/BraveSoftware/Brave-Browser' },
-  { id: 'edge', name: 'Microsoft Edge', kind: 'chromium', darwin: 'Library/Application Support/Microsoft Edge', win32: ['local', 'Microsoft/Edge/User Data'], linux: '.config/microsoft-edge' },
-  { id: 'vivaldi', name: 'Vivaldi', kind: 'chromium', darwin: 'Library/Application Support/Vivaldi', win32: ['local', 'Vivaldi/User Data'], linux: '.config/vivaldi' },
-  { id: 'opera', name: 'Opera', kind: 'chromium', darwin: 'Library/Application Support/com.operasoftware.Opera', win32: ['roaming', 'Opera Software/Opera Stable'], linux: '.config/opera' },
-  { id: 'chromium', name: 'Chromium', kind: 'chromium', darwin: 'Library/Application Support/Chromium', win32: ['local', 'Chromium/User Data'], linux: '.config/chromium' },
-  { id: 'firefox', name: 'Firefox', kind: 'firefox', darwin: 'Library/Application Support/Firefox', win32: ['roaming', 'Mozilla/Firefox'], linux: '.mozilla/firefox' },
+  { id: 'chrome', name: 'Google Chrome', kind: 'chromium', darwin: 'Library/Application Support/Google/Chrome', linux: '.config/google-chrome' },
+  { id: 'brave', name: 'Brave', kind: 'chromium', darwin: 'Library/Application Support/BraveSoftware/Brave-Browser', linux: '.config/BraveSoftware/Brave-Browser' },
+  { id: 'edge', name: 'Microsoft Edge', kind: 'chromium', darwin: 'Library/Application Support/Microsoft Edge', linux: '.config/microsoft-edge' },
+  { id: 'vivaldi', name: 'Vivaldi', kind: 'chromium', darwin: 'Library/Application Support/Vivaldi', linux: '.config/vivaldi' },
+  { id: 'opera', name: 'Opera', kind: 'chromium', darwin: 'Library/Application Support/com.operasoftware.Opera', linux: '.config/opera' },
+  { id: 'chromium', name: 'Chromium', kind: 'chromium', darwin: 'Library/Application Support/Chromium', linux: '.config/chromium' },
+  { id: 'firefox', name: 'Firefox', kind: 'firefox', darwin: 'Library/Application Support/Firefox', linux: '.mozilla/firefox' },
   { id: 'safari', name: 'Safari', kind: 'safari', darwin: 'Library/Safari' },
 ];
-const SQLITE = { darwin: ['/usr/bin/sqlite3'], linux: ['/usr/bin/sqlite3', '/bin/sqlite3'], win32: [] };
+const SQLITE = { darwin: ['/usr/bin/sqlite3'], linux: ['/usr/bin/sqlite3', '/bin/sqlite3'] };
 
 // `home` nul : aucun navigateur n'est cherché (mode test sans dossier d'essai :
 // les vrais profils de la machine ne sont jamais lus pendant un essai).
 // `labels` : noms donnés aux racines que Firefox et Safari ne nomment pas eux-mêmes.
-const conf = { home: os.homedir(), local: process.env.LOCALAPPDATA || '', roaming: process.env.APPDATA || '', platform: process.platform, sqlite: undefined, labels: { menu: 'Menu des signets', other: 'Autres signets', mobile: 'Signets du mobile' } };
+const conf = { home: os.homedir(), platform: process.platform, sqlite: undefined, labels: { menu: 'Menu des signets', other: 'Autres signets', mobile: 'Signets du mobile' } };
 function configure(o) {
   Object.assign(conf, o);
 }
@@ -56,10 +55,7 @@ function configure(o) {
 function rootOf(b, platform = conf.platform) {
   if (!conf.home) return '';
   const spec = b[platform];
-  if (!spec) return '';
-  if (typeof spec === 'string') return path.join(conf.home, spec);
-  const base = spec[0] === 'local' ? (conf.local || path.join(conf.home, 'AppData', 'Local')) : (conf.roaming || path.join(conf.home, 'AppData', 'Roaming'));
-  return path.join(base, spec[1]);
+  return spec ? path.join(conf.home, spec) : '';
 }
 
 const isFile = (p) => { try { return fs.statSync(p).isFile(); } catch { return false; } };
@@ -291,7 +287,7 @@ function firefoxRowsTree(rows) {
 const SQLITE_ARGS = ['-safe', '-readonly', '-batch', '-json'];
 function runSqlite(bin, db, sql) {
   return new Promise((resolve, reject) => {
-    execFile(bin, [...SQLITE_ARGS, db, sql], { encoding: 'utf8', timeout: SQLITE_TIMEOUT, maxBuffer: 96 * 1024 * 1024, windowsHide: true, env: { PATH: '', HOME: path.dirname(db) } }, (err, out) => (err ? reject(err) : resolve(out)));
+    execFile(bin, [...SQLITE_ARGS, db, sql], { encoding: 'utf8', timeout: SQLITE_TIMEOUT, maxBuffer: 96 * 1024 * 1024, env: { PATH: '', HOME: path.dirname(db) } }, (err, out) => (err ? reject(err) : resolve(out)));
   });
 }
 async function readFirefoxSqlite(dir) {

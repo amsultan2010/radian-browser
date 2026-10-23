@@ -39,11 +39,11 @@ const FILE_MAX = 2 * 1024 * 1024;
 
 // Polices proposées (« Aa ») : des familles du système, aucune n'est téléchargée.
 const FONTS = {
-  sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+  sans: '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif',
   serif: '"New York", "Iowan Old Style", Georgia, "Times New Roman", serif',
   mono: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
-  rounded: 'ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Segoe UI", sans-serif',
-  hand: '"Bradley Hand", "Segoe Print", "Comic Sans MS", cursive',
+  rounded: 'ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", sans-serif',
+  hand: '"Bradley Hand", "Comic Sans MS", cursive',
 };
 const CASES = { upper: 'uppercase', lower: 'lowercase', title: 'capitalize' };
 // Nuancier : les pastilles de l'éditeur (toute autre couleur « #rrggbb » est acceptée).

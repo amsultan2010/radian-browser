@@ -679,7 +679,6 @@ body.toolbar #empty { top: 50px; }
 body.docked #card { left: var(--sw); transition: left var(--sidebar-in); }
 body.no-anim #card { transition: none; }
 body.toolbar #card { top: 50px; }
-html.win body:not(.toolbar):not(.fullscreen) #card { top: 32px; }
 body.no-tab #card { box-shadow: none; }
 /* Fenêtre à l'arrière-plan (thème sombre) : tout le cadre s'assombrit de ≈ 24 niveaux, la carte non. */
 html[data-family="dark"] body.blurred #card { box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25), 0 0 0 200vmax rgba(0, 0, 0, 0.45); }
@@ -790,19 +789,6 @@ html[data-family="dark"] body.blurred.no-tab #card { box-shadow: 0 0 0 200vmax r
 .folder:not(.open) > .children:has(.row.active) { display: flex; }
 .folder:not(.open) > .children > :not(.active):not(.folder) { display: none; }
 .folder:not(.open) > .children > .folder:not(:has(.row.active)) { display: none; }
-
-/* ==== Plateformes (html.mac / html.win, classe posée par common.js) ==========
-   Tout ce qui dépend du système est dans ce bloc. */
-/* Bouton « ⋯ » : ouvre le menu de l'application là où il n'y a pas de barre de menus. */
-#b-menu { display: none; }
-html.win #b-menu { display: grid; }
-/* Windows : pas de feux tricolores à gauche ; les boutons de fenêtre sont en
-   haut à droite (140 px), au-dessus de la page ou à droite de la barre d'outils. */
-html.win #top, html.win.floating #top { padding-left: 0; }
-html.win body.toolbar:not(.fullscreen) #toolbar { right: 146px; }
-html.win body.toolbar:not(.docked) #toolbar { padding-left: 0; }
-html.win body:not(.toolbar):not(.fullscreen) #empty { top: 32px; }
-/* ==== Fin du bloc plateformes ============================================== */
 
 .divider.v { width: auto; height: 8px; cursor: row-resize; }
 .divider.v::after { width: 34px; height: 3px; }

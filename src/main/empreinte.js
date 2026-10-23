@@ -8,8 +8,7 @@
 // onglets lourds restés cachés.
 //
 // Ce qu'Electron 44 expose, relevé dans electron.d.ts :
-//   - `app.getAppMetrics()[].memory` : `workingSetSize` partout, `privateBytes`
-//     sous Windows seulement (c'est la bonne valeur, déjà utilisée) ;
+//   - `app.getAppMetrics()[].memory` : `workingSetSize` ;
 //   - `process.getProcessMemoryInfo()` : la mémoire propre (`private`), mais du
 //     seul processus qui l'appelle — rien, depuis le processus principal, pour un
 //     autre processus ni pour un `webContents` ;
@@ -61,7 +60,7 @@ function refresh(procs) {
   for (const p of procs) args.push('-pid', String(p.pid));
   state.runs += 1;
   state.running = new Promise((resolve) => {
-    state.exec(TOP, args, { timeout: 8000, maxBuffer: 4 << 20, windowsHide: true }, (err, stdout) => {
+    state.exec(TOP, args, { timeout: 8000, maxBuffer: 4 << 20 }, (err, stdout) => {
       state.running = null;
       const read = err ? new Map() : parse(stdout);
       if (!read.size) { state.failed += 1; return resolve(false); }

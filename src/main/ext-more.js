@@ -8,9 +8,7 @@
 // Écrit pour Orbe à partir de la documentation publique des API d'extension de
 // Chrome ; aucun code tiers.
 const { app, BrowserWindow } = require('electron');
-const path = require('path');
 const api = require('./ext-api');
-const platform = require('./platform');
 
 const X = api.internals;
 const isMac = process.platform === 'darwin';
@@ -83,9 +81,9 @@ function reserved() {
   const current = require('./shortcuts');
   for (const c of require('./commands').COMMANDS) add(current.accelOf(c.name));
   add(require('./store').store.state.settings.littleShortcut);
-  for (const k of ['C', 'V', 'X', 'A', 'Z', 'Q', 'H', 'M', 'W', 'T', 'N', 'L', 'R', 'F', 'P', 'S']) add(platform.accel(`Cmd+${k}`));
-  add(platform.accel('Shift+Cmd+Z'));
-  for (let n = 1; n <= 9; n++) { add(platform.accel(`Ctrl+${n}`)); add(platform.accel(`Cmd+${n}`)); }
+  for (const k of ['C', 'V', 'X', 'A', 'Z', 'Q', 'H', 'M', 'W', 'T', 'N', 'L', 'R', 'F', 'P', 'S']) add(`Cmd+${k}`);
+  add('Shift+Cmd+Z');
+  for (let n = 1; n <= 9; n++) { add(`Ctrl+${n}`); add(`Cmd+${n}`); }
   add('Ctrl+Tab');
   add('Ctrl+Shift+Tab');
   return reservedSet;
@@ -95,7 +93,7 @@ function suggested(command) {
   const k = command && command.suggested_key;
   if (typeof k === 'string') return k;
   if (!k || typeof k !== 'object') return '';
-  const os = isMac ? 'mac' : process.platform === 'win32' ? 'windows' : 'linux';
+  const os = isMac ? 'mac' : 'linux';
   return k[os] || k.default || '';
 }
 

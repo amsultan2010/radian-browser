@@ -127,16 +127,13 @@ const volatileRecords = new Set(); // navigation privée : jamais écrits sur di
 
 // Marque « venu d'Internet » sur le fichier téléchargé, comme le font Safari et Chrome :
 // c'est elle qui fait dire au système « téléchargé depuis Internet, voulez-vous l'ouvrir ? »
-// (Gatekeeper sur macOS, SmartScreen et la zone Internet sur Windows). Electron ne la pose pas.
+// (Gatekeeper sur macOS). Electron ne la pose pas.
 // `withUrl` : faux en navigation privée (l'adresse d'origine n'est pas écrite à côté du fichier).
 function quarantine(file, url, withUrl = true) {
   return new Promise((resolve) => {
     if (process.platform === 'darwin') {
       const value = `0081;${Math.floor(Date.now() / 1000).toString(16)};Radian;${require('crypto').randomUUID().toUpperCase()}`;
       require('child_process').execFile('/usr/bin/xattr', ['-w', 'com.apple.quarantine', value, file], { timeout: 5000 }, (err) => resolve(!err));
-    } else if (process.platform === 'win32') {
-      const host = withUrl && /^https?:/i.test(url || '') ? `HostUrl=${String(url).replace(/[\r\n]/g, '')}\r\n` : '';
-      fs.writeFile(file + ':Zone.Identifier', `[ZoneTransfer]\r\nZoneId=3\r\n${host}`, (err) => resolve(!err));
     } else resolve(null); // autre système : pas de marque de ce genre
   });
 }

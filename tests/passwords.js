@@ -186,7 +186,7 @@ module.exports = async function passwordTests(ctx) {
   check('coffre : fichier à part, sans mot de passe, identifiant ni site en clair', file.endsWith('passwords.json') && !leaks.length && JSON.parse(raw.toString('utf8')).orbe === 'passwords', String(leaks.length));
   store.flush();
   check('coffre : rien dans orbe.json', !fs.readFileSync(store.file, 'utf8').includes(P1));
-  if (process.platform !== 'win32') check('coffre : fichier lisible par son seul propriétaire', (fs.statSync(file).mode & 0o077) === 0);
+  check('coffre : fichier lisible par son seul propriétaire', (fs.statSync(file).mode & 0o077) === 0);
 
   // --- Même compte, mot de passe changé, « jamais » ---------------------------
   wc.loadURL(A + '/login');

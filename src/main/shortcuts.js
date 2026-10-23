@@ -4,7 +4,6 @@
 // Le menu, la page des raccourcis, la barre de commande et les extensions
 // lisent tous le résultat ici.
 const { store } = require('./store');
-const platform = require('./platform');
 const commands = require('./commands');
 
 const MODS = ['Ctrl', 'Alt', 'Shift', 'Cmd'];
@@ -42,16 +41,12 @@ function reservedMap() {
   if (reservedCache) return reservedCache;
   const out = new Map();
   const add = (kind, list) => { for (const a of list) { const c = canon(a); if (c) out.set(c, kind); } };
-  if (platform.isMac) {
-    add('system', ['Cmd+Q', 'Shift+Cmd+Q', 'Ctrl+Cmd+Q', 'Alt+Cmd+Escape', 'Cmd+H', 'Alt+Cmd+H', 'Cmd+M', 'Alt+Cmd+M', 'Cmd+Tab', 'Shift+Cmd+Tab',
-      'Cmd+Space', 'Ctrl+Space', 'Alt+Cmd+Space', 'Ctrl+Cmd+Space', 'Cmd+`', 'Shift+Cmd+3', 'Shift+Cmd+4', 'Shift+Cmd+5', 'Alt+Cmd+D',
-      'Ctrl+Up', 'Ctrl+Down', 'Ctrl+Left', 'Ctrl+Right']);
-  } else {
-    add('system', ['Alt+F4', 'Alt+Tab', 'Alt+Shift+Tab', 'Ctrl+Alt+Delete', 'Ctrl+Shift+Escape', 'Ctrl+Escape', 'Alt+Space', 'Alt+Escape', 'Alt+Return', 'F10']);
-  }
+  add('system', ['Cmd+Q', 'Shift+Cmd+Q', 'Ctrl+Cmd+Q', 'Alt+Cmd+Escape', 'Cmd+H', 'Alt+Cmd+H', 'Cmd+M', 'Alt+Cmd+M', 'Cmd+Tab', 'Shift+Cmd+Tab',
+    'Cmd+Space', 'Ctrl+Space', 'Alt+Cmd+Space', 'Ctrl+Cmd+Space', 'Cmd+`', 'Shift+Cmd+3', 'Shift+Cmd+4', 'Shift+Cmd+5', 'Alt+Cmd+D',
+    'Ctrl+Up', 'Ctrl+Down', 'Ctrl+Left', 'Ctrl+Right']);
   // Édition (rôles du menu) et accès direct aux onglets et aux Espaces.
-  add('orbe', ['Cmd+C', 'Cmd+V', 'Cmd+X', 'Cmd+A', 'Shift+Cmd+V'].map((a) => platform.accel(a)));
-  for (let n = 1; n <= 9; n++) add('orbe', [platform.accel(`Cmd+${n}`), platform.accel(`Ctrl+${n}`)]);
+  add('orbe', ['Cmd+C', 'Cmd+V', 'Cmd+X', 'Cmd+A', 'Shift+Cmd+V']);
+  for (let n = 1; n <= 9; n++) add('orbe', [`Cmd+${n}`, `Ctrl+${n}`]);
   add('orbe', ['Ctrl+Tab', 'Ctrl+Shift+Tab']);
   reservedCache = out;
   return out;
@@ -67,11 +62,9 @@ function check(accel) {
   const parts = c.split('+');
   const key = parts.pop();
   const mods = new Set(parts);
-  if (mods.has('Cmd') && !platform.isMac) return { error: 'bad' };
   if (!F_KEY.test(key)) {
     // macOS : ⌥ seul compose des caractères (« é », « œ ») ; il faut ⌘ ou ⌃.
-    const strong = platform.isMac ? (mods.has('Cmd') || mods.has('Ctrl')) : (mods.has('Ctrl') || mods.has('Alt'));
-    if (!strong) return { error: 'modifier' };
+    if (!mods.has('Cmd') && !mods.has('Ctrl')) return { error: 'modifier' };
   }
   const kind = reservedMap().get(c);
   if (kind) return { error: 'reserved', kind };
@@ -95,11 +88,10 @@ const effective = (name) => canon(accelOf(name) || '') || '';
 const GLYPH = { Ctrl: '⌃', Alt: '⌥', Shift: '⇧', Cmd: '⌘' };
 const KEY_GLYPH = { Left: '←', Right: '→', Up: '↑', Down: '↓', Plus: '+', Tab: '⇥', Return: '↩', Backspace: '⌫', Delete: '⌦', Escape: '⎋', Space: '␣', Home: '↖', End: '↘', PageUp: '⇞', PageDown: '⇟' };
 
-// Affichage : « ⇧⌘T » sur macOS, « Ctrl+Shift+T » ailleurs.
+// Display: « ⇧⌘T ».
 function display(accel) {
   const c = canon(accel || '');
   if (!c) return '';
-  if (!platform.isMac) return platform.label(c);
   const parts = c.split('+');
   const key = parts.pop();
   return MODS.filter((m) => parts.includes(m)).map((m) => GLYPH[m]).join('') + (KEY_GLYPH[key] || key);

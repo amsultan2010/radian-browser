@@ -59,10 +59,9 @@ module.exports = async function majTests(ctx) {
   const gh = (over) => updates.parseRelease({ tag_name: 'v1.2.3', body: 'x', assets: [], ...over }, { platform: 'darwin', arch: 'arm64' });
   const macAsset = { name: 'Radian-1.2.3-mac-arm64.zip', size: 10, browser_download_url: 'https://github.com/amsultan2010/radian-browser/releases/download/v1.2.3/Radian-1.2.3-mac-arm64.zip' };
   const dg = 'sha256:' + 'a'.repeat(64);
-  const good = gh({ assets: [{ ...macAsset, digest: dg }, { ...macAsset, name: 'Radian-1.2.3-windows-x64.zip', digest: dg }], html_url: 'https://pirate.example/' });
+  const good = gh({ assets: [{ ...macAsset, digest: dg }], html_url: 'https://pirate.example/' });
   check('version publiée : numéro, page reconstruite dans le dépôt d’Orbe, archive de ce système',
     good.version === '1.2.3' && good.url === 'https://github.com/amsultan2010/radian-browser/releases/tag/v1.2.3' && good.asset.name === 'Radian-1.2.3-mac-arm64.zip' && good.asset.digest === 'a'.repeat(64)
-    && updates.parseRelease({ tag_name: '1.2.3', assets: [{ ...macAsset, name: 'Radian-1.2.3-windows-x64.zip', digest: dg }] }, { platform: 'win32', arch: 'x64' }).asset.name === 'Radian-1.2.3-windows-x64.zip'
     && updates.parseRelease({ tag_name: '1.2.3', assets: [{ ...macAsset, digest: dg }] }, { platform: 'linux', arch: 'x64' }).asset === null, JSON.stringify(good));
   check('brouillon, préversion, numéro illisible ou réponse qui n’est pas un objet : ignorés',
     gh({ draft: true }) === null && gh({ prerelease: true }) === null && gh({ tag_name: 'v1.2' }) === null && gh({ tag_name: '1.2.3; rm -rf' }) === null && gh({ tag_name: 12 }) === null
@@ -225,8 +224,8 @@ module.exports = async function majTests(ctx) {
     await updates.check({ manual: true });
     await until(() => js('!document.getElementById("update-download").hidden'), 'bouton « Télécharger » de retour');
     const how = await js('document.getElementById("update-how").textContent');
-    check('la carte prévient de ce que le système demandera au premier lancement (« Ouvrir quand même » sur macOS, SmartScreen sous Windows)',
-      process.platform === 'darwin' ? /Confidentialité et sécurité, puis « Ouvrir quand même »/.test(how) : /SmartScreen/.test(how), how);
+    check('la carte prévient de ce que le système demandera au premier lancement (« Ouvrir quand même »)',
+      /Confidentialité et sécurité, puis « Ouvrir quand même »/.test(how), how);
   }
 
   // --- Téléchargement de l'archive ----------------------------------------------------
@@ -260,11 +259,7 @@ module.exports = async function majTests(ctx) {
     if (process.platform === 'darwin') {
       const q = require('child_process').execFileSync('/usr/bin/xattr', ['-p', 'com.apple.quarantine', kept], { encoding: 'utf8' }).trim();
       check('macOS : l’archive porte l’attribut de quarantaine (Gatekeeper et XProtect la contrôleront)', /^0081;[0-9a-f]{8};Radian;$/.test(q) && q === updates.quarantineValue(now), q);
-    } else if (process.platform === 'win32') {
-      let zone = '';
-      try { zone = fs.readFileSync(kept + ':Zone.Identifier', 'utf8'); } catch (err) { zone = String(err.message); }
-      check('Windows : l’archive porte la marque du Web (Zone.Identifier, zone 3 : SmartScreen l’examinera)', /^\[ZoneTransfer\]\r\nZoneId=3\r\n/.test(zone), zone);
-    } else ignorer('marque « venu d’Internet » sur l’archive', 'ni macOS ni Windows');
+    } else ignorer('marque « venu d’Internet » sur l’archive', 'hors macOS');
     const openedBefore = opened.length;
     updates.configure({ mark: () => false });
     const unmarked = await updates.fetchAsset();

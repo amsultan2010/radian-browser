@@ -498,7 +498,7 @@ function accelOf(e) {
   if (e.ctrlKey) mods.push('Ctrl');
   if (e.altKey) mods.push('Alt');
   if (e.shiftKey) mods.push('Shift');
-  if (e.metaKey) mods.push(O.platform === 'mac' ? 'Cmd' : 'Meta');
+  if (e.metaKey) mods.push('Cmd');
   return { key, mods, accel: [...mods, key].join('+') };
 }
 
@@ -551,7 +551,7 @@ function drawAppIcons() {
     }
   }
   for (const b of grid.children) b.setAttribute('aria-pressed', String(b.dataset.name === S.appIcon));
-  // No variants (Windows, or artwork missing from the build): no section.
+  // No variants (artwork missing from the build): no section.
   for (const n of [el('appIconTitle'), grid.parentElement, el('appIconHint')]) n.hidden = !grid.childElementCount;
 }
 
@@ -650,7 +650,7 @@ function drawUpdate(u) {
   const d = u.download || {};
   el('update-download').hidden = !u.latest.asset || d.state === 'done' || d.state === 'running';
   el('update-cancel').hidden = d.state !== 'running';
-  el('update-how').textContent = t('update.how') + ' ' + t(O.platform === 'mac' ? 'update.howMac' : 'update.howWin');
+  el('update-how').textContent = t('update.how') + ' ' + t('update.howMac');
   el('update-download').disabled = d.state === 'running';
   el('update-reveal').hidden = d.state !== 'done';
   el('update-dl-state').textContent = d.state === 'running' ? t('update.downloading', { pct: d.total ? Math.floor((d.received / d.total) * 100) : 0 })

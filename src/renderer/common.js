@@ -2,11 +2,8 @@
 const O = window.orbe;
 let lang = O.lang || 'en';
 
-// Classe « mac » ou « win » sur <html> : les feuilles de style adaptent
-// l'habillage (boutons de fenêtre, police) dans un bloc à part.
-document.documentElement.classList.add(O.platform || 'mac');
-// Touche « principale » d'un événement clavier ou souris : ⌘ sur macOS, Ctrl ailleurs.
-const modKey = (e) => (O.platform === 'mac' || !O.platform ? e.metaKey : e.ctrlKey);
+// Primary modifier of a keyboard or mouse event: ⌘.
+const modKey = (e) => e.metaKey;
 
 // Raccourcis en vigueur, par nom de commande : suivent les changements faits
 // dans les réglages (événement « keys »).

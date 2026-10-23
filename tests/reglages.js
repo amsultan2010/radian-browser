@@ -8,7 +8,6 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { Menu, dialog, globalShortcut } = require('electron');
-const platform = require('../src/main/platform');
 
 const { sleep, until } = require('./outils');
 
@@ -311,8 +310,8 @@ module.exports = async function reglagesTests(ctx) {
     check('réglage coupé : plus de mode développeur automatique', !prefs2.devMode(base + '/') && !w.toolbarShown && w.contentRect().y === yBefore);
   }
   await set({ showFullUrl: before.showFullUrl });
-  check('mode développeur : ⌃D sur macOS, hors du raccourci d’épinglage sous Windows',
-    commands.byName.get('toggleDevMode').accel === (platform.isMac ? 'Ctrl+D' : 'Alt+Shift+D') && commands.byName.get('togglePin').accel === platform.accel('Cmd+D'));
+  check('mode développeur : ⌃D, à côté du raccourci d’épinglage (⌘D)',
+    commands.byName.get('toggleDevMode').accel === 'Ctrl+D' && commands.byName.get('togglePin').accel === 'Cmd+D');
 
   // CSS ajouté aux pages : bandeaux de cookies, couleurs du thème, Boosts
   const css = (code) => wc.executeJavaScript(code, true);
@@ -408,13 +407,13 @@ module.exports = async function reglagesTests(ctx) {
   const mismatch = withAccel.filter((c) => shortcuts.display(c.accel) !== c.keys).map((c) => `${c.name} ${c.keys} ≠ ${shortcuts.display(c.accel)}`);
   check('l’affichage calculé d’un raccourci redonne celui de la table des commandes', !mismatch.length, mismatch.join(' ; '));
 
-  const main = platform.isMac ? 'Cmd' : 'Ctrl';
-  const bad = ['', 'T', 'Shift+T', main + '+', main + '+' + main + '+T', 'Hyper+T', main + '+TT', main + '+' + 'A'.repeat(60), main + '++', platform.isMac ? 'Alt+T' : 'Cmd+T', 42, null];
-  const reserved = [platform.isMac ? 'Cmd+Q' : 'Alt+F4', platform.accel('Cmd+C'), platform.accel('Cmd+1'), platform.accel('Ctrl+3'), 'Ctrl+Tab'];
+  const main = 'Cmd';
+  const bad = ['', 'T', 'Shift+T', main + '+', main + '+' + main + '+T', 'Hyper+T', main + '+TT', main + '+' + 'A'.repeat(60), main + '++', 'Alt+T', 42, null];
+  const reserved = ['Cmd+Q', 'Cmd+C', 'Cmd+1', 'Ctrl+3', 'Ctrl+Tab'];
   check('accélérateurs mal formés ou sans touche de modification : refusés', bad.every((a) => !!shortcuts.check(a).error), bad.filter((a) => !shortcuts.check(a).error).join(' | '));
   check('combinaisons réservées au système ou à Orbe : refusées', reserved.every((a) => shortcuts.check(a).error === 'reserved'), reserved.map((a) => a + ':' + shortcuts.check(a).error).join(' '));
   check('formes acceptées, rendues sous forme canonique',
-    shortcuts.check('shift+' + main.toLowerCase() + '+k').accel === (platform.isMac ? 'Shift+Cmd+K' : 'Ctrl+Shift+K') && shortcuts.check('F5').accel === 'F5' && shortcuts.check('Ctrl+Alt+Left').accel === 'Ctrl+Alt+Left');
+    shortcuts.check('shift+' + main.toLowerCase() + '+k').accel === 'Shift+Cmd+K' && shortcuts.check('F5').accel === 'F5' && shortcuts.check('Ctrl+Alt+Left').accel === 'Ctrl+Alt+Left');
 
   const freeA = 'Ctrl+Alt+R';
   const reloadDefault = commands.byName.get('reload').accel;
@@ -427,7 +426,7 @@ module.exports = async function reglagesTests(ctx) {
   const shownKeys = groups.flatMap((g) => g.items).find((i) => i.label === label('reload'));
   check('page des raccourcis, barre de commande et pages de l’interface : même nouveau raccourci',
     shownKeys && shownKeys.keys === shortcuts.display(freeA) && w.commandList().find((c) => c.command === 'reload').shortcut === shortcuts.display(freeA)
-    && shortcuts.keysMap().reload === shortcuts.display(freeA) && shortcuts.display(freeA) === (platform.isMac ? '⌃⌥R' : 'Ctrl+Alt+R'), JSON.stringify(shownKeys));
+    && shortcuts.keysMap().reload === shortcuts.display(freeA) && shortcuts.display(freeA) === '⌃⌥R', JSON.stringify(shownKeys));
 
   // Page « Raccourcis clavier essentiels » (menu Aide)
   commands.run(w, 'shortcuts');
@@ -470,10 +469,6 @@ module.exports = async function reglagesTests(ctx) {
   shortcuts.assign('toggleSidebar', 'Ctrl+Alt+B');
   await until(async () => (await ui('KEYS[document.getElementById("b-sidebar").dataset.tipKey]')) === shortcuts.display('Ctrl+Alt+B'), 'infobulle à jour');
   check('coque : l’infobulle de la barre latérale cite le nouveau raccourci', titleBefore === commands.byName.get('toggleSidebar').keys);
-
-  check('Windows : la table de correspondance n’est pas touchée par les changements',
-    platform.WIN_ACCEL['Cmd+Y'] === 'Ctrl+H' && platform.accel('Cmd+Y') === (platform.isMac ? 'Cmd+Y' : 'Ctrl+H') && commands.byName.get('history').accel === platform.accel('Cmd+Y')
-    && commands.byName.get('history').keys === (platform.isMac ? '⌘Y' : 'Ctrl+H'));
 
   const kept = JSON.parse(JSON.stringify(s().shortcuts));
   await set({ shortcuts: { inconnue: 'Ctrl+Alt+U' } });

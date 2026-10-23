@@ -22,9 +22,8 @@ function installed() {
   try { return JSON.parse(fs.readFileSync(pkg, 'utf8')).version; } catch { return null; }
 }
 
-// Sous Windows, npm est un script « npm.cmd » : il lui faut un interpréteur.
 function npm(args, cwd) {
-  execFileSync('npm', args, { cwd, stdio: 'inherit', shell: process.platform === 'win32' });
+  execFileSync('npm', args, { cwd, stdio: 'inherit' });
 }
 
 function ensure() {
@@ -58,13 +57,9 @@ function haptics() {
 // plus aucun minuteur n'y tourne : c'est d'ici, de l'extérieur, que l'on relève
 // ce qui se voit (fenêtres, boîte modale, piles d'appels) avant d'arrêter l'essai.
 function nativeDiagnostic(pid) {
-  const shots = process.env.ORBE_SHOTS || '';
   const run = (cmd, args, timeout) => {
     try { return execFileSync(cmd, args, { encoding: 'utf8', timeout, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] }); } catch (err) { return `${(err && err.stdout) || ''}\n(${cmd} : ${err.message.split('\n')[0]})`; }
   };
-  if (process.platform === 'win32') {
-    return run('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'diagnostic-win.ps1'), '-ProcessId', String(pid), '-Out', shots], 12 * 60e3);
-  }
   if (process.platform === 'darwin') {
     // `sample` : piles d'appels de tous les fils, relevées pendant deux secondes.
     const out = run('/usr/bin/sample', [String(pid), '2', '-mayDie'], 60e3);
@@ -75,7 +70,6 @@ function nativeDiagnostic(pid) {
 }
 
 function killTree(child) {
-  if (process.platform === 'win32') { try { execFileSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' }); } catch {} }
   try { child.kill('SIGKILL'); } catch {}
 }
 

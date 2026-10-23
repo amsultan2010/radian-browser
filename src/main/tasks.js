@@ -57,7 +57,7 @@ function list() {
     return row;
   });
   rows.sort((a, b) => b.mb - a.mb);
-  const real = process.platform === 'win32' || (process.platform === 'darwin' && empreinte.state.at > 0 && Date.now() - empreinte.state.at < empreinte.FRESH);
+  const real = process.platform === 'darwin' && empreinte.state.at > 0 && Date.now() - empreinte.state.at < empreinte.FRESH;
   return { rows, real, total: rows.reduce((a, r) => a + r.mb, 0) };
 }
 

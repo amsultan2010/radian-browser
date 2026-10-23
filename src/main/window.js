@@ -254,13 +254,12 @@ function isMeetingUrl(input) {
 // Mémoire des processus d'onglets, en Mo (`app.getAppMetrics`). Un onglet peut
 // occuper plusieurs processus (cadres d'autres sites) et un processus servir
 // plusieurs onglets : `total` compte chaque processus une fois, `of(id)` ne rend
-// que ce qui est propre à l'onglet. Sous Windows la mémoire privée est connue ;
-// ailleurs c'est la mémoire résidente, qui compte aussi les pages partagées
+// que ce qui est propre à l'onglet. La mémoire résidente compte aussi les pages partagées
 // (relevé sur macOS : 60 Mo de trop par processus léger, voir docs/orbe/suivi/ameliorations.md).
-// Mémoire d'un processus, en Mo : son empreinte réelle quand elle est connue (Windows :
-// `privateBytes` ; macOS : relevé récent d'empreinte.js), sinon sa mémoire résidente.
+// Process memory in MB: its real footprint when known (recent empreinte.js sample),
+// otherwise its resident memory.
 function processMb(m) {
-  const real = m.memory.privateBytes ? m.memory.privateBytes / 1024 : empreinte.of(m.pid, m.creationTime);
+  const real = empreinte.of(m.pid, m.creationTime);
   return real !== undefined ? real : (m.memory.workingSetSize || 0) / 1024;
 }
 
@@ -297,7 +296,7 @@ function tabMemory() {
   const of = (id) => { let mb = 0; for (const pid of pidsOf.get(id) || []) if (users.get(pid) === 1) mb += byPid.get(pid) || 0; return mb; };
   // `real` : le total vient d'empreintes réelles, pas de mémoire résidente.
   const metrics = new Map(app.getAppMetrics().map((m) => [m.pid, m]));
-  const real = users.size > 0 && [...users.keys()].every((pid) => { const m = metrics.get(pid); return !!m && (!!m.memory.privateBytes || empreinte.of(m.pid, m.creationTime) !== undefined); });
+  const real = users.size > 0 && [...users.keys()].every((pid) => { const m = metrics.get(pid); return !!m && empreinte.of(m.pid, m.creationTime) !== undefined; });
   return { total, of, real };
 }
 
@@ -425,7 +424,7 @@ class OrbeWindow {
       y: b.y != null ? b.y + offset : undefined,
       minWidth: 520,
       minHeight: 360,
-      ...platform.windowChrome({ traffic: TRAFFIC, color: this.space.color, dark: nativeTheme.shouldUseDarkColors, translucent: store.state.settings.translucent }),
+      ...platform.windowChrome({ traffic: TRAFFIC }),
       visualEffectState: 'followWindow',
       show: false,
     });
@@ -843,7 +842,7 @@ class OrbeWindow {
     if (this.htmlFullscreen) return { x: 0, y: 0, width: W, height: H };
     const sw = this.sidebarWidth;
     const docked = this.sidebarVisible && this.p === 1;
-    const top = platform.topInset(this.win, PAD, this.toolbarShown) + (this.toolbarShown ? TOOLBAR_H : 0);
+    const top = PAD + (this.toolbarShown ? TOOLBAR_H : 0);
     return {
       x: Math.round(PAD + (sw - PAD) * this.p),
       y: top,
@@ -4869,7 +4868,6 @@ class OrbeWindow {
         }
         : null,
     };
-    platform.syncChrome(this.win, { color: space.color, dark: payload.dark, toolbar, translucent: settings.translucent });
     this.ui.webContents.send('state', payload);
     if (this.floatView && !this.floatView.webContents.isDestroyed()) this.floatView.webContents.send('state', payload);
     sounds.observe(this);

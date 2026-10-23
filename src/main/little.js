@@ -125,7 +125,7 @@ class LittleWindow {
       show: !ms,
       minWidth: MIN.width,
       minHeight: MIN.height,
-      ...platform.windowChrome({ traffic: { x: 14, y: 13 }, dark: nativeTheme.shouldUseDarkColors }),
+      ...platform.windowChrome({ traffic: { x: 14, y: 13 } }),
     });
     this.win.orbeLittle = this;
     this.ui = new WebContentsView({ webPreferences: { preload: UI_PRELOAD, sandbox: true, contextIsolation: true } });

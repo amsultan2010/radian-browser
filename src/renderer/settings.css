@@ -2,11 +2,9 @@
    macOS et d'Arc), un volet affiché à la fois ; la fenêtre prend sa hauteur. */
 html, body { background: transparent; overflow: hidden; height: 100%; }
 body { display: flex; flex-direction: column; background: color-mix(in srgb, var(--base) 84%, transparent); }
-html.win body { background: var(--base); }
 
 /* --- Barre des volets -------------------------------------------------------- */
 #bar { flex: none; padding: 30px 8px 8px; -webkit-app-region: drag; border-bottom: 0.5px solid var(--line); }
-html.win #bar { padding-top: 34px; }
 #tabs { display: flex; justify-content: center; gap: 2px; }
 #tabs button {
   -webkit-app-region: no-drag;
@@ -112,7 +110,6 @@ html.win #bar { padding-top: 34px; }
   min-width: 74px; height: 26px; padding: 0 10px; border-radius: 7px; background: var(--pill);
   font: 12px -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: 0.02em; white-space: nowrap;
 }
-html.win .key-btn { font-family: inherit; }
 .key-btn:hover { background: color-mix(in srgb, var(--pill) 60%, var(--faint)); }
 .key-btn.none { color: var(--faint); }
 .key-btn.recording { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); outline: 2px solid var(--accent); }

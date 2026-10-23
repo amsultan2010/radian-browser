@@ -1098,7 +1098,7 @@ function raster({ W, H, k, cx, cy, bg, full }) {
         g.stroke();
       } else {
         if (it.type === 'note') { g.globalAlpha = 0.45; g.fillRect(it.x, it.y, it.w, it.h); g.globalAlpha = 1; g.fillStyle = '#333'; }
-        g.font = `${it.size}px -apple-system, "Segoe UI", sans-serif`;
+        g.font = `${it.size}px -apple-system, sans-serif`;
         g.textBaseline = 'top';
         const pad = it.type === 'note' ? 12 : 4;
         const width = Math.max(it.w - pad * 2, 10);
