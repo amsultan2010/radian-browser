@@ -3690,7 +3690,7 @@ class OrbeWindow {
   openTheme() {
     if (!this.sidebarVisible) this.toggleSidebar(true);
     const s = this.space;
-    this.showModal('theme', { space: themeFields(s), icon: s.icon, dark: nativeTheme.shouldUseDarkColors, x: this.sidebarWidth + 10 });
+    this.showModal('theme', { space: themeFields(s), icon: s.icon, dark: nativeTheme.shouldUseDarkColors, x: this.sidebarWidth + 18 }); // Arc: 18 pt right of the sidebar
   }
 
   // Bascule ⌃Tab : ordre d'utilisation récente, validée au relâchement de ⌃.

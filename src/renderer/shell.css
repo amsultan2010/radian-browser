@@ -466,12 +466,6 @@ body.incognito #incognito, body.blank-window #blank-note { display: flex; }
 #page-drag { position: absolute; top: 0; left: 10px; right: 10px; height: 10px; -webkit-app-region: drag; }
 body.docked #page-drag { left: var(--sw); }
 body.fullscreen #page-drag, .floating #page-drag { display: none; }
-/* Infobulle maison des boutons de la barre : libellé et raccourci en vigueur. */
-#tip { position: fixed; left: 0; top: 0; z-index: 50; display: flex; align-items: center; gap: 8px; max-width: 260px; padding: 5px 8px; border-radius: 7px; background: rgba(28, 28, 32, 0.94); color: #fff; font-size: 11.5px; line-height: 1.2; white-space: nowrap; pointer-events: none; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); opacity: 0; transition: opacity 90ms var(--ease-out); -webkit-app-region: no-drag; }
-#tip[hidden] { display: none; }
-#tip.on { opacity: 1; }
-#tip kbd { font: inherit; font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.62); letter-spacing: 0.5px; }
-#tip kbd[hidden] { display: none; }
 /* Téléchargements en cours, au bas de la barre : nom, taille, temps restant, annuler. */
 #dls { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; flex: none; }
 #dls[hidden] { display: none; }

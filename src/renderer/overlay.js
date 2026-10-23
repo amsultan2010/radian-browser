@@ -4,9 +4,11 @@ const $ = (id) => document.getElementById(id);
 const send = O.send;
 const panels = ['command', 'switcher', 'theme', 'space', 'icons', 'find', 'toast', 'peek', 'status', 'drop', 'swipe'];
 let mode = null;
+const tipHide = tooltips();
 
 function show(name) {
   mode = name;
+  tipHide();
   $('icons').classList.remove('beside');
   for (const p of panels) $(p).hidden = p !== name;
 }
@@ -293,7 +295,8 @@ function pushTheme(patch) {
 }
 const pushColors = () => pushTheme({ colors: theme.dots.map(dotHex) });
 
-// Grille du champ : chaque point a la couleur de sa place (plus gros vers le bord).
+// Grille du champ : chaque point a la couleur de sa place (plus gros vers le bord), sur
+// les points gris d'Arc (même pas de 4,25 pt, overlay.css), qu'ils recouvrent.
 function drawGrid() {
   const c = $('theme-grid');
   const w = c.clientWidth;
@@ -302,7 +305,7 @@ function drawGrid() {
   c.width = c.height = Math.round(w * k);
   const g = c.getContext('2d');
   g.scale(k, k);
-  const n = 15;
+  const n = 80;
   const step = w / n;
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
     const dx = (x + 0.5) * step - w / 2;
@@ -310,14 +313,32 @@ function drawGrid() {
     const s = Math.min(1, Math.hypot(dx, dy) / (w / 2));
     g.fillStyle = OrbeTheme.hsvToHex(((Math.atan2(dx, -dy) * 180) / Math.PI + 360) % 360, s * SMAX, V_FIELD);
     g.beginPath();
-    g.arc(w / 2 + dx, w / 2 + dy, 1.4 + s * 1.2, 0, Math.PI * 2);
+    g.arc(w / 2 + dx, w / 2 + dy, 0.75 + s * 0.75, 0, Math.PI * 2);
     g.fill();
   }
 }
 
 const pageOf = (colors) => Math.max(0, OrbeTheme.SWATCHES.findIndex((page) => page.some((c) => c.join() === colors.join())));
+// All five pages in one strip, slid a page (9 × 29.5 pt, Arc's pitch) at a time.
+const PAGE_W = 265.5;
 function drawSwatches() {
-  $('theme-presets').innerHTML = OrbeTheme.SWATCHES[theme.page].map((c, i) => `<button class="swatch" data-i="${i}" style="background:${c.length > 1 ? `linear-gradient(131deg, ${c.join(', ')})` : c[0]}"></button>`).join('');
+  $('theme-presets').innerHTML = OrbeTheme.SWATCHES.map((page, p) => page.map((c, i) => `<button class="swatch" data-p="${p}" data-i="${i}" style="background:${c.length > 1 ? `linear-gradient(131deg, ${c.join(', ')})` : c[0]}"></button>`).join('')).join('');
+}
+function placeStrip(slide) {
+  const strip = $('theme-presets');
+  strip.classList.toggle('still', !slide);
+  strip.style.transform = `translateX(${-theme.page * PAGE_W}px)`;
+}
+
+// Molette : vingt points autour du cercle, comme dans Arc (angle compté du haut, sens horaire).
+for (let i = 0; i < 20; i++) {
+  const a = (i * 18 * Math.PI) / 180;
+  const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  c.setAttribute('cx', (42 + 32 * Math.sin(a)).toFixed(2));
+  c.setAttribute('cy', (42 - 32 * Math.cos(a)).toFixed(2));
+  c.setAttribute('r', '2.25');
+  c.dataset.a = i * 18 > 180 ? i * 18 - 360 : i * 18;
+  $('theme-ring').appendChild(c);
 }
 
 function drawTheme() {
@@ -340,15 +361,18 @@ function drawTheme() {
     const a = (d.h * Math.PI) / 180;
     el.style.transform = `translate(${(R + r * Math.sin(a)).toFixed(1)}px, ${(R - r * Math.cos(a)).toFixed(1)}px)`;
   });
-  wheel.classList.toggle('plain', !theme.dots.length);
+  $('theme').classList.toggle('plain', !theme.dots.length);
   $('theme-less').disabled = !theme.dots.length;
   $('theme-more').disabled = theme.dots.length >= OrbeTheme.MAX_COLORS;
-  const page = OrbeTheme.SWATCHES[theme.page];
-  for (const b of $('theme-presets').children) b.classList.toggle('sel', page[b.dataset.i].join() === colors.join());
+  for (const b of $('theme-presets').children) {
+    b.classList.toggle('sel', OrbeTheme.SWATCHES[b.dataset.p][b.dataset.i].join() === colors.join());
+    b.tabIndex = Number(b.dataset.p) === theme.page ? 0 : -1; // the pages slid out of view take no focus
+  }
   $('theme-prev').disabled = theme.page === 0;
   $('theme-next').disabled = theme.page === OrbeTheme.SWATCHES.length - 1;
   for (const b of $('theme-modes').children) { b.classList.toggle('sel', b.dataset.mode === theme.mode); b.setAttribute('aria-checked', String(b.dataset.mode === theme.mode)); }
-  $('theme-dial').style.setProperty('--turn', `${-135 + 270 * theme.grain}deg`);
+  // The dial's dots light up from −135° (no grain) clockwise to the grain's angle.
+  for (const c of $('theme-ring').querySelectorAll('[data-a]')) c.classList.toggle('on', theme.grain > 0 && c.dataset.a >= -135 && c.dataset.a <= -135 + 270 * theme.grain);
   $('theme-dial').style.setProperty('--knob', `url("textures/${theme.texture}.png")`);
   $('theme-dial').style.setProperty('--amount', String(theme.grain));
   // Le panneau suit la couleur principale.
@@ -364,6 +388,7 @@ function openTheme(p) {
   $('theme-grain').value = String(Math.round(t0.grain * 100));
   drawGrid();
   drawSwatches();
+  placeStrip(false);
   drawTheme();
 }
 
@@ -432,7 +457,7 @@ $('theme-less').onclick = () => {
 $('theme-presets').addEventListener('click', (e) => {
   const b = e.target.closest('.swatch');
   if (!b) return;
-  const colors = OrbeTheme.SWATCHES[theme.page][b.dataset.i];
+  const colors = OrbeTheme.SWATCHES[b.dataset.p][b.dataset.i];
   theme.dots = colors.map(OrbeTheme.hexToHsv);
   theme.sel = 0;
   drawTheme();
@@ -441,7 +466,7 @@ $('theme-presets').addEventListener('click', (e) => {
 });
 function turnPage(d) {
   theme.page = Math.max(0, Math.min(OrbeTheme.SWATCHES.length - 1, theme.page + d));
-  drawSwatches();
+  placeStrip(true);
   drawTheme();
 }
 $('theme-prev').onclick = () => turnPage(-1);
