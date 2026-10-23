@@ -647,7 +647,7 @@ body.dev-site #tb-back, body.dev-site #tb-forward, body.dev-site #tb-reload { di
 body.dev-site #tb-url { height: 28px; margin: 0 7px 0 4px; padding: 0; border-radius: 0; background: none; font: 500 13px ui-monospace, 'SF Mono', Menlo, monospace; }
 body.dev-site #tb-url > svg { display: none; }
 body.dev-site #tb-dev { display: flex; align-items: center; flex: none; }
-#tb-dev .ib { width: 28px; height: 28px; }
+#tb-site, #tb-dev .ib { width: 28px; height: 28px; }
 /* Faint 1 × 20 pt dividers between the groups, as measured. */
 .tb-sep { width: 1px; height: 20px; margin: 0 8px; background: rgba(255, 255, 255, 0.025); }
 .tb-sep:first-of-type { margin: 0 13px 0 14px; }
