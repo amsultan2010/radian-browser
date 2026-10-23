@@ -26,7 +26,7 @@ jobs:
       - name: Ad blocker
         run: node tests/adblock.test.js
 
-      - name: Barre de commande (apprentissage)
+      - name: Command Bar learning
         run: node tests/suggest.test.js
 
       - name: Extensions
