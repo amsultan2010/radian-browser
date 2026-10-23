@@ -355,6 +355,9 @@ body.fav-hint #fav { display: none; }
 .row .act.x svg.mi, #pinned .row .act.x svg.cl { display: none; }
 #pinned .row .act.x svg.mi { display: block; }
 #b-newtab:hover { color: var(--fg); }
+/* Hover shows the shortcut at the row's right end, as in Arc (no tooltip). */
+#b-newtab kbd { font: inherit; font-size: 12px; color: var(--dim); margin-right: 4px; opacity: 0; transition: opacity 120ms; }
+#b-newtab:hover kbd { opacity: 1; }
 /* Glisser : la ligne emportée laisse sa place (elle reste dans la mise en page,
    invisible) et les lignes voisines s'écartent, par transformation seulement,
    pour ouvrir la place où elle tombera. */
