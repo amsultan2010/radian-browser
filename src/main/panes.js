@@ -1,5 +1,5 @@
 // Fenêtre des réglages à volets, à la manière d'Arc et de macOS : création de
-// la fenêtre, hauteur ajustée à chaque volet, et actions propres aux nouveaux
+// la fenêtre (taille fixe d’Arc, élargie quand le volet défile), et actions propres aux
 // volets (profils, raccourcis, import, avancé).
 const { app, BrowserWindow, dialog, globalShortcut, Menu, nativeTheme, webContents } = require('electron');
 const { store } = require('./store');
