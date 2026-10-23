@@ -255,10 +255,10 @@ module.exports = async function finitionsTests(ctx) {
   await until(() => !!menuItem('spaces.manage'), 'article « Gérer les Espaces »');
   check('menu Espaces et menu de l’Espace : « Gérer les Espaces… »', labels(w.spaceMenuTemplate()).includes(T('spaces.manage')) && commands.byName.get('manageSpaces').palette !== false);
   menuItem('spaces.manage').click();
-  await until(() => w.activeId && /library\.html#spaces$/.test(d.tabs[w.activeId].url), 'Bibliothèque, section Espaces');
+  // The Library is a panel in the sidebar's place now, not a tab.
+  await until(() => w.libraryShown && w.libraryView && w.libraryView.webContents.getURL().endsWith('library.html#spaces'), 'Bibliothèque, section Espaces');
   check('« Gérer les Espaces… » ouvre la section Espaces de la Bibliothèque', true);
-  const libId = w.activeId;
-  w.close(libId);
+  w.closeLibrary();
 
   // --- ⌘S sans onglet --------------------------------------------------------------------
   for (const id of [...space.today]) w.close(id, { silent: true });
