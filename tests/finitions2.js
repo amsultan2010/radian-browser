@@ -412,7 +412,13 @@ module.exports = async function finitions2Tests(ctx) {
     const over = (id) => ui(`document.getElementById(${JSON.stringify(id)}).dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))`);
     const tip = () => ui(`(() => { const el = document.getElementById('tip'); const r = el.getBoundingClientRect(); return { on: !el.hidden && el.classList.contains('on'), text: document.getElementById('tip-text').textContent, key: document.getElementById('tip-key').hidden ? '' : document.getElementById('tip-key').textContent, left: r.left, right: r.right, top: r.top, sw: S.sidebar.width, events: getComputedStyle(el).pointerEvents, caps: el.querySelectorAll('#tip-key kbd').length, fill: getComputedStyle(el).backgroundColor, h: r.height }; })()`);
     check('boutons de la barre : plus d’infobulle native (pas de « title »), un nom pour les aides techniques',
-      await ui(`['b-sidebar', 'b-back', 'b-forward', 'b-reload', 'b-library', 'b-clear'].every((id) => { const el = document.getElementById(id); return !el.title && el.getAttribute('aria-label') === t(el.dataset.tip); })`));
+      await ui(`['b-sidebar', 'b-back', 'b-forward', 'b-library', 'b-clear', 'url-copy', 'shield'].every((id) => { const el = document.getElementById(id); return !el.title && el.getAttribute('aria-label') === t(el.dataset.tip); })`));
+    check('« Actualiser » : pas d’infobulle (Arc), mais un nom pour les aides techniques',
+      await ui(`(() => { const el = document.getElementById('b-reload'); return !el.title && !el.dataset.tip && el.getAttribute('aria-label') === t(S.nav.loading ? 'view.stop' : 'side.reload'); })()`));
+    check('Espaces du bas : infobulle maison au nom de l’Espace avec ⌃1…⌃9 (Arc : « Space 1 ⌃1 »), pas de « title »',
+      await ui(`[...document.querySelectorAll('#spaces .sp')].every((b, i) => !b.title && b.dataset.tip === S.spaces[i].name && b.dataset.tipKeys === (i < 9 ? '⌃' + (i + 1) : undefined))`));
+    check('séparateur du jour : « ↓ Clear », une flèche vers le bas devant le mot (Arc)',
+      await ui(`document.querySelector('#b-clear use').getAttribute('href') === '#i-forward' && document.querySelector('#b-clear span').textContent === t('side.clear')`));
     check('« Nouvel onglet » : pas d’infobulle, son raccourci écrit au bout de la ligne (comme dans Arc)',
       await ui(`(() => { const el = document.getElementById('b-newtab'); return !el.dataset.tip && el.querySelector('kbd').textContent === KEYS.newTab; })()`));
     await over('b-sidebar');
@@ -422,12 +428,13 @@ module.exports = async function finitions2Tests(ctx) {
     const t1 = await tip();
     const btn = await ui(`(() => { const r = document.getElementById('b-sidebar').getBoundingClientRect(); return { bottom: r.bottom }; })()`);
     check('survol d’une seconde : infobulle maison avec le nom et le raccourci en touches, sous le bouton, dans la barre latérale, sans prendre les clics',
-      t1.text === T('side.sidebar') && t1.key === shortcuts.keysOf('toggleSidebar') && t1.key.length > 0 && t1.caps === t1.key.match(/[⌃⌥⇧⌘]|[^⌃⌥⇧⌘]+/g).length && t1.fill === 'rgb(10, 13, 75)' && t1.h === 27 && t1.left >= 6 && t1.right <= t1.sw - 5 && t1.top >= btn.bottom && t1.events === 'none', JSON.stringify(t1));
-    await over('b-plus');
-    await until(async () => { const x = await tip(); return x.on && x.text === T('side.plus'); }, 'infobulle du bouton +');
-    check('bouton sans raccourci : le nom seul', (await tip()).key === '');
+      t1.text === T('side.hideSidebar') && t1.key === shortcuts.keysOf('toggleSidebar') && t1.key.length > 0 && t1.caps === t1.key.match(/[⌃⌥⇧⌘]|[^⌃⌥⇧⌘]+/g).length && t1.fill === 'rgb(10, 13, 75)' && t1.h === 27 && t1.left >= 6 && t1.right <= t1.sw - 5 && t1.top >= btn.bottom && t1.events === 'none', JSON.stringify(t1));
+    await over('shield');
+    await until(async () => { const x = await tip(); return x.on && x.text === T('side.siteControl'); }, 'infobulle du centre de contrôle');
+    check('bouton sans raccourci : le nom seul — centre de contrôle du site (curseurs, Arc), sans compteur', (await tip()).key === '' && await ui(`document.getElementById('shield').textContent === '' && document.querySelector('#shield use').getAttribute('href') === '#i-sliders'`));
     await ui(`document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))`);
     check('un clic referme l’infobulle', (await tip()).on === false);
+    check('« + » du bas : pas d’infobulle (Arc), un nom pour les aides techniques', await ui(`(() => { const b = document.getElementById('b-plus'); return !b.dataset.tip && !b.title && b.getAttribute('aria-label') === t('side.plus'); })()`));
     // Raccourci changé par l'utilisateur : l'infobulle le suit.
     const free = ['Alt+Cmd+F9', 'Alt+Shift+Cmd+F9', 'Ctrl+Alt+Cmd+F9'].find((a) => !shortcuts.owner(shortcuts.canon(a), 'library'));
     const r = free ? shortcuts.assign('library', free) : { error: 'pris' };
@@ -435,7 +442,7 @@ module.exports = async function finitions2Tests(ctx) {
     else {
       await until(() => ui(`KEYS.library === ${JSON.stringify(r.keys)}`), 'raccourci reçu par la coque');
       await over('b-library');
-      await until(async () => { const x = await tip(); return x.on && x.text === T('side.library'); }, 'infobulle de la Bibliothèque');
+      await until(async () => { const x = await tip(); return x.on && x.text === T('side.viewLibrary'); }, 'infobulle de la Bibliothèque');
       const t2 = await tip();
       check('raccourci modifié dans les réglages : l’infobulle montre le nouveau ; au bas de la barre elle se place au-dessus du bouton', t2.key === r.keys
         && await ui(`document.getElementById('tip').getBoundingClientRect().bottom <= document.getElementById('b-library').getBoundingClientRect().top`), JSON.stringify(t2));

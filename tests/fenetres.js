@@ -478,7 +478,7 @@ module.exports = async function fenetresTests(ctx) {
     shield().click();
     await until(async () => (await js('getComputedStyle(document.body).backgroundColor')) === 'rgb(250, 204, 21)', 'Boost rétabli');
     check('Boost rétabli depuis le centre de contrôle', boosts.get(host).enabled === true);
-    check('créer un Boost : bouton « + », commande, centre de contrôle, menu de page', labels(w.sidebarMenuTemplate(true)).includes(t('boost.edit')) && w.commandList().some((c) => c.command === 'boost') && w.commandList().some((c) => c.command === 'boosts') && labels(w.pageMenuTemplate(win.live.get(T), { x: 5, y: 5, mediaType: 'none' })).includes(t('boost.edit')));
+    check('créer un Boost : bouton « + », commande, centre de contrôle, menu de page', await ui(`(() => { document.getElementById('b-plus').click(); const b = document.querySelector('#plus-menu [data-cmd=boost]'); document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); return !!b && !b.disabled; })()`) && w.commandList().some((c) => c.command === 'boost') && w.commandList().some((c) => c.command === 'boosts') && labels(w.pageMenuTemplate(win.live.get(T), { x: 5, y: 5, mediaType: 'none' })).includes(t('boost.edit')));
 
     // Liste des Boosts, export, import
     boosts.set('exemple.org', { css: 'a { color: red }', name: 'Exemple' });

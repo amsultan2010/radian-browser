@@ -329,7 +329,7 @@ function drawSpaces(list, current) {
   // Seul l'Espace courant change : les pastilles restent, leur largeur passe au ressort (CSS).
   if (same && list.length > 1) { for (const el of spaces.children) el.classList.toggle('active', el.dataset.space === current); return; }
   spaces.innerHTML = list.length > 1
-    ? list.map((x) => `<button class="sp${x.id === current ? ' active' : ''}" data-space="${esc(x.id)}" title="${esc(x.name)}" draggable="true"><span class="em">${esc(x.icon) || '•'}</span></button>`).join('')
+    ? list.map((x, i) => `<button class="sp${x.id === current ? ' active' : ''}" data-space="${esc(x.id)}" data-tip="${esc(x.name)}"${i < 9 ? ` data-tip-keys="⌃${i + 1}"` : ''} aria-label="${esc(x.name)}" draggable="true"><span class="em">${esc(x.icon) || '•'}</span></button>`).join('')
     : '';
 }
 
@@ -358,6 +358,7 @@ function render(s) {
   paintTheme(b, s.space, s);
   b.style.setProperty('--sw', s.sidebar.width + 'px');
   b.classList.toggle('open', open);
+  if (!open) plusClose();
   b.classList.toggle('docked', s.sidebar.visible);
   b.classList.toggle('translucent', s.translucent);
   b.classList.toggle('incognito', s.incognito);
@@ -379,6 +380,14 @@ function render(s) {
   scroller.classList.toggle('pinned-collapsed', (side.collapsed || []).includes(s.space.id));
   $('fav').dataset.hint = t('side.favHint');
   $('url-copy').hidden = !s.activeId || s.nav.internal || !s.nav.url;
+  // Share Quote (Arc): with text selected, the pill reads the host over "Share Quote", and the link button copies the quote.
+  const quote = !!s.nav.quote;
+  $('url').classList.toggle('quote', quote);
+  const copy = $('url-copy');
+  copy.dataset.tip = quote ? 'side.copyQuote' : 'side.copyCurrentUrl';
+  copy.dataset.tipKey = quote ? 'copyUrlQuote' : 'copyUrl';
+  copy.setAttribute('aria-label', t(copy.dataset.tip));
+  $('url-copy-icon').setAttribute('href', quote ? '#i-quote' : '#i-link');
 
   const label = s.nav.internal ? (s.nav.title || 'Radian') : host(s.nav.url);
   $('url-text').textContent = label || t('side.search');
@@ -397,8 +406,6 @@ function render(s) {
   $('url').title = s.nav.internal ? '' : s.nav.url;
   const shield = $('shield');
   shield.hidden = !s.activeId || s.nav.internal || false;
-  shield.className = s.nav.shield;
-  $('shield-n').textContent = s.nav.shield === 'on' && s.nav.blocked ? (s.nav.blocked > 99 ? '99+' : String(s.nav.blocked)) : '';
   // Connexion : cadenas discret en https, « Non sécurisé » en http ou avec un certificat refusé.
   const sec = s.activeId && !s.nav.internal ? (s.nav.security || '') : '';
   const lock = $('lock');
@@ -409,7 +416,6 @@ function render(s) {
   lock.title = sec ? t('site.sec.' + sec) : '';
   const blocked = s.activeId ? (s.nav.popups || 0) : 0;
   $('popup-note').hidden = !blocked;
-  $('quote-note').hidden = !s.nav.quote;
   $('popup-note').title = t('popup.blocked');
   const caps = s.activeId ? (s.nav.capture || []) : [];
   $('capture-note').hidden = !caps.length;
@@ -422,6 +428,12 @@ function render(s) {
     $(p + '-reload').disabled = !s.activeId;
   }
   $('reload-icon').setAttribute('href', s.nav.loading ? '#i-stop' : '#i-reload');
+  // Arc: "Hide sidebar" while docked, "Lock sidebar" on the floating one; reload has no tooltip.
+  const sbTip = s.sidebar.visible ? 'side.hideSidebar' : 'side.lockSidebar';
+  $('b-sidebar').dataset.tip = sbTip;
+  $('b-sidebar').setAttribute('aria-label', t(sbTip));
+  $('b-reload').setAttribute('aria-label', t(s.nav.loading ? 'view.stop' : 'side.reload'));
+  $('b-plus').setAttribute('aria-label', t('side.plus'));
 
   if (editing !== s.space.id) $('space-name').textContent = s.space.name;
   $('space-icon').textContent = s.space.icon;
@@ -860,7 +872,7 @@ for (const box of [$('exts'), $('tb-exts')]) {
 }
 $('b-sidebar').onclick = () => send('toggleSidebar');
 $('b-reload-more').onclick = () => { const r = $('b-reload-more').getBoundingClientRect(); send('reloadMenu', { dev: true, x: Math.round(r.left), y: Math.round(r.bottom + 4) }); };
-$('url').onclick = () => send('openCommand', 'edit');
+$('url').onclick = (e) => (e.target.closest('#url-quote') ? send('command', 'copyUrlQuote') : send('openCommand', 'edit'));
 $('shield').onclick = () => send('siteControl');
 $('shield').addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); send('shieldMenu'); });
 $('lock').onclick = () => send('siteInfo');
@@ -883,9 +895,58 @@ $('b-newtab').onclick = () => send('openCommand', 'new');
 $('b-clear').onclick = () => send('command', 'clearToday');
 // Library open: its icon closes it, as in Arc.
 $('b-library').onclick = () => send('command', S && S.downloads && !S.library ? 'downloads' : 'library');
-$('b-plus').onclick = () => send('sidebarMenu', 'plus');
-$('url-copy').onclick = () => send('command', 'copyUrl');
-$('quote-note').onclick = () => send('command', 'copyUrlQuote');
+// Bottom "+": Arc's navy menu above it, New Tab highlighted; the "+" turns into "✕" while it is open.
+// Each item runs an existing command; one that cannot run here is dimmed.
+const PLUS_ITEMS = [
+  ['newSpace', 'side.plusSpace', 'i-new-space', (s) => !s.incognito && !s.blank],
+  ['newFolder', 'side.plusFolder', 'i-folder-line'],
+  null,
+  ['newEasel', 'easel.new', 'i-easel'],
+  ['boost', 'side.plusBoost', 'i-boost', (s) => !s.incognito && !!s.activeId && /^https?:/i.test(s.nav.url)],
+  null,
+  ['addSplit', 'side.plusSplit', 'i-new-split', (s) => !!s.activeId],
+  ['newTab', 'tabs.newTab', 'i-new-tab'],
+];
+const plusMenu = $('plus-menu');
+function plusClose() {
+  if (plusMenu.hidden) return;
+  plusMenu.hidden = true;
+  $('b-plus').setAttribute('aria-expanded', 'false');
+  $('b-plus').querySelector('use').setAttribute('href', '#i-plus');
+}
+function plusOpen() {
+  plusMenu.innerHTML = PLUS_ITEMS.map((it) => (it
+    ? `<button role="menuitem" data-cmd="${it[0]}"${it[3] && !it[3](S) ? ' disabled' : ''}><svg class="i"><use href="#${it[2]}"/></svg><span>${esc(t(it[1]))}</span><kbd>${esc(KEYS[it[0]] || '')}</kbd></button>`
+    : '<hr>')).join('');
+  plusMenu.hidden = false;
+  const b = $('b-plus').getBoundingClientRect();
+  plusMenu.style.setProperty('--arrow-x', `${Math.round(b.left + b.width / 2 - plusMenu.getBoundingClientRect().left)}px`);
+  $('b-plus').setAttribute('aria-expanded', 'true');
+  $('b-plus').querySelector('use').setAttribute('href', '#i-close');
+  plusMenu.querySelector('[data-cmd="newTab"]').focus();
+}
+$('b-plus').onclick = () => (plusMenu.hidden && S ? plusOpen() : plusClose());
+plusMenu.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-cmd]');
+  if (!b || b.disabled) return;
+  plusClose();
+  send('command', b.dataset.cmd);
+});
+plusMenu.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); });
+// The highlight follows the pointer and the arrow keys (Enter runs it); Escape closes.
+plusMenu.addEventListener('mouseover', (e) => { const b = e.target.closest('[data-cmd]:not(:disabled)'); if (b) b.focus(); });
+document.addEventListener('keydown', (e) => {
+  if (plusMenu.hidden) return;
+  if (e.key === 'Escape') { plusClose(); return; }
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  e.preventDefault();
+  const items = [...plusMenu.querySelectorAll('[data-cmd]:not(:disabled)')];
+  const i = items.indexOf(document.activeElement);
+  items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+});
+document.addEventListener('mousedown', (e) => { if (!plusMenu.contains(e.target) && !$('b-plus').contains(e.target)) plusClose(); }, true);
+addEventListener('blur', plusClose);
+$('url-copy').onclick = () => send('command', S && S.nav.quote ? 'copyUrlQuote' : 'copyUrl');
 const LONG_PRESS = 500; // appui long sur précédent / suivant (ms)
 for (const p of ['b', 'tb']) {
   // Précédent, suivant : clic = aller ; ⌘clic ou clic molette = dans un nouvel
@@ -2026,13 +2087,13 @@ document.addEventListener('keydown', (e) => {
 
 // --- Infobulles maison (common.js) ---------------------------------------------
 // L'infobulle reste dans la barre latérale : les pages sont posées par-dessus le
-// reste de la fenêtre. « Actualiser » devient « Arrêter » pendant le chargement, comme son icône.
-const tipStop = (el) => el.id === 'b-reload' && S && S.nav.loading;
+// reste de la fenêtre.
 tooltips({
   right: () => (FLOATING || !S || !S.sidebar.visible ? innerWidth : Math.min(innerWidth, S.sidebar.width)),
   blocked: () => !!drag,
-  text: (el) => t(tipStop(el) ? 'view.stop' : el.dataset.tip),
-  keys: (el) => (tipStop(el) ? KEYS.stop : KEYS[el.dataset.tipKey]),
+  // Space dock: the Space's own name and its ⌃1…⌃9 shortcut (Arc: "Space 1 ⌃1").
+  text: (el) => (el.classList.contains('sp') ? el.dataset.tip : t(el.dataset.tip)),
+  keys: (el) => (el.classList.contains('sp') ? el.dataset.tipKeys : KEYS[el.dataset.tipKey]),
 });
 
 // Pointeur posé 150 ms sur un onglet en veille : le processus principal prépare

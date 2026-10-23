@@ -98,7 +98,7 @@ svg.i.tb { width: 20px; height: 20px; }
 /* Arc : la pastille d’adresse occupe toute la largeur (x 8–220, y 46–82) ; les témoins
    (cadenas, extensions épinglées, copier le lien, fenêtres bloquées, capture, bouclier) se posent dans son bout droit. */
 /* The address keeps a fixed minimum (not `auto`): the padding shell.js gives #url then never feeds back into the columns. */
-#url-row { display: grid; grid-template-columns: minmax(72px, 1fr) repeat(7, auto); align-items: center; flex: none; }
+#url-row { display: grid; grid-template-columns: minmax(72px, 1fr) repeat(6, auto); align-items: center; flex: none; }
 #url { grid-area: 1 / 1 / 2 / -1; }
 #lock { grid-area: 1 / 2; }
 #exts { grid-area: 1 / 3; }
@@ -106,24 +106,19 @@ svg.i.tb { width: 20px; height: 20px; }
 #popup-note { grid-area: 1 / 5; }
 #capture-note { grid-area: 1 / 6; }
 #shield { grid-area: 1 / 7; margin-right: 4px; }
-#quote-note { grid-area: 1 / 8; margin-right: 4px; }
 #lock, #url-row .note, #shield, #exts { z-index: 1; } /* au-dessus de la pastille, qui les précède ou les suit */
 /* Au repos, rien dans la pastille (comme Arc) : cadenas d’une page sûre et bouclier paraissent au survol.
    As in Arc, hovering anywhere over the sidebar reveals them, pinned extensions included (help center GIF). */
 #sidebar:not(:hover) #shield, #sidebar:not(:hover) #exts { display: none; }
+/* Site Control Center (Arc's sliders button); its blocked-ads count lives in the panel. */
 #shield {
+  width: 28px;
   height: 28px;
-  min-width: 28px;
-  padding: 0 7px;
   border-radius: 8px;
   background: transparent;
   color: var(--dim);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  display: grid;
+  place-items: center;
   transition: background 120ms, color 120ms, transform var(--spring-snappy);
 }
 #shield[hidden] { display: none; }
@@ -145,8 +140,6 @@ svg.i.tb { width: 20px; height: 20px; }
 .share-on .row.tab.live.web:not(.sharing):hover .act.inst { display: grid; }
 #shield:hover { color: var(--fg); }
 #shield:active { transform: scale(0.94); transition: transform var(--press); }
-#shield.on { color: var(--accent-text, color-mix(in srgb, var(--accent) 55%, var(--fg))); }
-#shield.off svg, #shield.allowed svg { opacity: 0.45; }
 #shield svg { width: 15px; height: 15px; }
 #url {
   flex: 1;
@@ -169,6 +162,12 @@ svg.i.tb { width: 20px; height: 20px; }
 /* Champ vide : la loupe dans un carré de 24 à x 14, le texte à x 41 (Arc). */
 #url-search { display: none; color: var(--dim); margin: 0 8px 0 -3px; }
 #url:has(#url-text.placeholder) #url-search { display: block; }
+/* Share Quote (Arc): with text selected, the host becomes a small grey first line over a bold "Share Quote". */
+#url-quote { display: none; }
+#url.quote { flex-direction: column; align-items: stretch; justify-content: center; }
+#url.quote #url-text { flex: none; top: 0; font-size: 11.5px; line-height: 14px; color: var(--dim); }
+#url.quote #url-quote { display: block; align-self: flex-start; font-weight: 700; line-height: 16px; color: var(--fg); }
+#url-quote:hover { text-decoration: underline; }
 /* Chargement : comme dans Arc, une lueur aux couleurs de l'Espace respire au milieu du bord
    haut de la page, à demi cachée sous elle. */
 #glow { position: absolute; top: 0; left: 10px; right: 10px; height: 10px; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 260ms var(--ease-out); }
@@ -450,7 +449,9 @@ body.parting #scroll .row, body.parting #divider { transform: translateY(0); tra
 /* Arc : rangée de 17 pt, trait d’un pixel (0,5 pt) à 7,5 pt de son haut, x 18–210. */
 #divider, .g-divider { display: flex; align-items: center; gap: 8px; height: 17px; margin-top: 3px; padding: 0 10px; flex: none; }
 #divider .rule, .g-divider .rule { flex: 1; height: 0.5px; align-self: flex-start; margin-top: 7.5px; background: var(--line); }
-#b-clear { font-size: 11px; font-weight: 600; color: var(--dim); opacity: 0; transition: opacity 120ms; padding: 2px 4px; border-radius: 5px; }
+#b-clear { font-size: 11px; font-weight: 600; color: var(--dim); opacity: 0; transition: opacity 120ms; padding: 2px 4px; border-radius: 5px; display: inline-flex; align-items: center; gap: 2px; }
+/* Arc: "↓ Clear". */
+#b-clear svg { width: 12px; height: 12px; stroke-width: 1.8; transform: rotate(90deg); }
 #b-clear:not(.can) { display: none; }
 #scroll:hover #b-clear.can { opacity: 1; }
 #b-clear:hover { color: var(--fg); background: var(--hover); }
@@ -526,6 +527,17 @@ body.fullscreen #page-drag, .floating #page-drag { display: none; }
 .sp.active { color: color-mix(in srgb, var(--dim) 89%, transparent); } /* Arc: 49 % */
 .sp.active::before { display: none; }
 .sp:not(.active) .em { display: none; }
+
+/* Bottom "+" menu (Arc): navy popover of about 222 × 308 pt, arrow down to the button, 42 pt rows with 20 pt line icons. */
+#plus-menu { position: absolute; right: 8px; bottom: 58px; z-index: 6; width: 222px; max-width: calc(100% - 16px); display: flex; flex-direction: column; padding: 9px 8px; border-radius: 14px; background: #050625; color: #fff; box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.35); transform-origin: var(--arrow-x, 90%) 100%; animation: lp-in var(--spring-bouncy) both; -webkit-app-region: no-drag; }
+#plus-menu::after { content: ''; position: absolute; left: calc(var(--arrow-x, 90%) - 7px); bottom: -6px; width: 14px; height: 14px; border-radius: 2px; background: inherit; transform: rotate(45deg); }
+#plus-menu button { position: relative; z-index: 1; display: flex; align-items: center; gap: 13px; height: 42px; padding: 0 12px 0 11px; border-radius: 8px; color: #fff; font-size: 14px; font-weight: 600; text-align: left; }
+#plus-menu button:focus { outline: none; background: #2f338c; }
+#plus-menu button:disabled { color: rgba(255, 255, 255, 0.4); }
+#plus-menu svg.i { width: 20px; height: 20px; }
+#plus-menu span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#plus-menu kbd { font: inherit; font-weight: 500; letter-spacing: 1px; color: rgba(255, 255, 255, 0.5); }
+#plus-menu hr { flex: none; height: 1px; margin: 9px 6px; border: 0; background: rgba(110, 118, 255, 0.35); }
 
 #dl-ring { position: absolute; inset: 2px; width: 28px; height: 28px; transform: rotate(-90deg); display: none; }
 #dl-ring circle { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 75.4; stroke-dashoffset: 75.4; transition: stroke-dashoffset 200ms; }
