@@ -184,6 +184,8 @@ module.exports = async function derniersTests(ctx) {
     await survol('der-dossier');
     const tot = await vu();
     const ouvert = await ui(`folderPeek.show('der-dossier')`);
+    // Measured once its slide-in is over: mid-animation it sits a few points too high.
+    await ui(`(() => { const p = document.getElementById('folder-peek'); return p ? Promise.all(p.getAnimations({ subtree: true }).map((a) => a.finished.catch(() => {}))).then(() => 1) : 1; })()`);
     const p1 = await vu();
     const gene = p1 ? '' : await ui(`JSON.stringify({ renommage: !!document.querySelector('input.rename'), glissement: document.getElementById('pager').classList.contains('sliding'), glisser: document.body.classList.contains('dragging'), ouvert: ${tete('der-dossier')}.parentElement.classList.contains('open') })`);
     check('dossier replié survolé : rien au premier instant ; puis la liste de ses onglets paraît sous lui, dans la barre, sous-dossiers compris',
