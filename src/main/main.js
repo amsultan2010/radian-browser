@@ -289,6 +289,15 @@ async function globalAction(action, a, sender) {
       if (p && name) { p.name = name; store.save(); menu.refresh(true); }
       return profileList();
     }
+    // Profiles pane "+": a new profile, no Space yet (Spaces → Profile assigns it).
+    case 'settings:addProfile': {
+      const p = { id: require('./store').uid(), name: store.t('profiles.name', null, { n: s.profiles.length + 1 }) };
+      s.profiles.push(p);
+      s.favs[p.id] = [];
+      store.save();
+      menu.refresh(true);
+      return profileList();
+    }
     case 'settings:deleteProfile':
       if (OrbeWindow.deleteProfile(String(a))) { passwords.forgetProfile(String(a)); prefs.forgetProfile(String(a)); essentials.permissions.forgetProfile(String(a)); menu.refresh(true); }
       return profileList();
@@ -352,7 +361,7 @@ function setupUpdates() {
     test: SELFTEST || (!app.isPackaged && process.env.ORBE_UI_TEST === '1'),
     downloadsDir: () => prefs.downloadDirFor('default') || app.getPath('downloads'),
     reveal: (file) => shell.showItemInFolder(file),
-    show: () => openSettings('advanced'),
+    show: () => openSettings('general'),
     open: (url) => { const w = OrbeWindow.primary || newWindow(); w.newTab(url); w.win.focus(); },
     changed: () => {
       const st = updates.status();
@@ -361,7 +370,7 @@ function setupUpdates() {
     },
   });
   win.hooks.updateNote = () => updates.note();
-  commands.hooks.checkUpdates = () => { openSettings('advanced'); updates.check({ manual: true }); };
+  commands.hooks.checkUpdates = () => { openSettings('general'); updates.check({ manual: true }); };
   updates.start();
 }
 
@@ -470,7 +479,7 @@ app.whenReady().then(async () => {
   commands.hooks.newLittle = (url) => new little.LittleWindow(url);
   commands.hooks.openSettings = openSettings;
   commands.hooks.openBoost = (w, mode) => boostEditor.open(w, mode);
-  boostEditor.hooks.openSettings = () => openSettings('privacy');
+  boostEditor.hooks.openSettings = () => openSettings('advanced'); // where the Boosts settings are
   commands.hooks.openPasswords = () => passwords.openManager();
   passwords.configure({ trusted, uiPreload: UI_PRELOAD, internal: INTERNAL, toast: (wc, text) => { const o = OrbeWindow.ownerOf(wc); if (o) o.toast(text); } });
   commands.hooks.settingsChanged = broadcastSettings;

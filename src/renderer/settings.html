@@ -10,226 +10,270 @@
 </head>
 <body>
 <!-- Fenêtre des réglages, à volets comme dans Arc. Un volet = une <section class="pane"> ;
-     un groupe de réglages = un <h2> suivi d'une <div class="card"> ; un réglage = une <div class="line">.
+     un groupe de réglages = une <div class="card"> ; un réglage = une <div class="line">.
      Une case à cocher ou une liste dont l'id est une clé de réglage (voir FIELDS dans settings.js)
-     est enregistrée toute seule. -->
+     est enregistrée toute seule. Arc's order: General, Profiles, Links, Shortcuts, Icon, Advanced
+     (docs/parity/settings-spec.md). Radian-only controls sit after Arc's, or in a sheet (<dialog class="sheet">)
+     opened by a button with data-sheet. data-icon elements get their glyph from ICONS in settings.js. -->
 <header id="bar">
+  <div id="title"></div>
   <nav id="tabs" role="tablist">
-    <button role="tab" data-pane="general"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="2.6"/><path d="M10 2.6v2M10 15.4v2M2.6 10h2M15.4 10h2M4.8 4.8l1.4 1.4M13.8 13.8l1.4 1.4M4.8 15.2l1.4-1.4M13.8 6.2l1.4-1.4"/></svg><span data-t="pane.general"></span></button>
-    <button role="tab" data-pane="profiles"><svg viewBox="0 0 20 20"><circle cx="10" cy="7.2" r="3.1"/><path d="M3.8 16.6c.9-2.9 3.3-4.3 6.2-4.3s5.3 1.4 6.2 4.3"/></svg><span data-t="pane.profiles"></span></button>
-    <button role="tab" data-pane="tabs"><svg viewBox="0 0 20 20"><path d="M15.6 12.2A6.4 6.4 0 0 1 7.8 4.4a6.4 6.4 0 1 0 7.8 7.8z"/></svg><span data-t="pane.tabs"></span></button>
-    <button role="tab" data-pane="links"><svg viewBox="0 0 20 20"><path d="M8.6 11.4a3.4 3.4 0 0 0 4.8 0l2.4-2.4a3.4 3.4 0 0 0-4.8-4.8l-.9.9"/><path d="M11.4 8.6a3.4 3.4 0 0 0-4.8 0L4.2 11a3.4 3.4 0 0 0 4.8 4.8l.9-.9"/></svg><span data-t="pane.links"></span></button>
-    <button role="tab" data-pane="shortcuts"><svg viewBox="0 0 20 20"><rect x="2.4" y="5" width="15.2" height="10" rx="2.4"/><path d="M5.6 8.2h.1M8.5 8.2h.1M11.4 8.2h.1M14.3 8.2h.1M6.6 11.8h6.8"/></svg><span data-t="pane.shortcuts"></span></button>
-    <button role="tab" data-pane="appearance"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.2"/><path d="M10 2.8v14.4"/><path d="M10 5.4a4.6 4.6 0 0 1 0 9.2" fill="currentColor" stroke="none"/></svg><span data-t="pane.appearance"></span></button>
-    <button role="tab" data-pane="privacy"><svg viewBox="0 0 20 20"><path d="M10 2.6 4 4.9v4.5c0 3.7 2.4 6.6 6 8 3.6-1.4 6-4.3 6-8V4.9z"/><path d="m7.6 10 1.7 1.7 3.2-3.4"/></svg><span data-t="pane.privacy"></span></button>
-    <button role="tab" data-pane="extensions"><svg viewBox="0 0 20 20"><path d="M8 4.2a1.8 1.8 0 1 1 3.6 0v1h3.2v3.4h-1a1.8 1.8 0 1 0 0 3.6h1v3.6H4.4V5.2H8z"/></svg><span data-t="pane.extensions"></span></button>
-    <button role="tab" data-pane="import"><svg viewBox="0 0 20 20"><path d="M10 3v9.4M6.4 9 10 12.6 13.6 9"/><path d="M3.6 13.4v1.8c0 .9.7 1.6 1.6 1.6h9.6c.9 0 1.6-.7 1.6-1.6v-1.800"/></svg><span data-t="pane.import"></span></button>
-    <button role="tab" data-pane="advanced"><svg viewBox="0 0 20 20"><path d="M3 6h7.4M14.6 6H17M3 14h2.4M9.6 14H17"/><circle cx="12.5" cy="6" r="2.1"/><circle cx="7.5" cy="14" r="2.1"/></svg><span data-t="pane.advanced"></span></button>
+    <button role="tab" data-pane="general"><svg data-icon="gear"></svg><span data-t="pane.general"></span></button>
+    <button role="tab" data-pane="profiles"><svg data-icon="person"></svg><span data-t="pane.profiles"></span></button>
+    <button role="tab" data-pane="links"><svg data-icon="windows"></svg><span data-t="pane.links"></span></button>
+    <button role="tab" data-pane="shortcuts"><svg data-icon="keyboard"></svg><span data-t="pane.shortcuts"></span></button>
+    <button role="tab" data-pane="icon"><svg data-icon="appicon"></svg><span data-t="pane.icon"></span></button>
+    <button role="tab" data-pane="advanced"><svg data-icon="sliders"></svg><span data-t="pane.advanced"></span></button>
   </nav>
 </header>
 <main id="panes">
 
-  <!-- ===== Général ===== -->
+  <!-- ===== General ===== -->
   <section class="pane" id="pane-general" role="tabpanel" hidden>
-  <h2 data-t="set.general"></h2>
+  <div class="banner" id="default-banner" hidden><span data-t="set.notDefault"></span><button class="btn blue" id="makeDefault"><svg data-icon="heart"></svg><span data-t="set.makeDefault"></span></button></div>
   <div class="card">
-    <div class="line"><div class="grow"><div data-t="set.language"></div><div class="sub" data-t="set.languageHint"></div></div>
-      <select id="lang"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="pt">Português</option><option value="de">Deutsch</option><option value="nl">Nederlands</option><option value="it">Italiano</option></select></div>
-    <div class="line"><div class="grow"><div data-t="set.default"></div><div class="sub" id="defaultState"></div></div><button class="btn" id="makeDefault" data-t="set.makeDefault"></button></div>
-  </div>
-
-  <h2 data-t="set.startup"></h2>
-  <div class="card">
-    <div class="line"><div class="grow"><div data-t="set.restoreSession"></div><div class="sub" data-t="set.restoreSessionHint"></div></div><input type="checkbox" id="restoreSession"></div>
+    <div class="line"><span class="grow"><span data-t="set.updateCheck"></span><button class="info" data-t-title="set.updateCheckHint"><svg data-icon="info"></svg></button></span><input type="checkbox" id="updateCheck"></div>
     <div class="line"><span class="grow" data-t="set.warnOnQuit"></span><input type="checkbox" id="warnOnQuit"></div>
+    <div class="line"><span class="grow" data-t="set.language" data-t-title="set.languageHint"></span>
+      <select id="lang"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="pt">Português</option><option value="de">Deutsch</option><option value="nl">Nederlands</option><option value="it">Italiano</option></select></div>
   </div>
-
-  <h2 data-t="set.searchTabs"></h2>
   <div class="card">
-    <div class="line"><span class="grow" data-t="set.search"></span><select id="searchEngine"></select></div>
-    <div class="line"><span class="grow" data-t="set.suggestions"></span><input type="checkbox" id="suggestions"></div>
-    <div class="line"><span class="grow" data-t="set.archiveAfter"></span>
-      <select id="archiveAfterHours">
-        <option value="12" data-t="set.h12"></option><option value="24" data-t="set.h24"></option>
-        <option value="168" data-t="set.d7"></option><option value="720" data-t="set.d30"></option>
-        <option value="0" data-t="set.never"></option>
-      </select></div>
-    <div class="line"><span class="grow" data-t="set.noteApp"></span>
-      <select id="noteApp"><option value="notes" data-t="set.noteAppNotes"></option><option value="notion">Notion</option><option value="googleDocs">Google Docs</option><option value="word">Word</option><option value="confluence">Confluence</option></select></div>
-    <div class="line"><span class="grow sub" data-t="set.perProfile"></span><button class="btn" id="toProfiles" data-t="set.perProfileBtn"></button></div>
+    <div class="line tall"><span class="grow wrap" data-t="set.perProfile"></span><button class="btn" id="toProfiles" data-t="set.perProfileBtn"></button></div>
   </div>
-
-  <h2 data-t="siteSearch.title"></h2>
-  <div class="card">
-    <div id="site-list"></div>
-    <div class="line site-row"><input class="search s-name" id="site-name" maxlength="40" spellcheck="false" data-t-ph="siteSearch.name"><input class="search s-keyword" id="site-keyword" maxlength="30" spellcheck="false" data-t-ph="siteSearch.keyword"><input class="search s-url" id="site-url" maxlength="500" spellcheck="false" data-t-ph="siteSearch.url"><button class="btn primary" id="site-add" data-t="route.add"></button></div>
-  </div>
-  <p class="muted note" id="site-msg" style="color:#e11d48" data-t="siteSearch.bad" hidden></p>
-  <p class="muted note" data-t="siteSearch.hint"></p>
-
-  <h2 data-t="set.downloads"></h2>
-  <div class="card">
-    <div class="line"><div class="grow"><div data-t="set.downloadDir"></div><div class="sub path" id="downloadDirPath"></div></div>
-      <button class="btn" id="downloadDirReset" data-t="set.useDefault"></button><button class="btn" id="downloadDirChoose" data-t="set.choose"></button></div>
-    <div class="line"><span class="grow" data-t="set.downloadAsk"></span><input type="checkbox" id="downloadAsk"></div>
-    <div class="line"><div class="grow"><div data-t="set.downloadOpenPdf"></div><div class="sub" data-t="set.downloadOpenPdfHint"></div></div><input type="checkbox" id="downloadOpenPdf"></div>
-  </div>
-
-  <p class="muted foot"><span data-t="set.about"></span> <span id="version"></span></p>
-  </section>
-
-  <!-- ===== Profils ===== -->
-  <section class="pane" id="pane-profiles" role="tabpanel" hidden>
-  <h2 data-t="set.profiles"></h2>
-  <div id="profiles"></div>
-  <p class="muted note" data-t="set.profilesHint"></p>
-  <p class="muted note" data-t="set.profilesHint2"></p>
-  </section>
-
-  <!-- ===== Onglets : veille automatique ===== -->
-  <section class="pane" id="pane-tabs" role="tabpanel" hidden>
-  <h2 data-t="set.sleepTitle"></h2>
-  <div class="card">
-    <div class="line"><div class="grow"><div data-t="set.sleepAfter"></div><div class="sub wrap" data-t="set.sleepAfterHint"></div></div>
-      <select id="sleepAfterHours">
-        <option value="1" data-t="set.h1"></option><option value="2" data-t="set.h2"></option><option value="3" data-t="set.h3"></option>
-        <option value="6" data-t="set.h6"></option><option value="12" data-t="set.h12"></option><option value="0" data-t="set.never"></option>
-      </select></div>
-    <div class="line"><div class="grow"><div data-t="set.batterySaver"></div><div class="sub wrap" data-t="set.batterySaverHint"></div></div><input type="checkbox" id="batterySaver"></div>
-    <div class="line"><div class="grow"><div data-t="set.memoryBudget"></div><div class="sub wrap" data-t="set.memoryBudgetHint"></div></div>
-      <select id="memoryBudget"></select></div>
-    <div class="line"><div class="grow"><div data-t="set.memory"></div><div class="sub" data-t="set.memoryHint"></div></div>
-      <select id="maxLiveTabs"><option>10</option><option>14</option><option>20</option><option>30</option><option>50</option></select></div>
-  </div>
-  <p class="muted note" data-t="set.sleepNote"></p>
-
-  <h2 data-t="set.neverSleepTitle"></h2>
-  <div class="card">
-    <div id="never-sleep-list"></div>
-    <div class="line"><input class="search" id="never-sleep-site" style="margin:0" spellcheck="false" data-t-ph="set.neverSleepPlaceholder"><button class="btn primary" id="never-sleep-add" data-t="route.add"></button></div>
-  </div>
-  <p class="muted note" id="never-sleep-msg" style="color:#e11d48" data-t="route.bad" hidden></p>
-  <p class="muted note" data-t="set.neverSleepHint"></p>
-  </section>
-
-  <!-- ===== Liens ===== -->
-  <section class="pane" id="pane-links" role="tabpanel" hidden>
-  <h2 data-t="set.linksFromApps"></h2>
-  <div class="card">
-    <div class="line"><span class="grow" data-t="set.external"></span>
-      <select id="externalLinks"><option value="window" data-t="set.externalWindow"></option><option value="little" data-t="set.externalLittle"></option></select></div>
-  </div>
-
-  <h2 data-t="route.title"></h2>
-  <div class="card">
-    <div id="routes"></div>
-    <div class="line"><select id="route-kind" data-t-title="route.kind"><option value="" data-t="route.kindSite"></option><option value="contains" data-t="route.kindContains"></option><option value="equals" data-t="route.kindEquals"></option></select><input class="search" id="route-match" style="margin:0" spellcheck="false" data-t-ph="route.placeholder"><select id="route-to"></select><button class="btn primary" id="route-add" data-t="route.add"></button></div>
-  </div>
-  <p class="muted note" id="route-msg" style="color:#e11d48" data-t="route.bad" hidden></p>
-  <p class="muted note" data-t="route.hint"></p>
-
-  <h2 data-t="set.linksInPages"></h2>
-  <div class="card">
-    <div class="line"><div class="grow"><div data-t="set.peekLinks"></div><div class="sub" data-t="set.peekLinksHint"></div></div><input type="checkbox" id="peekLinks"></div>
-    <div class="line"><div class="grow"><div data-t="set.peekShift"></div><div class="sub" data-t="set.peekShiftHint"></div></div><input type="checkbox" id="peekShift"></div>
-    <div class="line"><span class="grow" data-t="set.littleAltClick"></span><input type="checkbox" id="littleAltClick"></div>
-  </div>
-
-  <h2 data-t="set.little"></h2>
-  <div class="card">
-    <div class="line"><div class="grow"><div data-t="set.littleGlobal"></div><div class="sub" data-t="set.littleGlobalHint"></div></div>
-      <kbd id="littleKeys"></kbd><button class="btn" id="littleKeysEdit" data-t="set.edit"></button></div>
-    <div class="line"><div class="grow"><div data-t="set.littleArchive"></div><div class="sub" data-t="set.littleArchiveHint"></div></div>
-      <select id="littleArchiveHours">
-        <option value="6" data-t="set.h6"></option><option value="12" data-t="set.h12"></option><option value="24" data-t="set.h24"></option>
-        <option value="168" data-t="set.d7"></option><option value="720" data-t="set.d30"></option>
-        <option value="0" data-t="set.never"></option>
-      </select></div>
-  </div>
-  </section>
-
-  <!-- ===== Raccourcis ===== -->
-  <section class="pane" id="pane-shortcuts" role="tabpanel" hidden>
-  <div class="keys-top">
-    <input class="search" id="keys-search" type="search" spellcheck="false" data-t-ph="keys.search">
-    <button class="btn" id="keys-reset-all" data-t="keys.resetAll"></button>
-  </div>
-  <p class="muted note first" data-t="keys.hint"></p>
-  <div id="keys-list" tabindex="-1"></div>
-
-  <h2 data-t="keys.tabNumbers"></h2>
-  <div class="card">
-    <div class="line"><span class="grow" data-t="set.tabKeysFavorites"></span><input type="checkbox" id="tabKeysFavorites"></div>
-    <div class="line"><div class="grow"><div data-t="set.tabKeysNinthLast"></div><div class="sub" data-t="set.tabKeysNinthLastHint"></div></div><input type="checkbox" id="tabKeysNinthLast"></div>
-  </div>
-  <p class="foot"><button class="btn" id="keys-essential" data-t="keys.essential"></button></p>
-  </section>
-
-  <!-- ===== Apparence ===== -->
-  <section class="pane" id="pane-appearance" role="tabpanel" hidden>
-  <h2 data-t="set.theme"></h2>
   <div class="card">
     <div class="line"><span class="grow" data-t="set.appearance"></span>
       <select id="appearance"><option value="auto" data-t="view.auto"></option><option value="light" data-t="view.light"></option><option value="dark" data-t="view.dark"></option></select></div>
     <div class="line"><span class="grow" data-t="set.translucent"></span><input type="checkbox" id="translucent"></div>
   </div>
-  <p class="muted note" data-t="set.spaceThemeHint"></p>
 
-  <h2 data-t="set.toolbar"></h2>
-  <div class="card">
-    <div class="line"><div class="grow"><div data-t="set.showToolbar"></div><div class="sub" data-t="set.showToolbarHint"></div></div><input type="checkbox" id="showToolbar"></div>
-    <div class="line"><div class="grow"><div data-t="set.showFullUrl"></div><div class="sub" data-t="set.showFullUrlHint"></div></div><input type="checkbox" id="showFullUrl"></div>
+  <h2 data-t="update.title"></h2>
+  <div class="card" id="update-card">
+    <div class="line"><div class="grow"><div id="update-version"></div><div class="sub wrap" id="update-state"></div></div><button class="btn" id="update-check" data-t="update.check"></button></div>
+    <div id="update-new" hidden>
+      <div class="line"><div class="grow"><div id="update-headline"></div><div class="sub wrap" id="update-how" data-t="update.how"></div></div></div>
+      <pre id="update-notes" tabindex="0"></pre>
+      <div class="line"><span class="grow sub wrap" id="update-dl-state"></span><button class="btn" id="update-cancel" data-t="edit.undo" hidden></button><button class="btn" id="update-reveal" data-t="update.reveal" hidden></button><button class="btn" id="update-download" data-t="update.download"></button><button class="btn blue" id="update-page" data-t="update.page"></button></div>
+    </div>
   </div>
-
-  <!-- App icon: one button per variant, drawn by settings.js from "settings:get" (src/main/app-icon.js). -->
-  <h2 id="appIconTitle" data-t="set.appIcon"></h2>
-  <div class="card">
-    <div class="line app-icons" id="appIcons" role="group" aria-labelledby="appIconTitle"></div>
-  </div>
-  <p class="muted note" id="appIconHint" data-t="set.appIconHint"></p>
   </section>
 
-  <!-- ===== Confidentialité ===== -->
-  <section class="pane" id="pane-privacy" role="tabpanel" hidden>
-  <h2 data-t="set.blocking"></h2>
+  <!-- ===== Profiles: list on the left, the selected profile's settings on the right ===== -->
+  <section class="pane wide" id="pane-profiles" role="tabpanel" hidden>
+  <p class="intro" data-t="set.profilesHint"></p>
+  <div class="profiles">
+    <div class="plist">
+      <div class="plist-head" id="plist-head" data-t="set.yourProfiles"></div>
+      <div id="profiles" role="listbox" aria-labelledby="plist-head"></div>
+      <div class="plist-bar"><button id="profile-add" data-t-title="set.profileAdd"><svg data-icon="plus"></svg></button><button id="profile-remove"><svg data-icon="minus"></svg></button></div>
+    </div>
+    <div class="pdetail">
+      <input class="pname" id="profile-name" maxlength="40" spellcheck="false">
+      <div class="card">
+        <div class="line"><span class="grow" data-t="set.search"></span><select id="p-searchEngine"></select></div>
+        <div class="line"><span class="grow" data-t="set.manageSearch"></span><button class="btn" data-sheet="sites" data-t="set.searchSettings"></button></div>
+        <div class="line"><span class="grow" data-t="set.suggestions"></span><input type="checkbox" id="p-suggestions"></div>
+      </div>
+      <div class="card">
+        <div class="line"><span class="grow" data-t="set.archiveAfter"></span>
+          <select id="p-archiveAfterHours">
+            <option value="12" data-t="set.h12"></option><option value="24" data-t="set.h24"></option>
+            <option value="168" data-t="set.d7"></option><option value="720" data-t="set.d30"></option>
+            <option value="0" data-t="set.never"></option>
+          </select></div>
+        <div class="line"><span class="grow" data-t="set.newDocuments"></span>
+          <select id="p-noteApp" data-t-title="set.noteApp"><option value="notes" data-t="set.noteAppNotes"></option><option value="confluence" data-t="set.docConfluence"></option><option value="googleDocs" data-t="set.docGoogle"></option><option value="notion" data-t="set.docNotion"></option><option value="word" data-t="set.docWord"></option></select></div>
+        <div class="line"><span class="grow" data-t="set.downloadDir"></span><select id="p-download"></select></div>
+      </div>
+      <h2 data-t="set.yourData"></h2>
+      <div class="card">
+        <button class="line go" data-sheet="privacy"><i class="tile blue" data-icon="lock"></i><span class="grow" data-t="set.privacySecurity"></span><svg class="arrow" data-icon="arrow"></svg></button>
+        <button class="line go" data-sheet="passwords"><i class="tile green" data-icon="key"></i><span class="grow" data-t="set.passwords"></span><svg class="arrow" data-icon="arrow"></svg></button>
+        <button class="line go" id="clearData"><i class="tile red" data-icon="trash"></i><span class="grow" data-t="set.clearDataRow"></span><svg class="arrow" data-icon="arrow"></svg></button>
+      </div>
+    </div>
+  </div>
+  </section>
+
+  <!-- ===== Links ===== -->
+  <section class="pane" id="pane-links" role="tabpanel" hidden>
+  <div class="hero"><svg viewBox="0 0 684 135" preserveAspectRatio="none" aria-hidden="true">
+    <path class="hero-bg" d="M0 0H684V118C620 132 560 108 490 116S370 134 300 122 170 106 100 120 30 128 0 120Z"/>
+    <rect class="hero-win" x="232" y="20" width="220" height="86" rx="10"/>
+    <circle class="hero-dot" cx="246" cy="33" r="3.2"/><circle class="hero-dot" cx="256" cy="33" r="3.2"/><circle class="hero-dot" cx="266" cy="33" r="3.2"/>
+    <rect class="hero-pill" x="282" y="27" width="120" height="12" rx="6"/>
+    <rect class="hero-line" x="248" y="52" width="150" height="7" rx="3.5"/><rect class="hero-line" x="248" y="66" width="188" height="7" rx="3.5"/><rect class="hero-line" x="248" y="80" width="120" height="7" rx="3.5"/>
+  </svg></div>
+  <p class="intro" data-t="set.littleIntro"></p>
   <div class="card">
-    <div class="line"><div class="grow"><div data-t="set.adblock"></div><div class="sub" data-t="set.adblockHint"></div></div><input type="checkbox" id="adblock"></div>
-    <div class="line"><div class="grow"><div data-t="set.cookieBanners"></div><div class="sub" data-t="set.cookieBannersHint"></div></div><input type="checkbox" id="cookieBanners"></div>
-    <div class="line"><div class="grow"><div data-t="set.themeData"></div><div class="sub" data-t="set.themeDataHint"></div></div><input type="checkbox" id="themeData"></div>
-    <div class="line"><div class="grow"><div data-t="set.boostsJs"></div><div class="sub" data-t="set.boostsJsHint"></div></div><input type="checkbox" id="boostsJs"></div>
+    <div class="line"><span class="grow" id="littleKeysLabel"></span><input type="checkbox" id="littleKeysOn"></div>
+    <div class="line"><span class="grow" data-t="set.littleAltClick"></span><input type="checkbox" id="littleAltClick"></div>
+    <div class="line"><span class="grow" data-t="set.externalLittleSwitch"></span><input type="checkbox" id="externalLittle"></div>
+    <div class="line"><span class="grow" data-t="set.littleArchive" data-t-title="set.littleArchiveHint"></span>
+      <select id="littleArchiveHours">
+        <option value="1" data-t="set.h1"></option><option value="6" data-t="set.h6"></option><option value="12" data-t="set.h12"></option>
+        <option value="24" data-t="set.h24"></option><option value="168" data-t="set.d7"></option><option value="720" data-t="set.d30"></option>
+        <option value="0" data-t="set.never"></option>
+      </select></div>
+  </div>
+  <hr>
+  <p class="intro" data-t="set.peekIntro"></p>
+  <div class="card">
+    <div class="line"><span class="grow" data-t="set.peekShift"></span><input type="checkbox" id="peekShift"></div>
+    <div class="line"><div class="grow"><div data-t="set.peekLinks"></div><div class="sub wrap note-i" data-t="set.peekLinksHint"></div></div><input type="checkbox" id="peekLinks"></div>
+  </div>
+  <div class="line plain"><span class="grow" data-t="set.atcRow"></span><button class="btn" data-sheet="atc" data-t="route.atcBtn"></button></div>
+  </section>
+
+  <!-- ===== Shortcuts: one alphabetical list on the left ===== -->
+  <section class="pane wide" id="pane-shortcuts" role="tabpanel" hidden>
+  <div class="banner"><span data-t="keys.basics"></span><button class="btn blue" id="keys-essential"><span class="cmd">⌘</span><span data-t="keys.essential"></span></button></div>
+  <div class="keys">
+    <div class="keys-left">
+      <input class="search" id="keys-search" type="search" spellcheck="false" data-t-ph="keys.search">
+      <div id="keys-list" tabindex="-1"></div>
+    </div>
+    <div class="keys-right">
+      <div class="keycaps" aria-hidden="true"><span class="cap">⌘</span><span class="cap"><svg data-icon="smile"></svg></span></div>
+      <h3 data-t="keys.custom"></h3>
+      <p class="muted" data-t="keys.customText"></p>
+      <p class="muted" data-t="keys.hint"></p>
+      <div class="card">
+        <div class="line"><span class="grow" data-t="set.tabKeysFavorites"></span><input type="checkbox" id="tabKeysFavorites"></div>
+        <div class="line"><span class="grow" data-t="set.tabKeysNinthLast" data-t-title="set.tabKeysNinthLastHint"></span><input type="checkbox" id="tabKeysNinthLast"></div>
+      </div>
+      <div class="keys-foot"><button class="btn" id="keys-reset-all" data-t="keys.resetAll"></button><button class="btn" id="keys-more" data-t-title="keys.more"><svg data-icon="ellipsis"></svg></button></div>
+    </div>
+  </div>
+  </section>
+
+  <!-- ===== Icon: Arc's one-column list of app icons (src/main/app-icon.js) ===== -->
+  <section class="pane" id="pane-icon" role="tabpanel" hidden>
+  <div class="card" id="appIcons" role="radiogroup"></div>
+  <p class="muted note" data-t="set.appIconHint"></p>
+  </section>
+
+  <!-- ===== Advanced: Arc's three cards, then Radian's own ===== -->
+  <section class="pane" id="pane-advanced" role="tabpanel" hidden>
+  <div class="card">
+    <div class="line"><i class="tile blue" data-icon="speaker"></i><span class="grow" data-t="set.sounds" data-t-title="set.soundsHint"></span><input type="checkbox" id="sounds"></div>
+    <div class="line sub-row"><div class="grow"><div data-t="set.soundGestures"></div><div class="sub wrap" data-t="set.soundGesturesHint"></div></div><input type="checkbox" id="soundGestures"></div>
+    <div class="line sub-row"><span class="grow" data-t="set.soundVolume"></span><input type="range" id="soundVolume" min="0" max="100" step="5"></div>
+    <div class="line"><i class="tile blue" data-icon="hand"></i><span class="grow" data-t="set.haptics" data-t-title="set.hapticsHint"></span><input type="checkbox" id="haptics"></div>
+  </div>
+  <div class="card">
+    <div class="line"><i class="tile green" data-icon="window"></i><span class="grow" data-t="set.restoreSession" data-t-title="set.restoreSessionHint"></span><input type="checkbox" id="restoreSession"></div>
+    <div class="line"><i class="tile red" data-icon="dots"></i><span class="grow" data-t="set.showFullUrl" data-t-title="set.showFullUrlHint"></span><input type="checkbox" id="showFullUrl"></div>
+    <div class="line"><i class="tile red" data-icon="doc"></i><div class="grow"><div data-t="set.downloadOpenPdf"></div><div class="sub wrap" data-t="set.downloadOpenPdfHint"></div></div><input type="checkbox" id="downloadOpenPdf"></div>
+  </div>
+  <div class="card">
+    <div class="line"><i class="tile purple" data-icon="play"></i><span class="grow" data-t="set.autoPip" data-t-title="set.autoPipHint"></span><input type="checkbox" id="autoPip"></div>
+    <div class="line"><i class="tile purple" data-icon="player"></i><div class="grow"><div data-t="set.mediaControls"></div><div class="sub wrap" data-t="set.mediaControlsHint"></div></div><input type="checkbox" id="mediaControls"></div>
+    <div class="line"><i class="tile purple" data-icon="palette"></i><span class="grow" data-t="set.themeData" data-t-title="set.themeDataHint"></span><input type="checkbox" id="themeData"></div>
+    <div class="line"><i class="tile purple" data-icon="brush"></i><span class="grow" data-t="set.boostsEnabled" data-t-title="set.boostsEnabledHint"></span><input type="checkbox" id="boostsEnabled"></div>
+    <div class="line sub-row"><div class="grow"><div data-t="set.boostsJs"></div><div class="sub wrap" data-t="set.boostsJsHint"></div></div><input type="checkbox" id="boostsJs"></div>
   </div>
 
+  <h2 data-t="set.sleepTitle"></h2>
+  <div class="card">
+    <div class="line"><i class="tile orange" data-icon="moon"></i><div class="grow"><div data-t="set.sleepAfter"></div><div class="sub wrap" data-t="set.sleepAfterHint"></div></div>
+      <select id="sleepAfterHours">
+        <option value="1" data-t="set.h1"></option><option value="2" data-t="set.h2"></option><option value="3" data-t="set.h3"></option>
+        <option value="6" data-t="set.h6"></option><option value="12" data-t="set.h12"></option><option value="0" data-t="set.never"></option>
+      </select></div>
+    <div class="line"><i class="tile orange" data-icon="battery"></i><div class="grow"><div data-t="set.batterySaver"></div><div class="sub wrap" data-t="set.batterySaverHint"></div></div><input type="checkbox" id="batterySaver"></div>
+    <div class="line"><i class="tile orange" data-icon="chip"></i><div class="grow"><div data-t="set.memoryBudget"></div><div class="sub wrap" data-t="set.memoryBudgetHint"></div></div><select id="memoryBudget"></select></div>
+    <div class="line"><i class="tile orange" data-icon="stack"></i><div class="grow"><div data-t="set.memory"></div><div class="sub wrap" data-t="set.memoryHint"></div></div>
+      <select id="maxLiveTabs"><option>10</option><option>14</option><option>20</option><option>30</option><option>50</option></select></div>
+    <div class="line"><i class="tile orange" data-icon="sun"></i><span class="grow" data-t="set.neverSleepTitle"></span><button class="btn" data-sheet="awake" data-t="set.manage"></button></div>
+  </div>
+
+  <h2 data-t="set.devTitle"></h2>
+  <div class="card">
+    <div class="line"><i class="tile gray" data-icon="code"></i><div class="grow"><div data-t="set.devLocalhost"></div><div class="sub wrap" data-t="set.devLocalhostHint"></div></div><input type="checkbox" id="devLocalhost"></div>
+    <div id="dev-list"></div>
+    <div class="line"><input class="search" id="dev-host" spellcheck="false" data-t-ph="set.devPlaceholder"><button class="btn" id="dev-add" data-t="route.add"></button></div>
+  </div>
+  <p class="muted note"><span data-t="set.devHint"></span> <kbd data-key="toggleDevMode"></kbd></p>
+  <div class="buttons"><button class="btn" data-sheet="extensions" data-t="ext.manage"></button><button class="btn" data-sheet="import" data-t="set.importBtn"></button></div>
+  </section>
+
+</main>
+
+<!-- ===== Sheets ===== -->
+<dialog class="sheet" id="sheet-sites" aria-labelledby="sites-title">
+  <h1 id="sites-title" data-t="siteSearch.title"></h1>
+  <div class="card">
+    <div id="site-list"></div>
+    <div class="line site-row"><input class="search s-name" id="site-name" maxlength="40" spellcheck="false" data-t-ph="siteSearch.name"><input class="search s-keyword" id="site-keyword" maxlength="30" spellcheck="false" data-t-ph="siteSearch.keyword"><input class="search s-url" id="site-url" maxlength="500" spellcheck="false" data-t-ph="siteSearch.url"><button class="btn" id="site-add" data-t="route.add"></button></div>
+  </div>
+  <p class="muted note bad" id="site-msg" data-t="siteSearch.bad" hidden></p>
+  <p class="muted note" data-t="siteSearch.hint"></p>
+  <div class="sheet-foot"><button class="btn blue" data-close data-t="set.done"></button></div>
+</dialog>
+
+<dialog class="sheet" id="sheet-privacy" aria-labelledby="privacy-title">
+  <h1 id="privacy-title" data-t="set.privacySecurity"></h1>
+  <div class="card">
+    <div class="line"><div class="grow"><div data-t="set.adblock"></div><div class="sub wrap" data-t="set.adblockHint"></div></div><input type="checkbox" id="adblock"></div>
+    <div class="line"><div class="grow"><div data-t="set.cookieBanners"></div><div class="sub wrap" data-t="set.cookieBannersHint"></div></div><input type="checkbox" id="cookieBanners"></div>
+    <div class="line"><span class="grow" data-t="set.sitePerms"></span><button class="btn" id="resetPerms" data-t-title="set.sitePerms">↺</button></div>
+  </div>
   <h2 data-t="set.allowTitle"></h2>
   <div class="card" id="allow-list"></div>
+  <p class="muted note" data-t="set.allProfiles"></p>
+  <div class="sheet-foot"><button class="btn blue" data-close data-t="set.done"></button></div>
+</dialog>
 
-  <h2 data-t="set.passwords"></h2>
+<dialog class="sheet" id="sheet-passwords" aria-labelledby="passwords-title">
+  <h1 id="passwords-title" data-t="set.passwords"></h1>
   <div class="card">
-    <div class="line"><div class="grow"><div data-t="set.passwordSave"></div><div class="sub" data-t="set.passwordSaveHint"></div></div><input type="checkbox" id="passwordSave"></div>
-    <div class="line"><div class="grow"><div data-t="set.passwordFill"></div><div class="sub" data-t="set.passwordFillHint"></div></div><input type="checkbox" id="passwordFill"></div>
+    <div class="line"><div class="grow"><div data-t="set.passwordSave"></div><div class="sub wrap" data-t="set.passwordSaveHint"></div></div><input type="checkbox" id="passwordSave"></div>
+    <div class="line"><div class="grow"><div data-t="set.passwordFill"></div><div class="sub wrap" data-t="set.passwordFillHint"></div></div><input type="checkbox" id="passwordFill"></div>
     <div class="line"><span class="grow" data-t="set.passwordManage"></span><button class="btn" id="passwordManage" data-t="set.passwordManageBtn"></button></div>
   </div>
+  <p class="muted note" data-t="set.allProfiles"></p>
+  <div class="sheet-foot"><button class="btn blue" data-close data-t="set.done"></button></div>
+</dialog>
 
-  <h2 data-t="set.data"></h2>
+<dialog class="sheet wide" id="sheet-atc" aria-labelledby="atc-title">
+  <h1 id="atc-title" data-t="route.atc"></h1>
   <div class="card">
-    <div class="line"><div class="grow"><div data-t="set.clearData"></div><div class="sub" data-t="set.clearDataHint"></div></div>
-      <button class="btn" id="clearData" data-t="set.clearBtn"></button></div>
-    <div class="line"><span class="grow" data-t="set.sitePerms"></span><button class="btn" id="resetPerms">↺</button></div>
+    <div class="line"><div class="grow"><div data-t="route.default"></div><div class="sub" data-t="set.linksFromApps"></div></div>
+      <select id="externalLinks" data-t-title="set.external"><option value="window" data-t="set.externalWindow"></option><option value="little" data-t="set.externalLittle"></option></select></div>
   </div>
-  </section>
-
-  <!-- ===== Extensions ===== -->
-  <section class="pane" id="pane-extensions" role="tabpanel" hidden>
-  <h2 data-t="ext.title"></h2>
   <div class="card">
-    <div class="line"><input class="search" id="ext-url" style="margin:0" spellcheck="false" data-t-ph="ext.placeholder"><button class="btn primary" id="ext-add" data-t="ext.install"></button></div>
+    <div id="routes"></div>
+    <div class="line"><select id="route-kind" data-t-title="route.kind"><option value="" data-t="route.kindSite"></option><option value="contains" data-t="route.kindContains"></option><option value="equals" data-t="route.kindEquals"></option></select><input class="search" id="route-match" spellcheck="false" data-t-ph="route.placeholder"><select id="route-to"></select><button class="btn" id="route-add" data-t="route.add"></button></div>
+  </div>
+  <p class="muted note bad" id="route-msg" data-t="route.bad" hidden></p>
+  <p class="muted note" data-t="route.hint"></p>
+  <div class="sheet-foot"><button class="btn blue" data-close data-t="set.done"></button></div>
+</dialog>
+
+<dialog class="sheet" id="sheet-awake" aria-labelledby="awake-title">
+  <h1 id="awake-title" data-t="set.neverSleepTitle"></h1>
+  <div class="card">
+    <div id="never-sleep-list"></div>
+    <div class="line"><input class="search" id="never-sleep-site" spellcheck="false" data-t-ph="set.neverSleepPlaceholder"><button class="btn" id="never-sleep-add" data-t="route.add"></button></div>
+  </div>
+  <p class="muted note bad" id="never-sleep-msg" data-t="route.bad" hidden></p>
+  <p class="muted note" data-t="set.neverSleepHint"></p>
+  <p class="muted note" data-t="set.sleepNote"></p>
+  <div class="sheet-foot"><button class="btn blue" data-close data-t="set.done"></button></div>
+</dialog>
+
+<dialog class="sheet wide" id="sheet-extensions" aria-labelledby="ext-title">
+  <h1 id="ext-title" data-t="ext.title"></h1>
+  <div class="card">
+    <div class="line"><input class="search" id="ext-url" spellcheck="false" data-t-ph="ext.placeholder"><button class="btn" id="ext-add" data-t="ext.install"></button></div>
     <div id="ext-list"></div>
   </div>
   <p class="muted note" id="ext-msg" data-t="ext.hint"></p>
-  </section>
+  <div class="sheet-foot"><button class="btn blue" data-close data-t="set.done"></button></div>
+</dialog>
 
-  <!-- ===== Import ===== -->
-  <section class="pane" id="pane-import" role="tabpanel" hidden>
-  <h2 data-t="pane.import"></h2>
+<dialog class="sheet wide" id="sheet-import" aria-labelledby="import-title">
+  <h1 id="import-title" data-t="pane.import"></h1>
   <div class="card">
     <div class="line"><div class="grow"><div data-t="imp.arc"></div><div class="sub wrap" id="import-arc-hint" data-t="imp.arcHint"></div></div><button class="btn" id="import-arc" data-t="imp.btn"></button></div>
     <div class="line"><div class="grow"><div data-t="imp.bookmarks"></div><div class="sub wrap" data-t="imp.bookmarksHint"></div></div><button class="btn" id="import-bookmarks" data-t="imp.btn"></button></div>
@@ -240,46 +284,16 @@
   <div class="card" id="import-browsers"></div>
   <p class="muted note" id="import-msg" data-t="imp.scope"></p>
   <p class="muted note" data-t="imp.bookmarksHow"></p>
-  </section>
+  <div class="sheet-foot"><button class="btn blue" data-close data-t="set.done"></button></div>
+</dialog>
 
-  <!-- ===== Avancé ===== -->
-  <section class="pane" id="pane-advanced" role="tabpanel" hidden>
-  <h2 data-t="update.title"></h2>
-  <div class="card" id="update-card">
-    <div class="line"><div class="grow"><div id="update-version"></div><div class="sub wrap" id="update-state"></div></div><button class="btn" id="update-check" data-t="update.check"></button></div>
-    <div id="update-new" hidden>
-      <div class="line"><div class="grow"><div id="update-headline"></div><div class="sub wrap" id="update-how" data-t="update.how"></div></div></div>
-      <pre id="update-notes" tabindex="0"></pre>
-      <div class="line"><span class="grow sub wrap" id="update-dl-state"></span><button class="btn" id="update-cancel" data-t="edit.undo" hidden></button><button class="btn" id="update-reveal" data-t="update.reveal" hidden></button><button class="btn" id="update-download" data-t="update.download"></button><button class="btn primary" id="update-page" data-t="update.page"></button></div>
-    </div>
-    <div class="line"><div class="grow"><div data-t="set.updateCheck"></div><div class="sub wrap" data-t="set.updateCheckHint"></div></div><input type="checkbox" id="updateCheck"></div>
-  </div>
+<dialog class="sheet" id="sheet-extkeys" aria-labelledby="extkeys-title">
+  <h1 id="extkeys-title" data-t="keys.extensions"></h1>
+  <p class="muted note first" data-t="keys.extensionsHint"></p>
+  <div class="card" id="ext-keys-list"></div>
+  <div class="sheet-foot"><button class="btn blue" data-close data-t="set.done"></button></div>
+</dialog>
 
-  <h2 data-t="set.mediaTitle"></h2>
-  <div class="card">
-    <div class="line"><div class="grow"><div data-t="set.autoPip"></div><div class="sub" data-t="set.autoPipHint"></div></div><input type="checkbox" id="autoPip"></div>
-    <div class="line"><div class="grow"><div data-t="set.mediaControls"></div><div class="sub" data-t="set.mediaControlsHint"></div></div><input type="checkbox" id="mediaControls"></div>
-    <div class="line"><div class="grow"><div data-t="set.sounds"></div><div class="sub" data-t="set.soundsHint"></div></div><input type="checkbox" id="sounds"></div>
-    <div class="line"><div class="grow"><div data-t="set.soundGestures"></div><div class="sub" data-t="set.soundGesturesHint"></div></div><input type="checkbox" id="soundGestures"></div>
-    <div class="line"><span class="grow" data-t="set.soundVolume"></span><input type="range" id="soundVolume" min="0" max="100" step="5"></div>
-    <div class="line"><div class="grow"><div data-t="set.haptics"></div><div class="sub" data-t="set.hapticsHint"></div></div><input type="checkbox" id="haptics"></div>
-  </div>
-
-  <h2 data-t="set.sites"></h2>
-  <div class="card">
-    <div class="line"><div class="grow"><div data-t="set.boostsEnabled"></div><div class="sub" data-t="set.boostsEnabledHint"></div></div><input type="checkbox" id="boostsEnabled"></div>
-  </div>
-
-  <h2 data-t="set.devTitle"></h2>
-  <div class="card">
-    <div class="line"><div class="grow"><div data-t="set.devLocalhost"></div><div class="sub wrap" data-t="set.devLocalhostHint"></div></div><input type="checkbox" id="devLocalhost"></div>
-    <div id="dev-list"></div>
-    <div class="line"><input class="search" id="dev-host" style="margin:0" spellcheck="false" data-t-ph="set.devPlaceholder"><button class="btn primary" id="dev-add" data-t="route.add"></button></div>
-  </div>
-  <p class="muted note"><span data-t="set.devHint"></span> <kbd data-key="toggleDevMode"></kbd></p>
-  </section>
-
-</main>
 <script src="common.js"></script>
 <script src="import-ui.js"></script>
 <script src="settings.js"></script>

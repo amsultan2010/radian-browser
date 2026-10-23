@@ -1,7 +1,7 @@
 // Fenêtre des réglages à volets, à la manière d'Arc et de macOS : création de
 // la fenêtre, hauteur ajustée à chaque volet, et actions propres aux nouveaux
 // volets (profils, raccourcis, import, avancé).
-const { app, BrowserWindow, dialog, globalShortcut, nativeTheme, screen, webContents } = require('electron');
+const { app, BrowserWindow, dialog, globalShortcut, Menu, nativeTheme, webContents } = require('electron');
 const { store } = require('./store');
 const platform = require('./platform');
 const prefs = require('./prefs');
@@ -14,17 +14,24 @@ const sessions = require('./sessions');
 const win = require('./window');
 const { OrbeWindow, trusted, INTERNAL, UI_PRELOAD } = win;
 
-const PANES = ['general', 'profiles', 'tabs', 'links', 'shortcuts', 'appearance', 'privacy', 'extensions', 'import', 'advanced'];
-const WIDTH = 720;
-const MIN_H = 260;
+// Arc's panes, in its order (no Account, no Max: Radian has neither accounts nor AI).
+const PANES = ['general', 'profiles', 'links', 'shortcuts', 'icon', 'advanced'];
+// Panes Radian had before: where their controls went, and the sheet that holds them.
+const MOVED = { tabs: ['advanced'], appearance: ['general'], privacy: ['advanced'], extensions: ['advanced', 'extensions'], import: ['advanced', 'import'] };
+// Arc's window: 684 × 650 pt, 701 wide when the pane scrolls (its scroll bar sits beside the content).
+const WIDTH = 684;
+const SCROLL_WIDTH = 701;
+const HEIGHT = 650;
 
 const t = (k, v) => store.t(k, null, v);
 // `broadcast` : même porte que tout changement de réglage (menu, coque, pages).
 const deps = { broadcast: () => {}, profileList: () => [], refreshMenu: () => {} };
 let settingsWindow = null;
+let sheet = ''; // sheet to open with the pane, read once by the page (info)
 
 // --- Fenêtre ------------------------------------------------------------------
 function open(pane) {
+  if (MOVED[pane]) [pane, sheet = ''] = MOVED[pane];
   if (pane && PANES.includes(pane)) { store.state.window.settingsPane = pane; store.save(true); }
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     if (pane) settingsWindow.webContents.reload();
@@ -34,7 +41,7 @@ function open(pane) {
   }
   const w = new BrowserWindow({
     width: WIDTH,
-    height: 520,
+    height: HEIGHT,
     useContentSize: true,
     resizable: false,
     minimizable: false,
@@ -49,23 +56,22 @@ function open(pane) {
   w.webContents.on('will-navigate', (e) => e.preventDefault());
   w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   w.loadURL(INTERNAL + 'settings.html');
-  // Affichée une fois sa hauteur connue (premier « settings:layout ») : aucun
+  // Affichée une fois sa largeur connue (premier « settings:layout ») : aucun
   // saut à l'ouverture. Filet de sécurité si la page tarde.
   const fallback = setTimeout(() => { if (!w.isDestroyed() && !w.isVisible()) w.show(); }, 1500);
   w.on('closed', () => { clearTimeout(fallback); if (settingsWindow === w) settingsWindow = null; });
   return w;
 }
 
+// `a.scroll`: the pane is taller than the window, which then makes room for the scroll bar.
 function layout(sender, a) {
   const w = BrowserWindow.fromWebContents(sender);
   if (!w || w.isDestroyed() || w !== settingsWindow) return 0;
-  const area = screen.getDisplayMatching(w.getBounds()).workAreaSize;
-  const max = Math.max(MIN_H + 60, area.height - 60);
-  const h = Math.max(MIN_H, Math.min(max, Math.round(Number(a && a.height) || 0)));
+  const width = a && a.scroll ? SCROLL_WIDTH : WIDTH;
   const shown = w.isVisible();
-  if (w.getContentSize()[1] !== h) w.setContentSize(WIDTH, h, platform.isMac && shown && !(a && a.instant));
+  if (w.getContentSize()[0] !== width) w.setContentSize(width, HEIGHT, platform.isMac && shown && !(a && a.instant));
   if (!shown) w.show();
-  return h;
+  return width;
 }
 
 // --- Navigateur par défaut -----------------------------------------------------
@@ -151,7 +157,7 @@ function shortcutList() {
   const s = store.state.settings;
   return {
     groups: shortcuts.list(),
-    global: { name: '@little', label: t('keys.globalLittle'), keys: shortcuts.display(s.littleShortcut || ''), accel: s.littleShortcut || '', defaultKeys: '', changed: !!s.littleShortcut },
+    global: { name: '@little', label: t('set.littleGlobal'), keys: shortcuts.display(s.littleShortcut || ''), accel: s.littleShortcut || '', defaultKeys: '', changed: !!s.littleShortcut },
     extensions: extensionShortcuts(),
     changed: Object.keys(s.shortcuts || {}).length + (s.littleShortcut ? 1 : 0) + Object.keys(s.extShortcuts || {}).length,
   };
@@ -260,9 +266,13 @@ async function importBookmarks(parent, { profileId = 'default' } = {}) {
 // --- Données pour la page ---------------------------------------------------------
 function info() {
   const s = store.state.settings;
+  const saved = store.state.window.settingsPane;
+  const shown = sheet;
+  sheet = '';
   return {
     panes: PANES,
-    pane: PANES.includes(store.state.window.settingsPane) ? store.state.window.settingsPane : 'general',
+    pane: PANES.includes(saved) ? saved : MOVED[saved] ? MOVED[saved][0] : 'general',
+    sheet: shown,
     isDefault: isDefaultBrowser(),
     downloads: app.getPath('downloads'),
     allow: (s.adblockAllow || []).slice(),
@@ -328,6 +338,16 @@ async function handle(action, a, sender) {
     }
     case 'shortcuts:list':
       return shortcutList();
+    // The Shortcuts pane's "…" button: a native menu; answers the item chosen ('' if none).
+    case 'settings:keysMenu': {
+      const w = BrowserWindow.fromWebContents(sender);
+      if (!w || w !== settingsWindow) return '';
+      return new Promise((resolve) => {
+        const menu = Menu.buildFromTemplate([{ label: t('keys.extShortcuts'), click: () => resolve('extkeys') }]);
+        // The click may come after the menu closes: wait a moment before answering "nothing".
+        menu.popup({ window: w, x: Math.round(Number(a && a.x) || 0), y: Math.round(Number(a && a.y) || 0), callback: () => setTimeout(() => resolve(''), 100) });
+      });
+    }
     case 'shortcuts:assign': {
       const name = String((a && a.name) || '');
       // « ext:<id>/<commande> » : raccourci d'une extension (ext-more.js).
@@ -367,4 +387,4 @@ function configure(d) {
   app.on('will-quit', () => { try { globalShortcut.unregisterAll(); } catch {} });
 }
 
-module.exports = { PANES, WIDTH, open, handle, info, configure, settingsChanged, quit, beforeQuit, importBookmarks, extraCss, BANNER_SELECTORS, setGlobal, applyGlobal, isDefaultBrowser, shortcutList, get window() { return settingsWindow; } };
+module.exports = { PANES, MOVED, WIDTH, SCROLL_WIDTH, HEIGHT, open, handle, info, configure, settingsChanged, quit, beforeQuit, importBookmarks, extraCss, BANNER_SELECTORS, setGlobal, applyGlobal, isDefaultBrowser, shortcutList, get window() { return settingsWindow; } };
