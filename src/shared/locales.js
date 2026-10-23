@@ -2586,4 +2586,5 @@ const en = {
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).
-module.exports = { fr, en, es: require('./locales-es'), pt: require('./locales-pt') };
+// Other languages live in their own files and fall back to English (src/renderer/common.js `t`).
+module.exports = { fr, en, es: require('./locales-es'), pt: require('./locales-pt'), de: require('./locales-de') };
