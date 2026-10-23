@@ -3279,15 +3279,17 @@ class OrbeWindow {
     const wc = this.peekChrome && this.peekChrome.webContents;
     if (!st || !wc || wc.isDestroyed()) return;
     const full = store.state.settings.showFullUrl !== false;
-    wc.send('overlay', { mode: 'peek-url', text: this.toolbarShown ? (full ? st.url : suggest.strip(st.url)) : '' });
+    wc.send('overlay', { mode: 'peek-url', text: this.toolbarShown && !st.internal ? (full ? st.url : suggest.strip(st.url)) : '' });
   }
 
   // `point` : d'où part la carte (coordonnées de la fenêtre) ; à défaut, le
   // dernier clic dans la page d'origine s'il vient d'avoir lieu.
-  openPeek(url, fromId, options, point) {
+  // `internal`: one of Radian's own pages (Easel, Note), set by Radian code only, never
+  // from an address: the view then gets the interface bridge, like an internal tab.
+  openPeek(url, fromId, options, point, internal = false) {
     this.closePeek({ animate: false });
     const view = new WebContentsView(options || {
-      webPreferences: { session: this.sessionFor(fromId), sandbox: true, contextIsolation: true, nodeIntegrationInSubFrames: true },
+      webPreferences: { session: this.sessionFor(fromId), sandbox: true, contextIsolation: true, nodeIntegrationInSubFrames: true, preload: internal ? UI_PRELOAD : undefined },
     });
     // Pas d'éclair blanc en thème sombre : la carte prend la teinte du thème
     // jusqu'à ce que la page ait de quoi s'afficher, puis le blanc habituel des pages.
@@ -3300,7 +3302,7 @@ class OrbeWindow {
       const b = boundsOf(src.view);
       point = { x: b.x + src.click.x, y: b.y + src.click.y };
     }
-    const state = (this.peekState = { view, from: fromId, url, title: '', handlers: [], point: point || null });
+    const state = (this.peekState = { view, from: fromId, url, title: '', handlers: [], point: point || null, internal });
     const on = (event, fn) => { wc.on(event, fn); state.handlers.push([event, fn]); };
     if (dark) wc.once('dom-ready', () => { try { view.setBackgroundColor('#ffffff'); } catch {} });
     on('page-title-updated', (e, title) => { state.title = title; });
@@ -3309,7 +3311,17 @@ class OrbeWindow {
     on('did-navigate-in-page', (e, u, main) => { if (main) { state.url = u; this.peekAddress(); } });
     on('will-prevent-unload', (e) => { if (hooks.leave(this, wc)) e.preventDefault(); });
     on('destroyed', () => { if (this.peekState === state) this.closePeek(); });
-    const guard = (e, u) => { if (isInternal(u)) e.preventDefault(); };
+    // Same rules as an internal tab (see `wire`): it may only go to Radian's pages, a web link opens a tab.
+    const guard = internal
+      ? (e, u) => { if (isInternal(u)) return; e.preventDefault(); this.newTab(u); }
+      : (e, u) => { if (isInternal(u)) e.preventDefault(); };
+    // Its messages reach this window (`ownerOf`) until it closes or becomes a tab.
+    if (internal) {
+      const id = wc.id;
+      trusted.add(wc);
+      wcOwner.set(id, this);
+      wc.once('destroyed', () => wcOwner.delete(id));
+    }
     on('will-navigate', guard);
     on('will-redirect', guard);
     on('context-menu', (e, params) => this.pageMenu({ wc, id: fromId }, params));
@@ -3426,9 +3438,10 @@ class OrbeWindow {
     const tab = this.createTab(wc.getURL() || state.url, { after: from });
     tab.title = state.title;
     tab.favicon = state.favicon || '';
+    if (state.internal) { tab.internal = true; wcOwner.delete(wc.id); }
     state.view.setBorderRadius(RADIUS);
     this.ensureView(tab.id, null, state.view);
-    if (!this.incognito) store.visit(tab.url, tab.title, tab.favicon);
+    if (!this.incognito && !state.internal) store.visit(tab.url, tab.title, tab.favicon);
     if (ms) {
       this.growing = { view: state.view, ms, under: new Set(this.attached || []), started: false };
       this.peekOverlay({ leaving: true, ms });
