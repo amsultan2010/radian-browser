@@ -257,6 +257,7 @@ function dockTemplate() {
   const littles = () => require('./little').LittleWindow.all.filter((l) => l.win && !l.win.isDestroyed());
   const shown = littles().some((l) => l.win.isVisible());
   return [
+    { label: t('file.newWindow'), click: () => dispatch('newWindow') },
     { label: t('file.newIncognito'), click: () => dispatch('newIncognito') },
     {
       label: t(shown || !littles().length ? 'dock.hideLittle' : 'dock.showLittle'),
