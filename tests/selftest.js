@@ -696,11 +696,15 @@ module.exports = async function selftest(ctx) {
   check('aiguillage : le lien s’ouvre dans l’Espace de la règle', w.space === s2 && tabs()[w.activeId].url === base + '/b');
   w.close(w.activeId);
   // "URL contains" and "URL is equal to" rules route the same way; a longer URL is not equal.
+  // Unrouted links must land in this window (not Little Radian, the default) so each one closes its own tab.
+  const extBefore = store.state.settings.externalLinks;
+  store.state.settings.externalLinks = 'window';
   const routedTo = (url) => { w.spaceAt(1); openUrl(url); const sp = w.space; w.close(w.activeId); return sp; };
   store.state.settings.routes = [{ match: base.replace(/^http:\/\//, '') + '/egal', to: s2.id, kind: 'equals' }, { match: '/contient', to: s2.id, kind: 'contains' }];
   check('aiguillage : règles « l’adresse contient » et « l’adresse est égale à »',
     routedTo(base + '/contient/page') === s2 && routedTo(base + '/egal/') === s2 && routedTo(base + '/egal/plus') !== s2 && routedTo(base + '/?/contient') !== s2);
   store.state.settings.routes = [];
+  store.state.settings.externalLinks = extBefore;
   w.spaceAt(1);
 
   // Handoff (macOS) : page reprise d'un autre appareil. L'événement d'Electron est rejoué tel quel.
