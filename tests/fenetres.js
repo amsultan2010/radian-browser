@@ -225,6 +225,25 @@ module.exports = async function fenetresTests(ctx) {
     w.separateAll(A);
   }
 
+  // Tab dropped on another sidebar tab (BL-98)
+  {
+    w.handle('splitOnTab', { id: C, target: A, before: true });
+    check('tab dropped on the left half of another sidebar tab: a split, the dropped tab on the left, next to the target in its list',
+      w.groupOf(A).join() === [C, A].join() && w.visibleIds().join() === [C, A].join() && w.activeId === C && space.today.indexOf(C) === space.today.indexOf(A) - 1, JSON.stringify(space.today));
+    w.separateAll(A);
+    w.togglePin(B);
+    w.handle('splitOnTab', { id: C, target: B, before: false });
+    const at = w.placeOf(B);
+    check('… dropped on the right half of a pinned tab: the split stays in Pinned, where the target sits',
+      w.groupOf(B).join() === [B, C].join() && w.placeOf(C).list === 'pinned' && w.placeOf(C).index === at.index + 1 && w.activeId === C, JSON.stringify(w.placeOf(C)));
+    const groups = JSON.stringify(w.splits);
+    check('splitOnTab ignores a tab dropped on itself or an unknown tab',
+      w.handle('splitOnTab', { id: A, target: A }) === undefined && w.handle('splitOnTab', { id: A, target: 'nowhere' }) === undefined && w.handle('splitOnTab', null) === undefined && JSON.stringify(w.splits) === groups);
+    w.separateAll(B);
+    for (const id of [B, C]) w.move({ id, to: 'today', index: 0 });
+    w.activate(A);
+  }
+
   // ⌥clic sur un lien de la page : vue scindée
   {
     const L = await open('/liens', 'Liens');
