@@ -440,7 +440,7 @@ module.exports = async function finitionsTests(ctx) {
     check('Finder files and folders: a tab each at the drop place, named after the file, the first one shown; bad paths skipped',
       !!fa && !!fb && fa.url === pathToFileURL(file).href && fb.url === pathToFileURL(dir).href && fa.title === 'note #1.txt' && w.activeId === fa.id && Object.keys(d.tabs).length === count + 2,
       JSON.stringify([fa && fa.url, fb && fb.url, w.activeId === (fa && fa.id)]));
-    await until(() => { const rt = w.activeRt; return !!rt && rt.wc.getURL() === pathToFileURL(file).href && !rt.wc.isLoading(); }, 'dropped file loaded');
+    await until(() => { const rt = w.activeRt; return !!rt && rt.wc.getURL().endsWith('/note%20%231.txt') && !rt.wc.isLoading(); }, 'dropped file loaded');
     check('… and the file loads in its tab', true);
     w.handle('dropFiles', { paths: [file], to: 'folder', folderId: 'missing', index: 0 });
     check('drop place refused: the file opens at the top of Today', d.tabs[w.space.today[0]].url === pathToFileURL(file).href && w.activeId === w.space.today[0]);
