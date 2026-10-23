@@ -175,7 +175,9 @@ function make(env) {
     rt.media = changed ? { ...info, art, at: now } : { ...info, art, position: before.position, at: before.at };
     if (info.has) rt.playing = !info.paused;
     wantArt(rt);
-    if (changed && (info.has || before.has)) pushAll();
+    // A call page may have no <audio>/<video>: its microphone and camera still update the player.
+    const call = info.mic !== (before.mic || '') || info.cam !== (before.cam || '');
+    if (changed && (info.has || before.has || call)) pushAll();
     return rt.media;
   }
 
