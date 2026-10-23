@@ -110,6 +110,7 @@ function drawEmpty() {
 
 function draw() {
   document.title = t('lib.title') + ' — ' + t('lib.' + kind);
+  document.getElementById('heading').textContent = t('lib.' + kind);
   for (const b of document.querySelectorAll('[data-tab]')) b.classList.toggle('on', b.dataset.tab === kind);
   const clear = document.getElementById('clear');
   // (Médias d'un dossier de l'utilisateur : rien à vider, la liste n'est pas celle d'Orbe.)
@@ -349,5 +350,14 @@ window.addEventListener('hashchange', () => {
   if (KINDS.includes(h) && h !== kind) { kind = h; load(); }
 });
 window.addEventListener('focus', load);
+document.getElementById('exit').onclick = () => O.send('lib:close');
+// Each time the panel is shown: it slides in from the left, like a neighbouring Space.
+const panel = document.getElementById('panel');
+O.on('overlay', (p) => {
+  if (!p || p.mode !== 'library-in') return;
+  panel.classList.remove('in');
+  void panel.offsetWidth;
+  panel.classList.add('in');
+});
 O.on('settings', (s) => { if (setLang(s.lang)) draw(); });
 load();

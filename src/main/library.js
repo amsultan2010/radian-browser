@@ -348,7 +348,7 @@ async function action(name, a, sender) {
       return recent();
     case 'lib:peekMenu':
       if (!w) return false;
-      env.popup(w, [...peekMenuTemplate(), { type: 'separator' }, { label: t('peek.open'), click: () => w.run('library') }]);
+      env.popup(w, [...peekMenuTemplate(), { type: 'separator' }, { label: t('peek.open'), click: () => w.openLibrary(require('./commands').librarySection()) }]);
       return true;
     case 'lib:space': {
       const o = a && typeof a === 'object' ? a : {};
@@ -362,6 +362,9 @@ async function action(name, a, sender) {
     }
     case 'lib:newSpace':
       if (w) w.askNewSpace();
+      return !!w;
+    case 'lib:close':
+      if (w) w.closeLibrary();
       return !!w;
     case 'lib:boost': {
       const o = a && typeof a === 'object' ? a : {};

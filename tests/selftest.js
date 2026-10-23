@@ -988,11 +988,11 @@ module.exports = async function selftest(ctx) {
 
   // Bibliothèque (page interne)
   w.run('history');
-  const libId = w.activeId;
-  await until(async () => (await win.live.get(libId).wc.executeJavaScript('document.querySelectorAll("#list .line").length')) > 0, 'historique affiché');
-  check('⌘Y affiche l’historique', tabs()[libId].url.endsWith('library.html#history'));
+  const libWc = w.libraryView.webContents;
+  await until(async () => (await libWc.executeJavaScript('document.querySelectorAll("#list .line").length')) > 0, 'historique affiché');
+  check('⌘Y affiche l’historique', w.libraryShown && libWc.getURL().endsWith('library.html#history'));
   await shot('bibliotheque');
-  w.close(libId);
+  w.closeLibrary();
 
   // Page d'erreur
   const bad = w.newTab('http://127.0.0.1:1/');

@@ -108,8 +108,8 @@ module.exports = {
 
     await t.verifier('la Bibliothèque se rouvre sur la dernière section affichée', async () => {
       await jusqua(async () => (await ctx.principal(({ store }) => store.state.window.librarySection)) === 'archive', 'section retenue');
-      await ctx.principal(({ w }) => { const id = Object.keys(w.data.tabs).find((x) => w.data.tabs[x].internal && w.data.tabs[x].url.includes('library.html')); w.close(id, { ask: false }); });
-      await jusqua(() => !ctx.page('library.html'), 'Bibliothèque fermée');
+      // L'onglet rouvert l'a fermée : la Bibliothèque est un panneau, jamais un onglet.
+      await jusqua(() => ctx.principal(({ w }) => !w.libraryShown && !Object.values(w.data.tabs).some((x) => x.url.includes('library.html'))), 'Bibliothèque fermée');
       await ctx.menu('Shift+Cmd+L');
     });
     const lib2 = await ctx.attendrePage('library.html');
@@ -155,8 +155,11 @@ module.exports = {
       assert.match(await ligne2('Voyages').locator('.sub').textContent(), /0 épinglés, 1 aujourd’hui/);
       await ligne2('Voyages').locator('.name').click();
       await jusqua(async () => (await ctx.etat()).espace === 'Voyages', 'Espace « Voyages » affiché');
+      assert.equal(await ctx.principal(({ w }) => w.libraryShown), false, 'la Bibliothèque se ferme sur l’Espace');
       await ctx.principal(({ w }) => w.switchSpace(w.data.spaces[0].id));
       await jusqua(async () => (await ctx.etat()).espace !== 'Voyages', 'retour au premier Espace');
+      await ctx.menu('Shift+Cmd+L');
+      await jusqua(() => ctx.principal(({ w }) => w.libraryShown), 'Bibliothèque rouverte');
     });
 
     await t.verifier('section Boosts : résumé du Boost d’un site, « Désactiver » puis « Activer », « Supprimer »', async () => {

@@ -104,9 +104,14 @@ module.exports = async function bibliothequeTests(ctx) {
     { id: 'p2', url: site('p2'), title: 'Lu il y a deux mois', spaceId: space.id, by: 'auto', at: old },
     { id: 'p3', url: site('p3'), title: '<img src=x onerror="window.__xss=1">', spaceId: other.id, by: 'little', at: old - 1000 },
   ];
-  const libTab = w.openInternal('library.html#archive');
-  const page = () => win.live.get(libTab.id).wc;
+  const tabs0 = Object.keys(d.tabs).length;
+  const active0 = w.activeId;
+  w.openLibrary('archive');
+  const page = () => w.libraryView.webContents;
   const js = (code) => page().executeJavaScript(code);
+  check('la Bibliothèque s’ouvre dans son panneau, par-dessus les pages : aucun onglet créé, l’onglet affiché le reste',
+    w.libraryShown && w.win.contentView.children.includes(w.libraryView) && Object.keys(d.tabs).length === tabs0 && w.activeId === active0
+    && !Object.values(d.tabs).some((x) => (x.url || '').includes('library.html')) && w.openInternal('library.html#history') === undefined);
   await until(() => js('document.querySelectorAll("#list .line").length === 3'), 'archive affichée');
   const fixed = new Date(2026, 9, 14, 15, 0).getTime(); // mercredi 14 octobre 2026
   const labels = await js(`[0, 1, 2, 3, 9, 12, 13, 14, 40, 400].map((n) => period(${fixed} - n * 864e5, ${fixed}))`);
@@ -150,20 +155,31 @@ module.exports = async function bibliothequeTests(ctx) {
   await until(() => store.state.window.librarySection === 'downloads', 'section retenue après un clic');
   for (const bad of ['inconnue', null, 42, { a: 1 }, '__proto__']) await lib('lib:section', bad);
   check('la Bibliothèque retient la dernière section affichée ; une valeur inconnue est ignorée', store.state.window.librarySection === 'downloads' && commands.librarySection() === 'downloads');
-  w.close(libTab.id, { ask: false });
+  const shownTab = w.activeId;
   w.run('library');
-  const again = w.activeId;
-  check('⇧⌘L rouvre la Bibliothèque sur cette section', d.tabs[again].url.endsWith('library.html#downloads'));
+  check('⇧⌘L, Bibliothèque ouverte : elle se ferme, l’onglet affiché revient', !w.libraryShown && !w.win.contentView.children.includes(w.libraryView) && w.activeId === shownTab);
+  w.run('library');
+  await until(() => page().getURL().endsWith('library.html#downloads'), 'section rouverte');
+  check('⇧⌘L rouvre la Bibliothèque sur cette section, sans onglet', w.libraryShown && w.activeId === shownTab && Object.keys(d.tabs).length === tabs0);
+  page().emit('before-input-event', { preventDefault() {} }, { type: 'keyDown', key: 'Escape' });
+  check('Échap ferme la Bibliothèque', !w.libraryShown);
+  w.run('library');
+  w.run('closeTab');
+  check('⌘W, Bibliothèque ouverte : elle se ferme, sans fermer l’onglet dessous', !w.libraryShown && w.activeId === shownTab && Object.keys(d.tabs).length === tabs0);
+  if (shownTab) {
+    w.run('library');
+    w.handle('activate', shownTab);
+    check('clic sur l’onglet affiché, dans la barre latérale : la Bibliothèque se ferme sur lui', !w.libraryShown && w.activeId === shownTab);
+  }
   w.run('history');
-  await until(() => d.tabs[again].url.endsWith('library.html#history') && store.state.window.librarySection === 'history', 'historique demandé');
-  check('⌘Y demande toujours l’historique, dans le même onglet', w.activeId === again);
+  await until(() => page().getURL().endsWith('library.html#history') && store.state.window.librarySection === 'history', 'historique demandé');
+  check('⌘Y demande toujours l’historique, dans le même panneau', w.libraryShown && w.activeId === shownTab);
   store.state.window.librarySection = 'inconnue';
   check('section retenue illisible : l’historique', commands.librarySection() === 'history');
 
   // --- Espaces --------------------------------------------------------------------------
   w.run('librarySpaces');
-  const page2 = () => win.live.get(w.activeId).wc;
-  const libId = w.activeId;
+  const page2 = page;
   await until(() => page2().executeJavaScript(`location.hash === '#spaces' && document.querySelectorAll('#list .line').length === ${d.spaces.length}`), 'section Espaces');
   got = await lib('lib:get', {});
   const row = got.spaces.find((s) => s.id === space.id);
@@ -172,7 +188,7 @@ module.exports = async function bibliothequeTests(ctx) {
     && got.spaces.filter((s) => s.current).length === 1 && typeof row.profile === 'string' && row.profile.length > 0);
   check('« Gérer les Espaces… » ouvre cette section, onglet « Espaces » allumé', await page2().executeJavaScript(`document.querySelector('[data-tab].on').dataset.tab === 'spaces' && document.getElementById('clear').textContent === ${JSON.stringify(T('spaces.new'))}`));
   w.switchSpace(space.id);
-  check('aller à un Espace depuis la Bibliothèque', (await lib('lib:space', { id: other.id, do: 'focus' })) === true && w.spaceId === other.id);
+  check('aller à un Espace depuis la Bibliothèque : l’Espace s’affiche, la Bibliothèque se ferme', (await lib('lib:space', { id: other.id, do: 'focus' })) === true && w.spaceId === other.id && !w.libraryShown);
   const spaces0 = d.spaces.length;
   const refused = [];
   for (const bad of [null, 'x', { id: 'inconnu', do: 'focus' }, { id: other.id, do: 'exploser' }, { id: other.id }, { do: 'delete' }]) refused.push(await lib('lib:space', bad));
@@ -184,7 +200,7 @@ module.exports = async function bibliothequeTests(ctx) {
   dialog.showMessageBox = box0;
   check('supprimer un Espace depuis la Bibliothèque : même confirmation que par le menu', asked.length === 1 && asked[0].message === T('spaces.deleteConfirm', { name: 'Musique' }) && d.spaces.includes(other));
   w.switchSpace(space.id);
-  w.activate(libId);
+  w.openLibrary('spaces');
 
   // --- Boosts ---------------------------------------------------------------------------
   store.state.boosts = { 'exemple.fr': { css: 'body { color: red }', zaps: ['.pub', '#bandeau'], enabled: true }, 'autre.org': { css: '', zaps: ['.x'], enabled: false } };
@@ -549,7 +565,7 @@ module.exports = async function bibliothequeTests(ctx) {
   Object.assign(downloads.env, env0);
   library.env.startDrag = startDrag0;
   try { fs.rmSync(dir, { recursive: true, force: true }); } catch {}
-  w.close(libId, { ask: false });
+  w.closeLibrary();
   for (const sp of [space, other]) {
     for (const id of [...sp.today]) { win.OrbeWindow.destroyView(id); delete d.tabs[id]; }
     sp.today = [];

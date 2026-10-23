@@ -195,13 +195,13 @@ module.exports = {
     const NOMS = { history: 'ti-clock', archive: 'ti-lid', downloads: 'ti-drop', media: 'ti-rise', easels: 'ti-sway', spaces: 'ti-hop', boosts: 'ti-zap' };
     const mouvement = (nom) => lib.evaluate(`(() => { const b = document.querySelector('.tabs [data-tab="${nom}"]'); const as = b.getAnimations({ subtree: true }).filter((a) => a.animationName); return { noms: [...new Set(as.map((a) => a.animationName))].sort(), props: [...new Set(as.flatMap(${PROPS}))].sort(), duree: Math.max(0, ...as.map((a) => a.effect.getTiming().duration)), enCours: as.some((a) => a.playState === 'running') }; })()`);
 
-    await t.verifier('Bibliothèque : chaque section porte son icône, le libellé reste du texte, la rangée tient dans la page', async () => {
+    await t.verifier('Bibliothèque : chaque section porte son icône, le libellé reste du texte, une section par ligne dans la colonne de gauche', async () => {
       await jusqua(() => lib.evaluate(() => document.querySelectorAll('.tabs [data-tab].on').length === 1), 'section choisie');
       if (process.env.ORBE_UI_SHOTS) await ctx.capture('bibliotheque-icones', lib);
       const vu = await lib.evaluate(() => { const bs = [...document.querySelectorAll('.tabs [data-tab]')]; return { icones: bs.filter((b) => b.querySelector('svg.ti')).length, textes: bs.map((b) => b.textContent), hauts: [...new Set([...document.querySelectorAll('.tabs button')].map((b) => Math.round(b.getBoundingClientRect().top)))].length, large: document.documentElement.scrollWidth <= innerWidth }; });
       assert.equal(vu.icones, 7);
       assert.deepEqual(vu.textes, ['Historique', 'Archive', 'Téléchargements', 'Médias', 'Tableaux', 'Espaces', 'Boosts']);
-      assert.ok(vu.hauts <= 2, 'deux lignes de boutons au plus : ' + vu.hauts);
+      assert.equal(vu.hauts, 7, 'une section par ligne : ' + vu.hauts);
       assert.ok(vu.large);
     });
 

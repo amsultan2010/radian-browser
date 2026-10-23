@@ -314,18 +314,19 @@ module.exports = async function easelTests(ctx) {
 
   // --- Bibliothèque : liste, ouverture, suppression ----------------------------------------
   w.run('easels');
-  const libId = w.activeId;
-  const lib = (code) => win.live.get(libId).wc.executeJavaScript(code);
+  const lwc = w.libraryView.webContents;
+  const lib = (code) => lwc.executeJavaScript(code);
   await until(() => lib('document.querySelectorAll("#list .board").length === 1 && !!document.querySelector("#list .board .thumb img")'), 'tableau listé dans la bibliothèque');
   const card = await lib('JSON.stringify({ name: document.querySelector("#list .board .name").textContent, thumb: document.querySelector("#list .board .thumb img").src.slice(0, 22), tab: document.querySelector(".tabs .on").dataset.tab })').then(JSON.parse);
   check('bibliothèque : onglet Tableaux avec vignette, titre et date', card.name === 'Idées de voyage' && card.thumb === 'data:image/png;base64,' && card.tab === 'easels', JSON.stringify(card));
-  if (shots) { await sleep(300); fs.writeFileSync(path.join(shots, 'tableaux-bibliotheque.png'), (await win.live.get(libId).wc.capturePage()).toPNG()); }
+  if (shots) { await sleep(300); fs.writeFileSync(path.join(shots, 'tableaux-bibliotheque.png'), (await lwc.capturePage()).toPNG()); }
   await lib('document.querySelector("#list .board .meta").click()');
-  await until(() => w.activeId !== libId && w.data.tabs[w.activeId].url.endsWith('easel.html?id=' + id), 'tableau rouvert depuis la bibliothèque');
+  const under = w.activeId;
+  await until(() => w.activeId !== under && w.data.tabs[w.activeId].url.endsWith('easel.html?id=' + id) && !w.libraryShown, 'tableau rouvert depuis la bibliothèque');
   const reopened = w.activeId;
   await until(() => win.live.get(reopened).wc.executeJavaScript(`typeof E === "object" && E.ready.then(() => E.items.length === ${kept})`), 'tableau rouvert avec la capture ajoutée');
   check('un clic dans la bibliothèque rouvre le tableau, capture comprise', true);
-  w.activate(libId);
+  w.openLibrary('easels');
   await lib('document.querySelector("#list .board [data-do=delete]").click()');
   // La suppression peut tarder (verrous, antivirus) : marge élargie.
   await until(() => !fs.existsSync(file) && !fs.existsSync(dir), 'fichiers du tableau supprimés', 30000);
@@ -334,7 +335,7 @@ module.exports = async function easelTests(ctx) {
   check('suppression : fichier et images retirés, la page ouverte ne le recrée pas', easels.list().every((b) => b.id !== id) && !fs.existsSync(file)
     && (await lib('document.querySelectorAll("#list .board").length')) === 0);
   w.close(reopened);
-  w.close(libId);
+  w.closeLibrary();
   if (back && w.data.tabs[back]) w.activate(back);
 
   server.close();

@@ -143,7 +143,8 @@ function spaceLabel(sp, data = store.state, from = null, gap = ' ') {
 const isInternal = (url) => (url || '').startsWith(INTERNAL);
 const isErrorPage = (url) => (url || '').startsWith(INTERNAL + 'error.html');
 // Pages internes pouvant s'ouvrir dans un onglet, avec accès à l'interface.
-const INTERNAL_PAGES = new Set(['library.html', 'shortcuts.html', 'welcome.html', 'notes.html', 'easel.html', 'tasks.html']);
+// (Not the Library: as in Arc it has a panel of its own, see `openLibrary`.)
+const INTERNAL_PAGES = new Set(['shortcuts.html', 'welcome.html', 'notes.html', 'easel.html', 'tasks.html']);
 // Adresse fournie par une page web (lien, image, glisser-déposer) : seuls
 // http et https sont acceptés, jamais file:, orbe: ou chrome:.
 const webUrl = (u) => (/^https?:\/\//i.test(u || '') ? u : null);
@@ -414,6 +415,8 @@ class OrbeWindow {
     this.modalMode = null;
     this.findOpen = false;
     this.switcher = null;
+    this.libraryView = null; // the Library's panel, loaded at its first opening (`openLibrary`)
+    this.libraryShown = false;
 
     const b = onScreen((restore && saved.bounds) || {});
     const offset = restore ? 0 : 28 * (OrbeWindow.all.length % 6);
@@ -970,6 +973,10 @@ class OrbeWindow {
       this.peekChrome.setBorderRadius(this.htmlFullscreen ? 0 : RADIUS);
     }
     if (this.peekState) place(this.peekState.view, this.peekRect(rect));
+    if (this.libraryShown) {
+      place(this.libraryView, rect);
+      this.libraryView.setBorderRadius(this.htmlFullscreen ? 0 : RADIUS);
+    }
     if (this.floatView && this.peek) this.floatView.setBounds({ x: 0, y: 0, width: Math.min(W, this.sidebarWidth + 24), height: H });
     if (this.modalMode) this.modal.setBounds(full);
     if (this.findOpen && this.findView) {
@@ -1095,7 +1102,7 @@ class OrbeWindow {
     clearTimeout(this.floatTimer);
     clearTimeout(this.statusTimer);
     clearTimeout(this.uiRetry);
-    for (const v of [...AUX.map((k) => this[k]), ...this.spares.map((sp) => sp.view), this.ui]) {
+    for (const v of [...AUX.map((k) => this[k]), this.libraryView, ...this.spares.map((sp) => sp.view), this.ui]) {
       if (v && !v.webContents.isDestroyed()) { wcOwner.delete(v.webContents.id); v.webContents.close(); }
     }
     if (this.incognito) this.session.clearStorageData().catch(() => {});
@@ -1629,6 +1636,7 @@ class OrbeWindow {
     rt.lastUsed = Date.now();
     if (rt.crashed) { rt.crashed = false; rt.wc.reload(); }
     if (this.peekState && !this.peekAdopting) this.closePeek();
+    this.closeLibrary();
     if (this.findOpen) this.closeFind();
     this.layout();
     this.focusContent();
@@ -1666,6 +1674,7 @@ class OrbeWindow {
     if (this.gone) return undefined;
     if (this.modalMode) return this.modal.webContents.focus();
     if (this.peekState) return this.peekState.view.webContents.focus();
+    if (this.libraryShown) return this.libraryView.webContents.focus();
     // Une feuille posée sur l'onglet actif (question, avertissement) garde le clavier.
     const sheet = hooks.sheetFocus(this);
     if (sheet) return sheet.focus();
@@ -2630,6 +2639,7 @@ class OrbeWindow {
     const from = this.data.spaces.findIndex((s) => s.id === this.spaceId);
     this.spaceDir = i > from ? 1 : -1;
     this.closePeek();
+    this.closeLibrary();
     this.htmlFullscreen = false;
     this.spaceId = id;
     if (this.findOpen) this.closeFind();
@@ -4303,6 +4313,46 @@ class OrbeWindow {
     return tab;
   }
 
+  // --- Bibliothèque -----------------------------------------------------------
+  // As in Arc, the Library is not a tab: it takes the place of the pages, in a panel of
+  // its own, until the user goes back to a tab (click, new tab, Space), presses Esc, or
+  // clicks its icon again. The panel stays loaded once opened: it reopens at once.
+  openLibrary(section) {
+    const page = 'library.html#' + section;
+    let view = this.libraryView;
+    if (!view) {
+      view = this.libraryView = this.makeUiView(page);
+      const wc = view.webContents;
+      wc.on('before-input-event', (e, input) => {
+        if (input.type === 'keyDown' && input.key === 'Escape' && !input.isAutoRepeat) { e.preventDefault(); this.closeLibrary(); }
+      });
+      wc.on('render-process-gone', () => { this.closeLibrary(); wc.close(); });
+      wc.once('destroyed', () => { if (this.libraryView === view) { this.libraryView = null; this.libraryShown = false; } });
+    } else if (view.webContents.getURL() !== INTERNAL + page) view.webContents.loadURL(INTERNAL + page).catch(() => {});
+    if (!this.libraryShown) {
+      this.libraryShown = true;
+      this.closePeek({ animate: false });
+      if (this.findOpen) this.closeFind();
+      this.win.contentView.addChildView(view);
+      this.sendUi(view, 'overlay', { mode: 'library-in' }, () => this.libraryShown);
+      OrbeWindow.pushAll();
+    }
+    this.layout();
+    view.webContents.focus();
+  }
+
+  closeLibrary() {
+    if (!this.libraryShown) return;
+    this.libraryShown = false;
+    try { this.win.contentView.removeChildView(this.libraryView); } catch {}
+    this.focusContent();
+    OrbeWindow.pushAll();
+  }
+
+  toggleLibrary(section) {
+    if (this.libraryShown) this.closeLibrary(); else this.openLibrary(section);
+  }
+
   // Active ou coupe le bloqueur pour le site affiché, puis recharge la page.
   toggleSiteBlocking() {
     const tab = this.activeId && this.data.tabs[this.activeId];
@@ -4818,6 +4868,7 @@ class OrbeWindow {
       blank: this.blank,
       tracing: require('./trace').state.on, // trace de Chromium en cours : la barre le montre
       sidebar: { visible: this.sidebarVisible, peek: this.peek, width: this.sidebarWidth },
+      library: !!this.libraryShown,
       toolbar,
       fullUrl: settings.showFullUrl !== false || (!!tab && prefs.devMode(tab.url)),
       devMode: !!tab && prefs.devMode(tab.url),
@@ -4909,7 +4960,7 @@ class OrbeWindow {
       case 'haptic': return store.state.settings.haptics === false ? undefined : require('./haptics').perform(a);
       // Clic sur l'onglet déjà affiché : rien à faire, et surtout ne pas
       // reprendre le clavier (second clic d'un double-clic pour renommer).
-      case 'activate': return a === this.activeId && live.has(a) && !this.peekState ? undefined : this.activate(a);
+      case 'activate': return a === this.activeId && live.has(a) && !this.peekState && !this.libraryShown ? undefined : this.activate(a);
       // Variante { ids } : l'action porte sur la sélection (liste vérifiée par checkIds).
       case 'close': return a && typeof a === 'object' ? this.closeMany(a.ids) : this.close(a);
       case 'select': this.selection = this.checkIds(a); return undefined;
