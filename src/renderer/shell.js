@@ -418,6 +418,11 @@ function render(s) {
     $(p + '-reload').disabled = !s.activeId;
   }
   $('reload-icon').setAttribute('href', s.nav.loading ? '#i-stop' : '#i-reload');
+  // Arc: "Hide sidebar" while docked, "Lock sidebar" on the floating one; reload has no tooltip.
+  const sbTip = s.sidebar.visible ? 'side.hideSidebar' : 'side.lockSidebar';
+  $('b-sidebar').dataset.tip = sbTip;
+  $('b-sidebar').setAttribute('aria-label', t(sbTip));
+  $('b-reload').setAttribute('aria-label', t(s.nav.loading ? 'view.stop' : 'side.reload'));
 
   if (editing !== s.space.id) $('space-name').textContent = s.space.name;
   $('space-icon').textContent = s.space.icon;
@@ -2026,10 +2031,8 @@ function tipHide() {
 }
 function tipShow(el) {
   if (!el.isConnected || el.disabled || drag) return;
-  // « Actualiser » devient « Arrêter » pendant le chargement, comme son icône.
-  const stop = el.id === 'b-reload' && S && S.nav.loading;
-  $('tip-text').textContent = t(stop ? 'view.stop' : el.dataset.tip);
-  const keys = (stop ? KEYS.stop : KEYS[el.dataset.tipKey]) || '';
+  $('tip-text').textContent = t(el.dataset.tip);
+  const keys = KEYS[el.dataset.tipKey] || '';
   $('tip-key').textContent = keys;
   $('tip-key').hidden = !keys;
   tipEl.hidden = false;

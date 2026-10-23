@@ -412,7 +412,9 @@ module.exports = async function finitions2Tests(ctx) {
     const over = (id) => ui(`document.getElementById(${JSON.stringify(id)}).dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))`);
     const tip = () => ui(`(() => { const el = document.getElementById('tip'); const r = el.getBoundingClientRect(); return { on: !el.hidden && el.classList.contains('on'), text: document.getElementById('tip-text').textContent, key: document.getElementById('tip-key').hidden ? '' : document.getElementById('tip-key').textContent, left: r.left, right: r.right, top: r.top, sw: S.sidebar.width, events: getComputedStyle(el).pointerEvents }; })()`);
     check('boutons de la barre : plus d’infobulle native (pas de « title »), un nom pour les aides techniques',
-      await ui(`['b-sidebar', 'b-back', 'b-forward', 'b-reload', 'b-library', 'b-clear'].every((id) => { const el = document.getElementById(id); return !el.title && el.getAttribute('aria-label') === t(el.dataset.tip); })`));
+      await ui(`['b-sidebar', 'b-back', 'b-forward', 'b-library', 'b-clear'].every((id) => { const el = document.getElementById(id); return !el.title && el.getAttribute('aria-label') === t(el.dataset.tip); })`));
+    check('« Actualiser » : pas d’infobulle (Arc), mais un nom pour les aides techniques',
+      await ui(`(() => { const el = document.getElementById('b-reload'); return !el.title && !el.dataset.tip && el.getAttribute('aria-label') === t(S.nav.loading ? 'view.stop' : 'side.reload'); })()`));
     check('« Nouvel onglet » : pas d’infobulle, son raccourci écrit au bout de la ligne (comme dans Arc)',
       await ui(`(() => { const el = document.getElementById('b-newtab'); return !el.dataset.tip && el.querySelector('kbd').textContent === KEYS.newTab; })()`));
     await over('b-sidebar');
@@ -422,7 +424,7 @@ module.exports = async function finitions2Tests(ctx) {
     const t1 = await tip();
     const btn = await ui(`(() => { const r = document.getElementById('b-sidebar').getBoundingClientRect(); return { bottom: r.bottom }; })()`);
     check('survol d’une demi-seconde : infobulle maison avec le nom et le raccourci, sous le bouton, dans la barre latérale, sans prendre les clics',
-      t1.text === T('side.sidebar') && t1.key === shortcuts.keysOf('toggleSidebar') && t1.key.length > 0 && t1.left >= 6 && t1.right <= t1.sw - 5 && t1.top >= btn.bottom && t1.events === 'none', JSON.stringify(t1));
+      t1.text === T('side.hideSidebar') && t1.key === shortcuts.keysOf('toggleSidebar') && t1.key.length > 0 && t1.left >= 6 && t1.right <= t1.sw - 5 && t1.top >= btn.bottom && t1.events === 'none', JSON.stringify(t1));
     await over('b-plus');
     await until(async () => { const x = await tip(); return x.on && x.text === T('side.plus'); }, 'infobulle du bouton +');
     check('bouton sans raccourci : le nom seul', (await tip()).key === '');

@@ -1328,6 +1328,9 @@ const fr = {
   'lib.exit': 'Quitter la Bibliothèque',
   // battery saver
   'toast.batterySaverOff': 'Mode économie de batterie désactivé',
+  // sidebar chrome (Arc 1.170 live capture)
+  'side.hideSidebar': 'Masquer la barre latérale',
+  'side.lockSidebar': 'Verrouiller la barre latérale',
 };
 
 const en = {
@@ -2636,6 +2639,9 @@ const en = {
   'lib.exit': 'Exit the Library',
   // battery saver
   'toast.batterySaverOff': 'Battery Saver Mode Deactivated',
+  // sidebar chrome (Arc 1.170 live capture)
+  'side.hideSidebar': 'Hide sidebar',
+  'side.lockSidebar': 'Lock sidebar',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).
