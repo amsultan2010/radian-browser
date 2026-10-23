@@ -73,7 +73,9 @@ module.exports = async function fenetresTests(ctx) {
       JSON.stringify([ps, [A, B, C].map(bounds)]));
     await until(() => ui('document.querySelectorAll("#pane-bars .pane-bar").length === 3'), 'trois petites barres');
     const bars = await ui(`[...document.querySelectorAll('#pane-bars .pane-bar')].map((b) => ({ id: b.dataset.pane, actif: b.classList.contains('active'), texte: b.querySelector('.pane-text').textContent, x: b.offsetLeft, y: b.offsetTop, w: b.offsetWidth }))`);
-    check('petite barre de chaque volet : son adresse, à sa place', bars.map((b) => b.id).join() === [A, B, C].join() && bars.every((b, i) => b.x === ps[i].x && b.y === ps[i].y && b.w === ps[i].width && b.texte.includes('/p/' + 'abc'[i])), JSON.stringify(bars));
+    // Short address by default, as in Arc (`showFullUrl`): the site's name; with the full address, the path too.
+    const full = store.state.settings.showFullUrl !== false;
+    check('petite barre de chaque volet : son adresse, à sa place', bars.map((b) => b.id).join() === [A, B, C].join() && bars.every((b, i) => b.x === ps[i].x && b.y === ps[i].y && b.w === ps[i].width && (full ? b.texte.includes('/p/' + 'abc'[i]) : b.texte === new URL(base).host)), JSON.stringify(bars));
     await until(() => ui(`document.querySelector('#pane-bars .pane-bar.active') && document.querySelector('#pane-bars .pane-bar.active').dataset.pane === ${JSON.stringify(w.activeId)}`), 'barre du volet actif');
     const ring = await ui(`(() => { const r = document.getElementById('pane-ring'); return { on: r.classList.contains('on'), x: r.offsetLeft, y: r.offsetTop, w: r.offsetWidth, h: r.offsetHeight }; })()`);
     const act = ps[w.visibleIds().indexOf(w.activeId)];
@@ -834,14 +836,16 @@ module.exports = async function fenetresTests(ctx) {
     check('aperçu sans barre d’outils : la carte commence à 16 px du haut de la zone des pages', plain.y === zone.y + 16);
     commands.setSetting('showToolbar', true);
     await until(() => w.toolbarShown && w.contentRect().y > zone.y, 'barre d’outils affichée');
+    // The address as the toolbar shows it: whole, or without the scheme by default (`showFullUrl`, as in Arc).
+    const shown = (url) => (store.state.settings.showFullUrl !== false ? url : require('../src/main/suggest').strip(url));
     w.openPeek(base + '/p/adresse', Pn);
-    await until(() => w.peekState && w.peekChrome && !w.peekChrome.webContents.isLoading() && w.peekChrome.webContents.executeJavaScript(`!document.getElementById('peek-url').hidden && document.getElementById('peek-url').textContent`).then((x) => x === base + '/p/adresse'), 'adresse de l’aperçu affichée');
+    await until(() => w.peekState && w.peekChrome && !w.peekChrome.webContents.isLoading() && w.peekChrome.webContents.executeJavaScript(`!document.getElementById('peek-url').hidden && document.getElementById('peek-url').textContent`).then((x) => x === shown(base + '/p/adresse')), 'adresse de l’aperçu affichée');
     const z2 = w.contentRect();
     const card = w.peekRect();
     const pill = await w.peekChrome.webContents.executeJavaScript(`(() => { const r = document.getElementById('peek-url').getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; })()`);
     check('barre d’outils affichée : l’aperçu montre son adresse, au-dessus de la carte', card.y === z2.y + 40 && pill.bottom <= card.y - z2.y && pill.top >= 0, JSON.stringify([card, z2, pill]));
     w.peekState.view.webContents.loadURL(base + '/p/suite');
-    await until(() => w.peekChrome.webContents.executeJavaScript(`document.getElementById('peek-url').textContent`).then((x) => x === base + '/p/suite'), 'adresse suivie');
+    await until(() => w.peekChrome.webContents.executeJavaScript(`document.getElementById('peek-url').textContent`).then((x) => x === shown(base + '/p/suite')), 'adresse suivie');
     check('l’adresse de l’aperçu suit sa navigation', true);
     commands.setSetting('showToolbar', false);
     await until(() => !w.toolbarShown && w.peekChrome.webContents.executeJavaScript(`document.getElementById('peek-url').hidden`), 'barre d’outils masquée');
