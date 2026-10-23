@@ -1298,6 +1298,7 @@ const fr = {
   'impb.undoExpired': 'Trop tard pour annuler cet import d’ici : retire les signets à la main.',
   // More app icons
   'appIcon.hologram': 'Hologramme',
+  'appIcon.metal': 'Métal',
 };
 
 const en = {
@@ -2576,6 +2577,7 @@ const en = {
   'impb.undoExpired': 'Too late to undo this import from here: remove the bookmarks by hand.',
   // More app icons
   'appIcon.hologram': 'Hologram',
+  'appIcon.metal': 'Metal',
 };
 
 module.exports = { fr, en };
