@@ -350,6 +350,7 @@ function drawTheme() {
   for (const b of $('theme-modes').children) { b.classList.toggle('sel', b.dataset.mode === theme.mode); b.setAttribute('aria-checked', String(b.dataset.mode === theme.mode)); }
   $('theme-dial').style.setProperty('--turn', `${-135 + 270 * theme.grain}deg`);
   $('theme-dial').style.setProperty('--knob', `url("textures/${theme.texture}.png")`);
+  $('theme-dial').style.setProperty('--amount', String(theme.grain));
   // Le panneau suit la couleur principale.
   document.documentElement.style.setProperty('--accent', colors[0] || OrbeTheme.DEFAULT_COLOR);
 }
