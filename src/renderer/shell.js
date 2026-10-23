@@ -44,7 +44,7 @@ function setIcon(el, it) {
 function tabRow(el, it) {
   if (!el._built) {
     el._built = true;
-    el.innerHTML = `<span class="ic" data-act="icon"></span><span class="more"></span><span class="slash">/</span><span class="title"></span>`
+    el.innerHTML = `<span class="ic" data-act="icon"></span><span class="more"></span><span class="slash">/</span><span class="title"></span><span class="host"></span>`
       + `<button class="act reset" data-act="reset">${icon('reset')}</button>`
       + `<button class="act cap" data-act="capture">${icon('screen')}</button>`
       + `<button class="act snd" data-act="mute">${icon('sound')}</button>`
@@ -54,6 +54,7 @@ function tabRow(el, it) {
     el._ic = el.firstChild;
     el._title = el.children[3];
     el._more = el.children[1];
+    el._host = el.children[4];
     el._snd = el.querySelector('.snd use');
     el._cap = el.querySelector('.cap use');
     el.draggable = true;
@@ -72,6 +73,9 @@ function tabRow(el, it) {
     el._title.textContent = label;
     el.title = label;
   }
+  // Second line of a Developer Mode row (shell.css): host:port, as in Arc.
+  const hostPort = /^https?:/i.test(it.url) ? (() => { try { return new URL(it.url).host; } catch { return ''; } })() : '';
+  if (el._h !== hostPort) { el._h = hostPort; el._host.textContent = hostPort; }
   const moreKey = it.partners ? it.partners.map((p) => p.id + p.favicon + (p.icon || '')).join(',') : '';
   if (el._mk !== moreKey) {
     el._mk = moreKey;
@@ -438,7 +442,8 @@ function render(s) {
 
   // Boutons des extensions : icône, pastille, clic = fenêtre de l'extension.
   // In the address pill, revealed on hover (shell.css); with the toolbar shown they sit at its right, always visible (Arc).
-  const exts = s.toolbar && !FLOATING ? $('tb-exts') : $('exts');
+  // Arc's Developer Mode bar has none (they are in its Extensions menu): they stay in the pill.
+  const exts = s.toolbar && !s.devMode && !FLOATING ? $('tb-exts') : $('exts');
   const extSig = JSON.stringify(s.extensions || []);
   if (exts._sig !== extSig) {
     exts._sig = extSig;
@@ -854,6 +859,7 @@ for (const box of [$('exts'), $('tb-exts')]) {
   });
 }
 $('b-sidebar').onclick = () => send('toggleSidebar');
+$('b-reload-more').onclick = () => { const r = $('b-reload-more').getBoundingClientRect(); send('reloadMenu', { dev: true, x: Math.round(r.left), y: Math.round(r.bottom + 4) }); };
 $('url').onclick = () => send('openCommand', 'edit');
 $('shield').onclick = () => send('siteControl');
 $('shield').addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); send('shieldMenu'); });
@@ -861,7 +867,16 @@ $('lock').onclick = () => send('siteInfo');
 $('popup-note').onclick = () => send('popupMenu');
 $('capture-note').onclick = () => send('captureMenu');
 $('tb-url').onclick = () => send('openCommand', 'edit');
-$('tb-dev').onclick = (e) => { const b = e.target.closest('[data-cmd]'); if (b) send('command', b.dataset.cmd); };
+$('tb-dev').onclick = (e) => {
+  const b = e.target.closest('[data-cmd], [data-menu]');
+  if (!b) return;
+  if (b.dataset.cmd) return send('command', b.dataset.cmd);
+  // Extensions and split view menus open under their button.
+  const r = b.getBoundingClientRect();
+  send('devMenu', { which: b.dataset.menu, x: Math.round(r.left), y: Math.round(r.bottom + 4) });
+};
+// Site Settings (Arc): the sidebar comes out if hidden, with the Site Control Center.
+$('tb-site').onclick = () => send('siteControl', 'reveal');
 // Clic droit sur la barre d'outils : adresse entière, copie, capture, partage.
 $('toolbar').addEventListener('contextmenu', (e) => { e.preventDefault(); send('toolbarMenu'); });
 $('b-newtab').onclick = () => send('openCommand', 'new');

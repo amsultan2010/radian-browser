@@ -252,13 +252,29 @@ module.exports = async function essentielsTests(ctx) {
       panel.payload.site === permissions.siteName(A) && panel.payload.perms.map((x) => x.key + ':' + x.value).join() === 'camera:true' && panel.payload.adblock.on === true && panel.payload.adblock.site === true
       && panel.payload.dev.on === false && panel.payload.dev.can === true && panel.payload.boost.has === false && panel.payload.extensions.length === 2 && panel.origin === A, panel.payload);
     const shown = await inSheet(panel, `(() => { const c = document.getElementById('card'); const r = c.getBoundingClientRect(); return {
-      anchor: document.body.classList.contains('anchor') && r.top < 40 && r.left < 40, title: document.getElementById('title').textContent,
-      perms: [...document.querySelectorAll('#perms .item')].map((x) => x.dataset.key).join(), cookies: document.getElementById('c-cookies').textContent,
-      ext: document.querySelector('#c-exts .item .grow').textContent, imgs: c.querySelectorAll('img, script, iframe').length, pirate: typeof window.pirate,
-      extOff: document.querySelectorAll('#c-exts .item button')[1].disabled, dev: document.getElementById('c-dev').checked, site: document.getElementById('c-shield-site').checked }; })()`);
+      anchor: document.body.classList.contains('anchor') && r.top < 40 && r.left < 40 && Math.round(r.width) === 236, title: document.getElementById('title').textContent,
+      perms: [...document.querySelectorAll('#perms .item')].map((x) => x.dataset.key).join(),
+      ext: document.querySelector('#c-exts [data-ext]').getAttribute('aria-label'), imgs: c.querySelectorAll('img, script, iframe').length, pirate: typeof window.pirate,
+      extOff: document.querySelectorAll('#c-exts [data-ext]')[1].disabled, dev: document.getElementById('c-dev').getAttribute('aria-pressed'), site: document.getElementById('c-shield-site').getAttribute('aria-pressed'),
+      tiles: [...c.querySelectorAll('.tiles button')].slice(0, 5).map((b) => b.getAttribute('aria-label')).join('|'), heads: [...c.querySelectorAll('h2')].map((h) => h.textContent).join('|'),
+      chip: document.getElementById('c-details').textContent, more: !!document.getElementById('c-more') }; })()`);
     check('… affiché en bulle ancrée, tout en texte : un nom d’extension piégé reste du texte',
-      shown.anchor && shown.title === permissions.siteName(A) && shown.perms === 'camera' && shown.cookies === t('ctl.cookieCount', { n: 1 }) && shown.ext === evil && shown.imgs === 0 && shown.pirate === 'undefined'
-      && shown.extOff === true && shown.dev === false && shown.site === true, shown);
+      shown.anchor && shown.title === permissions.siteName(A) && shown.perms === 'camera' && shown.ext === evil && shown.imgs === 0 && shown.pirate === 'undefined'
+      && shown.extOff === true && shown.dev === 'false' && shown.site === 'true', shown);
+    check('… in Arc’s layout: Share, New Boost, the two captures, then Extensions with “+”, Settings, the connection chip and More',
+      shown.tiles === ['ctl.share', 'ctl.newBoost', 'ctl.capturePart', 'ctl.capturePage', 'ctl.addExt'].map((k) => t(k)).join('|') && shown.heads === t('pane.extensions') + '|' + t('ctl.settings')
+      && shown.chip === t('ctl.insecure') && shown.more, shown);
+    // More (…): a native menu with Arc's items (plus Zap and the blocker switch); the cookie count sits under Clear Cookies.
+    {
+      const popup0 = w.popup;
+      let menu = null;
+      w.popup = (tpl) => { menu = tpl; };
+      await act(panel, 'more');
+      w.popup = popup0;
+      check('More menu: Clear Cache, Clear Cookies (with the count), boosts, extensions, All Site Settings…',
+        !!menu && menu.filter((x) => x.label).map((x) => x.label).join('|') === ['ctl.clearCache', 'ctl.clearCookies', 'ctl.manageBoosts', 'ctl.newBoostMenu', 'ctl.zap', 'ext.manage', 'ext.add', 'adblock.everywhere', 'ctl.allSettings'].map((k) => t(k)).join('|')
+        && menu[1].sublabel === t('ctl.cookieCount', { n: 1 }) && !panel.closed, menu && menu.map((x) => x.label).join('|'));
+    }
     // Garde : une action qui change quelque chose est refusée dans la demi-seconde qui suit l'apparition.
     panel.armedAt = Date.now();
     const early = await act(panel, 'dev');

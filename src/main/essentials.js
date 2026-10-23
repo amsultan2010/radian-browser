@@ -94,63 +94,87 @@ function siteControl(w, deps = {}) {
       capture: capture.of(wc).map((k) => t('capture.' + k)),
       cookies,
       boost: { can: !w.incognito, has, enabled: has && !!boosts.get(host).enabled, all: store.state.settings.boostsEnabled !== false },
-      dev: { can: !w.incognito && !!prefs.hostOf(u), on: prefs.devMode(u), auto: prefs.devAuto(u), keys: require('./shortcuts').keysOf('toggleDevMode') || '' },
-      extensions: (extActions(w) || []).slice(0, 40).map((x) => ({ id: String(x.id), title: String(x.title || '').slice(0, 80), badge: String(x.badgeText || '').slice(0, 8), enabled: x.enabled !== false })),
-      share: process.platform === 'darwin',
+      dev: { can: !w.incognito && !!prefs.hostOf(u), on: prefs.devMode(u) },
+      extensions: (extActions(w) || []).slice(0, 40).map((x) => ({ id: String(x.id), title: String(x.title || '').slice(0, 80), icon: typeof x.icon === 'string' && /^data:image\//.test(x.icon) ? x.icon : '', badge: String(x.badgeText || '').slice(0, 8), enabled: x.enabled !== false })),
+      // Arc greys Share out on a local site.
+      share: process.platform === 'darwin' && !prefs.isLocal(u),
     };
   };
   const count = () => ses.cookies.get({ url: urlNow() }).then((list) => { cookies = list.length; }, () => { cookies = null; });
   // L'onglet du panneau est-il toujours le même site, affiché et actif ?
   const fresh = () => !wc.isDestroyed() && live.get(rt.id) === rt && w.activeRt === rt && !w.win.isDestroyed() && permissions.originOf(urlNow()) === origin;
-  const sheet = sheets.open(wc, 'control', payload(), {
-    onAction: async (name, arg, self) => {
-      if (!fresh()) { self.close(null); return null; }
-      if (CONTROL_MUTATING.has(name) && !(self.armedAt && Date.now() - self.armedAt >= sheets.GUARD)) return null;
-      const again = () => ({ kind: 'control', cover: false, ...payload() });
-      switch (name) {
-        // Bloqueur pour ce site : la page est rechargée (le panneau se ferme avec elle).
-        case 'shield': if (store.state.settings.adblock) w.toggleSiteBlocking(); return null;
-        case 'shieldAll': require('./commands').setSetting('adblock', !store.state.settings.adblock); return again();
-        case 'reset': {
-          let reload = false;
-          if (arg === 'cert-exception' || arg === '*') reload = certs.revoke(ses, urlNow());
-          if (arg !== 'cert-exception') permissions.reset(ses, origin, String(arg));
-          w.changed();
-          if (reload) { ses.closeAllConnections().catch(() => {}).then(() => { if (!wc.isDestroyed()) wc.reload(); }); return null; }
-          return again();
-        }
-        // Cookies et données enregistrées par CE site (son origine), puis rechargement.
-        case 'cookies':
-          await ses.clearStorageData({ origin, storages: ['cookies', 'localstorage', 'indexdb', 'serviceworkers', 'cachestorage'] }).catch(() => {});
-          if (fresh()) wc.reloadIgnoringCache();
-          return null;
-        // Le cache HTTP n'est pas rangé par site : c'est celui du profil entier qui est vidé.
-        case 'cache':
-          await ses.clearCache().catch(() => {});
-          if (fresh()) wc.reloadIgnoringCache();
-          return null;
-        case 'boost': w.toggleBoost(); return again();
-        case 'dev': w.toggleDevMode(); return again();
-        case 'copy': w.copyUrl(false); return null;
-        case 'refresh': await count(); return fresh() ? again() : null;
-        // Les suivantes ferment le panneau puis passent la main.
-        case 'boostEdit': self.close(null); w.run('boost'); return null;
-        case 'zap': self.close(null); w.run('zap'); return null;
-        case 'share': self.close(null); w.share(); return null;
-        case 'capture': self.close(null); w.capture(); return null;
-        case 'captureFull': self.close(null); w.captureFull(); return null;
-        case 'capturePortrait': self.close(null); w.capturePortrait(); return null;
-        case 'details': self.close(null); siteInfo(w); return null;
-        case 'ext': {
-          const x = (extActions(w) || []).find((e) => String(e.id) === String(arg) && e.enabled !== false);
-          self.close(null);
-          if (x) openExtPopup(w, x.id);
-          return null;
-        }
-        default: return null;
+  // Each action of the panel, from its buttons or from its More menu.
+  const handle = async (name, arg, self) => {
+    if (!fresh()) { self.close(null); return null; }
+    if (CONTROL_MUTATING.has(name) && !(self.armedAt && Date.now() - self.armedAt >= sheets.GUARD)) return null;
+    const again = () => ({ kind: 'control', cover: false, ...payload() });
+    switch (name) {
+      // Bloqueur pour ce site : la page est rechargée (le panneau se ferme avec elle).
+      case 'shield': if (store.state.settings.adblock) w.toggleSiteBlocking(); return null;
+      case 'shieldAll': require('./commands').setSetting('adblock', !store.state.settings.adblock); return again();
+      case 'reset': {
+        let reload = false;
+        if (arg === 'cert-exception' || arg === '*') reload = certs.revoke(ses, urlNow());
+        if (arg !== 'cert-exception') permissions.reset(ses, origin, String(arg));
+        w.changed();
+        if (reload) { ses.closeAllConnections().catch(() => {}).then(() => { if (!wc.isDestroyed()) wc.reload(); }); return null; }
+        return again();
       }
-    },
-  });
+      // Cookies et données enregistrées par CE site (son origine), puis rechargement.
+      case 'cookies':
+        await ses.clearStorageData({ origin, storages: ['cookies', 'localstorage', 'indexdb', 'serviceworkers', 'cachestorage'] }).catch(() => {});
+        if (fresh()) wc.reloadIgnoringCache();
+        return null;
+      // Le cache HTTP n'est pas rangé par site : c'est celui du profil entier qui est vidé.
+      case 'cache':
+        await ses.clearCache().catch(() => {});
+        if (fresh()) wc.reloadIgnoringCache();
+        return null;
+      case 'boost': w.toggleBoost(); return again();
+      case 'dev': w.toggleDevMode(); return again();
+      case 'refresh': await count(); return fresh() ? again() : null;
+      // Arc's More (…) menu, with Radian's Zap and blocker switch in its groups. Its items go
+      // through `handle` like the buttons, so they are checked again when chosen.
+      case 'more': {
+        const run = (n) => async () => { const out = await handle(n, undefined, self); if (out && !self.closed) self.update(out); };
+        const sep = { type: 'separator' };
+        const p = payload();
+        w.popup([
+          { label: t('ctl.clearCache'), click: run('cache') },
+          { label: t('ctl.clearCookies'), ...(cookies == null ? null : { sublabel: t('ctl.cookieCount', { n: cookies }) }), click: run('cookies') },
+          sep,
+          { label: t('ctl.manageBoosts'), enabled: p.boost.can, click: run('manageBoosts') },
+          { label: t('ctl.newBoostMenu'), enabled: p.boost.can, click: run('boostEdit') },
+          { label: t('ctl.zap'), enabled: p.boost.can, click: run('zap') },
+          sep,
+          { label: t('ext.manage'), click: run('manageExt') },
+          { label: t('ext.add'), click: run('manageExt') },
+          sep,
+          { label: t('adblock.everywhere'), type: 'checkbox', checked: p.adblock.on, click: run('shieldAll') },
+          { label: t('ctl.allSettings'), click: run('details') },
+        ]);
+        return null;
+      }
+      // Les suivantes ferment le panneau puis passent la main.
+      case 'boostEdit': self.close(null); w.run('boost'); return null;
+      case 'zap': self.close(null); w.run('zap'); return null;
+      case 'share': self.close(null); w.share(); return null;
+      case 'capture': self.close(null); w.capture(); return null;
+      case 'captureFull': self.close(null); w.captureFull(); return null;
+      case 'capturePortrait': self.close(null); w.capturePortrait(); return null;
+      case 'details': self.close(null); siteInfo(w); return null;
+      case 'manageBoosts': self.close(null); w.run('boosts'); return null;
+      case 'manageExt': self.close(null); w.run('manageExtensions'); return null;
+      case 'ext': {
+        const x = (extActions(w) || []).find((e) => String(e.id) === String(arg) && e.enabled !== false);
+        self.close(null);
+        if (x) openExtPopup(w, x.id);
+        return null;
+      }
+      default: return null;
+    }
+  };
+  const sheet = sheets.open(wc, 'control', payload(), { onAction: handle });
   if (sheet) { sheet.origin = origin; count().then(() => { if (!sheet.closed && fresh()) sheet.update(payload()); }); }
   return sheet;
 }
@@ -270,7 +294,11 @@ function setup({ win, sessions, test = false }) {
   };
   hooks.action = (w, action, a) => {
     if (action === 'siteInfo') { siteInfo(w); return true; }
-    if (action === 'siteControl') return !!siteControl(w);
+    if (action === 'siteControl') {
+      const sheet = siteControl(w);
+      if (sheet && a === 'reveal') w.holdPeek(sheet.result);
+      return !!sheet;
+    }
     // Autorisations du site affiché, dans la mémoire de SA session (profil, navigation privée).
     if (action === 'resetSitePerms') {
       const rt = w.activeRt;

@@ -275,80 +275,96 @@ const KINDS = {
     buttons.append(button(t('sheet.close'), () => answer(null), { cls: 'primary', id: 'close' }));
     return null;
   },
-  // Centre de contrôle du site (bouclier) : bloqueur, autorisations, données, Boost,
-  // mode développeur, extensions. Chaque clic part au processus principal, qui
-  // revérifie le site de l'onglet avant d'agir et renvoie l'état à afficher.
-  control(p, body, buttons) {
-    const secure = p.security === 'secure';
-    head(secure ? 'lock' : (p.security === 'local' ? 'info' : 'warn'), p.site, t('site.sec.' + p.security), p.security === 'insecure' || p.security === 'broken');
+  // Centre de contrôle du site (bouclier). Arc 1.170's layout (docs/parity/captures/live/devmode.md):
+  // four tiles (Share, New Boost, two captures), Extensions with "+", Settings rows, then the
+  // connection chip and More (…), a menu built by the main process. Radian's extra controls sit
+  // where Arc puts site settings (blocker, Boost, permissions) or in More. Each click goes to the
+  // main process, which checks the tab's site again before acting and sends back the state to show.
+  control(p, body) {
+    head('info', p.site, '', false); // hidden (Arc shows no header); names the panel for assistive tech
+    body.style.gap = '0';
     const run = async (name, arg) => { const next = await act(name, arg); if (next) show(next, true); };
-    const section = (title, id) => { const box = el('div', 'list'); box.id = id; body.append(el('h2', '', title), box); return box; };
-    // Ligne : libellé (et précision), puis une case à cocher ou des boutons.
-    const line = (box, label, sub, ...controls) => {
-      const row = el('div', 'item');
-      const text = el('div', 'grow');
-      text.append(el('div', '', label));
-      if (sub) text.append(el('div', 'sub', sub));
-      row.append(text, ...controls);
-      box.append(row);
-      return row;
+    const icon = (name) => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('class', 'i'); const u = document.createElementNS('http://www.w3.org/2000/svg', 'use'); u.setAttribute('href', '#i-' + name); s.append(u); return s; };
+    // Icon button, named for assistive tech only (Arc gives these no tooltips).
+    const iconButton = (id, cls, name, label, fn) => {
+      const b = el('button', cls);
+      if (id) b.id = id;
+      if (name) b.append(icon(name));
+      b.setAttribute('aria-label', label);
+      b.onclick = fn;
+      return b;
     };
-    const toggle = (id, on, enabled, name) => {
-      const input = el('input');
-      input.type = 'checkbox';
-      input.id = id;
-      input.checked = !!on;
-      input.disabled = !enabled;
-      // L'état affiché est celui que renvoie le processus principal, pas celui du clic.
-      input.onclick = (e) => { e.preventDefault(); if (settled()) run(name); };
-      return input;
-    };
-    const small = (id, label, name, arg, cls = '') => button(label, () => run(name, arg), { id, cls: 'small ' + cls, risky: true });
-
-    const quick = el('div', 'quick');
-    quick.append(button(t('edit.copyUrl'), () => run('copy'), { id: 'c-copy', cls: 'small' }));
-    if (p.share) quick.append(button(t('tb.share'), () => run('share'), { id: 'c-share', cls: 'small' }));
-    // As in Arc: Capture Full Page, or with Option held a Portrait capture.
-    quick.append(button(t('ctl.capture'), () => run('capture'), { id: 'c-capture', cls: 'small' }), button(t('ctl.captureFull'), (e) => run(e.altKey ? 'capturePortrait' : 'captureFull'), { id: 'c-capture-full', cls: 'small' }), button(t('ctl.details'), () => run('details'), { id: 'c-details', cls: 'small' }));
+    const quick = el('div', 'tiles');
+    const share = iconButton('c-share', 'tile', 'share', t('ctl.share'), () => run('share'));
+    share.disabled = !p.share;
+    const boost = iconButton('c-boost-new', 'tile', 'boost', t('ctl.newBoost'), () => run('boostEdit'));
+    boost.disabled = !p.boost.can;
+    // As before: with Option held, the full-page tile makes a Portrait capture.
+    quick.append(share, boost, iconButton('c-capture', 'tile', 'photo', t('ctl.capturePart'), () => run('capture')),
+      iconButton('c-capture-full', 'tile', 'fullpage', t('ctl.capturePage'), (e) => run(e.altKey ? 'capturePortrait' : 'captureFull')));
     body.append(quick);
 
-    const shield = section(t('ctl.blocking'), 'c-shield');
-    line(shield, t('adblock.thisSite'), p.adblock.on ? t('adblock.count', { n: p.blocked }) : t('ctl.blockingOff'), toggle('c-shield-site', p.adblock.on && p.adblock.site, p.adblock.on, 'shield'));
-    line(shield, t('adblock.everywhere'), '', toggle('c-shield-all', p.adblock.on, true, 'shieldAll'));
-
-    const perms = section(t('site.perms'), 'perms');
-    if (!p.perms.length) line(perms, t('site.noPerms'), '');
-    for (const perm of p.perms) {
-      const row = line(perms, perm.label, '', el('span', 'state ' + (perm.value ? 'yes' : 'no'), t(perm.value ? 'site.allowed' : 'site.denied')), small('', t('site.reset'), 'reset', perm.key));
-      row.dataset.key = perm.key;
-      row.lastChild.dataset.do = 'reset';
+    body.append(el('h2', '', t('pane.extensions')));
+    const exts = el('div', 'tiles');
+    exts.id = 'c-exts';
+    exts.append(iconButton('c-add-ext', 'tile light', 'plus', t('ctl.addExt'), () => run('manageExt')));
+    for (const x of p.extensions) {
+      const b = iconButton('', 'tile light', '', x.title, () => run('ext', x.id));
+      b.dataset.ext = x.id;
+      b.title = x.title;
+      b.disabled = !x.enabled;
+      if (/^data:image\//.test(x.icon)) { const img = el('img'); img.src = x.icon; img.alt = ''; img.draggable = false; b.append(img); } else b.append(el('span', 'letter', (x.title.trim()[0] || '?').toUpperCase()));
+      if (x.badge) b.append(el('span', 'badge', x.badge));
+      exts.append(b);
     }
+    body.append(exts);
+
+    body.append(el('h2', '', t('ctl.settings')));
+    // Setting row: white circle with its icon, then name and value.
+    const row = (tag, name, label, value, cls = '') => {
+      const r = el(tag, 'set ' + cls);
+      const dot = el('span', 'dot');
+      dot.append(icon(name));
+      const txt = el('span', 'txt');
+      txt.append(el('span', 'name', label), el('span', 'val', value));
+      r.append(dot, txt);
+      return r;
+    };
+    // A row that switches something; the value shown is the one the main process sends back.
+    const toggle = (id, name, label, on, value, enabled, action) => {
+      const r = row('button', name, label, value);
+      r.id = id;
+      r.setAttribute('aria-pressed', String(!!on));
+      r.disabled = !enabled;
+      r.onclick = () => { if (settled()) run(action); };
+      body.append(r);
+    };
+    toggle('c-dev', 'hammer', t('ctl.devMode'), p.dev.on, p.dev.can ? t(p.dev.on ? 'ctl.on' : 'ctl.off') : t('ctl.devPrivate'), p.dev.can, 'dev');
+    const shieldOn = p.adblock.on && p.adblock.site;
+    toggle('c-shield-site', 'shield', t('ctl.blocking'), shieldOn, !p.adblock.on ? t('ctl.blockingOff') : (shieldOn ? t('adblock.count', { n: p.blocked }) : t('ctl.off')), p.adblock.on, 'shield');
+    if (p.boost.can && p.boost.has) toggle('c-boost', 'boost', t('ctl.boost'), p.boost.enabled, t(p.boost.enabled ? 'ctl.on' : 'ctl.off'), p.boost.all, 'boost');
+    const perms = el('div', '');
+    perms.id = 'perms';
+    for (const perm of p.perms) {
+      const r = row('div', { camera: 'camera', microphone: 'mic' }[perm.key] || 'key', perm.label, t(perm.value ? 'site.allowed' : 'site.denied'), 'item');
+      r.dataset.key = perm.key;
+      r.querySelector('.val').className = 'val state ' + (perm.value ? 'yes' : 'no');
+      const reset = button(t('site.reset'), () => run('reset', perm.key), { cls: 'small', risky: true });
+      reset.dataset.do = 'reset';
+      r.append(reset);
+      perms.append(r);
+    }
+    body.append(perms);
     if (p.capture && p.capture.length) body.append(el('p', 'warn', p.capture.join(' · ')));
 
-    const data = section(t('ctl.data'), 'c-data');
-    const n = el('span', '', p.cookies == null ? '' : t('ctl.cookieCount', { n: p.cookies }));
-    n.id = 'c-cookies';
-    line(data, t('ctl.cookies'), t('ctl.cookiesHint'), n, small('c-clear-cookies', t('ctl.clear'), 'cookies'));
-    line(data, t('ctl.cache'), t('ctl.cacheHint'), small('c-clear-cache', t('ctl.empty'), 'cache'));
-
-    const tools = section(t('ctl.tools'), 'c-tools');
-    if (p.boost.can) {
-      const controls = [];
-      if (p.boost.has) controls.push(toggle('c-boost', p.boost.enabled, p.boost.all, 'boost'));
-      line(tools, t('boost.thisSite'), p.boost.has ? '' : t('ctl.noBoost'), small('c-zap', t('ctl.zap'), 'zap'), small('c-boost-edit', t(p.boost.has ? 'set.edit' : 'ctl.create'), 'boostEdit'), ...controls);
-    }
-    line(tools, t('view.devMode'), p.dev.can ? (p.dev.auto ? t('ctl.devAuto') : t('ctl.devHint')) + (p.dev.keys ? ' ' + p.dev.keys : '') : t('ctl.devPrivate'), toggle('c-dev', p.dev.on, p.dev.can, 'dev'));
-
-    if (p.extensions.length) {
-      const exts = section(t('pane.extensions'), 'c-exts');
-      for (const x of p.extensions) {
-        const open = small('', t('ctl.open'), 'ext', x.id);
-        open.disabled = !x.enabled;
-        const row = line(exts, x.title, '', ...(x.badge ? [el('span', 'badge', x.badge)] : []), open);
-        row.dataset.ext = x.id;
-      }
-    }
-    buttons.append(button(t('sheet.close'), () => answer(null), { cls: 'primary', id: 'close' }));
+    // Connection chip (its details, as "All Site Settings…" in More), and More.
+    const secure = p.security === 'secure';
+    const chip = iconButton('c-details', 'chip' + (secure ? '' : ' insecure'), secure ? 'lock' : 'lock-off', t(secure ? 'ctl.secure' : 'ctl.insecure'), () => run('details'));
+    chip.append(t(secure ? 'ctl.secure' : 'ctl.insecure'));
+    chip.removeAttribute('aria-label'); // its text names it
+    const foot = el('div', 'foot');
+    foot.append(chip, iconButton('c-more', 'round', 'more', t('ctl.more'), () => run('more')));
+    body.append(foot);
     return null;
   },
 };

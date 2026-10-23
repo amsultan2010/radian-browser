@@ -262,10 +262,10 @@ module.exports = {
     await t.verifier('bouclier → centre de contrôle : bulle ancrée du côté de l’adresse, nom du site, bloqueur, données, outils ; un clic trop rapide est ignoré', async () => {
       await ctx.clic(shell, '#shield', { survol: shell.locator('#url') }); // au repos, la pastille d’adresse est vide (Arc)
       const c = await feuille('control');
-      const vu = await c.evaluate(() => { const r = document.getElementById('card').getBoundingClientRect(); return { haut: r.top, gauche: r.left, titre: document.getElementById('title').textContent, sections: [...document.querySelectorAll('#body h2')].map((h) => h.textContent), dev: document.getElementById('c-dev').checked }; });
+      const vu = await c.evaluate(() => { const r = document.getElementById('card').getBoundingClientRect(); return { haut: r.top, gauche: r.left, titre: document.getElementById('title').textContent, sections: [...document.querySelectorAll('#body h2')].map((h) => h.textContent), dev: document.getElementById('c-dev').getAttribute('aria-pressed') === 'true' }; });
       assert.ok(vu.haut < 40 && vu.gauche < 40, JSON.stringify(vu));
       assert.equal(vu.titre, new URL(A).host === vu.titre ? vu.titre : A);
-      assert.deepEqual(vu.sections, [await ctx.texte('ctl.blocking'), await ctx.texte('site.perms'), await ctx.texte('ctl.data'), await ctx.texte('ctl.tools')]);
+      assert.deepEqual(vu.sections, [await ctx.texte('pane.extensions'), await ctx.texte('ctl.settings')]);
       assert.equal(vu.dev, false);
       // Clic tombé dans la demi-seconde qui suit l'apparition : rien ne change.
       await c.click('#c-dev');
@@ -274,8 +274,8 @@ module.exports = {
       await sleep(GARDE);
       await c.click('#c-dev');
       await jusqua(() => ctx.principal(({ store }, h) => store.state.settings.devSites.includes(h), new URL(A).host), 'mode développeur activé pour le site');
-      await jusqua(() => c.evaluate(() => document.getElementById('c-dev').checked), 'case cochée par l’état rendu');
-      await jusqua(() => shell.evaluate(() => document.body.classList.contains('toolbar') && document.body.classList.contains('dev-site') && getComputedStyle(document.querySelector('.row.tab.active'), '::after').backgroundImage.includes('repeating-linear-gradient')), 'barre d’outils et liseré jaune et noir');
+      await jusqua(() => c.evaluate(() => document.getElementById('c-dev').getAttribute('aria-pressed') === 'true'), 'ligne « Developer Mode » à On, par l’état rendu');
+      await jusqua(() => shell.evaluate(() => document.body.classList.contains('toolbar') && document.body.classList.contains('dev-site') && getComputedStyle(document.querySelector('.row.tab.active'), '::after').borderTopStyle === 'dashed'), 'barre d’outils et liseré jaune et noir');
       await ctx.capture('19-centre-de-controle', c);
       await c.click('#c-dev');
       await jusqua(() => ctx.principal(({ store }) => store.state.settings.devSites.length === 0), 'mode développeur coupé');
@@ -286,12 +286,14 @@ module.exports = {
       await plusDeFeuille();
     });
 
-    await t.verifier('centre de contrôle : Échap le ferme ; « Copier l’URL » copie l’adresse ; le clic droit sur le bouclier garde le menu', async () => {
+    await t.verifier('centre de contrôle : « More » ouvre le menu d’Arc ; Échap le ferme ; le clic droit sur le bouclier garde le menu', async () => {
       await ctx.clic(shell, '#shield', { survol: shell.locator('#url') }); // au repos, la pastille d’adresse est vide (Arc)
       const c = await feuille('control');
-      await ctx.principal(({ electron }) => electron.clipboard.writeText(''));
-      await c.click('#c-copy');
-      await jusqua(async () => (await ctx.principal(({ electron }) => electron.clipboard.readText())).startsWith(A), 'adresse copiée');
+      await ctx.principal(({ w }) => { w.menuVu = null; });
+      await c.click('#c-more');
+      const plus = await jusqua(() => ctx.principal(({ w }) => w.menuVu && w.menuVu.filter((x) => x.label).map((x) => x.label)), 'menu « More »');
+      assert.deepEqual(plus.slice(0, 2), [await ctx.texte('ctl.clearCache'), await ctx.texte('ctl.clearCookies')]);
+      assert.equal(plus[plus.length - 1], await ctx.texte('ctl.allSettings'));
       await touche(c, 'Escape');
       await plusDeFeuille();
       await ctx.principal(({ w }) => { w.menuVu = null; });

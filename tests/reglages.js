@@ -281,11 +281,13 @@ module.exports = async function reglagesTests(ctx) {
   const devOn = s().devSites.includes(hostDev) && w.toolbarShown && !s().showToolbar && w.contentRect().y > yBefore;
   await set({ showFullUrl: false });
   await until(async () => (await ui('document.getElementById("tb-url-text").textContent')) === base + '/?externe' && (await ui('document.body.classList.contains("toolbar")')), 'barre d’outils du mode développeur');
-  const devBar = await ui('[...document.querySelectorAll("#tb-dev [data-cmd]")].filter((b) => b.offsetWidth && b.title).map((b) => b.dataset.cmd).join()');
+  // Shown buttons, in order; "+tip" marks a tooltip and "-label" a missing accessibility label (Arc has labels, no tooltips).
+  const devBar = await ui('[...document.querySelectorAll("#toolbar .ib")].filter((b) => b.offsetWidth).map((b) => (b.dataset.cmd || b.dataset.menu || b.id) + (b.title ? "+tip" : "") + (b.getAttribute("aria-label") ? "" : "-label")).join() + "|" + document.getElementById("toolbar").getBoundingClientRect().height + "|" + !!document.getElementById("b-reload-more").offsetWidth');
   commands.run(w, 'toggleDevMode');
   await sleep(60);
   check('mode développeur d’un site : barre d’outils et adresse entière pour lui seul', devOn && !s().devSites.length && !w.toolbarShown && w.contentRect().y === yBefore);
-  check('Developer Mode bar: copy, Portrait capture, console, network and element picker buttons', devBar === 'copyUrl,capturePortrait,console,network,inspect', devBar);
+  check('Developer Mode bar: Arc’s controls in Arc’s order (Site Settings, copy | capture window, capture | console, network, inspect | extensions, split), 40 pt tall; reload gets its chevron',
+    devBar === 'tb-site,copyUrl,capturePortrait,capture,console,network,inspect,extensions,split|40|true', devBar);
   // Automatique sur les sites locaux (localhost, 127.0.0.1), avec son liseré jaune et noir.
   {
     const prefs2 = require('../src/main/prefs');
@@ -293,7 +295,7 @@ module.exports = async function reglagesTests(ctx) {
       prefs2.isLocal('http://localhost:3000/') && prefs2.isLocal('https://app.localhost/x') && prefs2.isLocal('http://127.0.0.1:8080/') && prefs2.isLocal('http://[::1]:5173/')
       && !prefs2.isLocal('https://localhost.pirate.invalid/') && !prefs2.isLocal('https://exemple.fr/?localhost') && !prefs2.isLocal('file:///localhost') && !prefs2.isLocal('http://127.0.0.2/'));
     check('pendant les essais, le mode développeur automatique est coupé au départ (les pages d’essai sont locales)', s().devLocalhost === false && !w.toolbarShown);
-    const stripe = () => ui('(() => { const b = document.body.classList.contains("dev-site"); const r = document.querySelector(".row.tab.active"); const g = r ? getComputedStyle(r, "::after") : { content: "none", backgroundImage: "" }; return b + "|" + (g.content !== "none" && g.backgroundImage.includes("repeating-linear-gradient")); })()');
+    const stripe = () => ui(`(() => { const b = document.body.classList.contains("dev-site"); const r = document.querySelector(".row.tab.active"); const g = r ? getComputedStyle(r, "::after") : { content: "none", borderTopStyle: "" }; const h = r && r.querySelector(".host"); return b + "|" + (g.content !== "none" && g.borderTopStyle === "dashed" && !!h.offsetWidth && h.textContent === ${JSON.stringify(hostDev)}); })()`);
     const noStripe = await stripe();
     await set({ devLocalhost: true });
     await until(async () => (await stripe()) === 'true|true', 'liseré du mode développeur');
@@ -316,7 +318,7 @@ module.exports = async function reglagesTests(ctx) {
   check('mode développeur : ⌃D, à côté du raccourci d’épinglage (⌘D)',
     commands.byName.get('toggleDevMode').accel === 'Ctrl+D' && commands.byName.get('togglePin').accel === 'Cmd+D');
 
-  // JSON view (Arc's JSON Formatter): a collapsible tree, Raw and Parsed, nothing new for the page.
+  // JSON view: a collapsible tree behind Chromium's "Pretty-print" strip (as Arc shows it), nothing new for the page.
   {
     const tab = w.newTab(base + '/data.json');
     await until(() => win.live.get(tab.id) && !win.live.get(tab.id).loading, 'page JSON');
@@ -324,17 +326,17 @@ module.exports = async function reglagesTests(ctx) {
     await until(() => page.executeJavaScript('!!document.querySelector(".jv .en")'), 'arbre JSON');
     const seen = await page.executeJavaScript(`(() => {
       const q = (sel) => document.querySelector(sel);
-      const bar = [...document.querySelectorAll('.jv-bar button')];
-      const out = { labels: bar.map((b) => b.textContent).join(), markup: !!q('.jv b'), key: q('.jv .k').textContent, link: q('.jv a').href, globals: typeof parse + typeof render };
-      bar[0].click();
+      const box = q('.jv-bar input[type=checkbox]');
+      const out = { labels: q('.jv-bar').textContent + '|' + box.checked, markup: !!q('.jv b'), key: q('.jv .k').textContent, link: q('.jv a').href, globals: typeof parse + typeof render };
+      box.click();
       out.raw = q('.jv').hidden && !q('body > pre').hidden;
-      bar[1].click();
+      box.click();
       q('.jv .ex').click();
       out.shut = !q('.jv').hidden && q('.jv .en').classList.contains('shut') && q('.jv .ex').getAttribute('aria-expanded') === 'false';
       return out;
     })()`);
-    check('JSON page: a collapsible tree with Raw and Parsed buttons; its text never becomes markup, and the page sees no new globals',
-      seen.labels === store.t('json.raw') + ',' + store.t('json.parsed') && !seen.markup && seen.key === '"name"' && seen.link === 'https://example.com/' && seen.globals === 'undefinedundefined' && seen.raw && seen.shut, JSON.stringify(seen));
+    check('JSON page: a collapsible tree behind a checked “Pretty-print” box (unchecked: the raw text); its text never becomes markup, and the page sees no new globals',
+      seen.labels === store.t('json.pretty') + '|true' && !seen.markup && seen.key === '"name"' && seen.link === 'https://example.com/' && seen.globals === 'undefinedundefined' && seen.raw && seen.shut, JSON.stringify(seen));
     w.close(tab.id, { silent: true });
   }
 

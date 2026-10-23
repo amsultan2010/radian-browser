@@ -394,7 +394,7 @@ function setupIpc() {
     e.returnValue = ok(e) ? { locales, lang: store.state.settings.lang, settings: store.state.settings, keys: shortcuts.keysMap(), defaultKeys: shortcuts.defaultKeysMap() } : null;
   });
   // Labels of the JSON view's buttons (src/preload/json.js), asked by web pages: nothing else.
-  ipcMain.on('orbe-json', (e) => { e.returnValue = { raw: store.t('json.raw'), parsed: store.t('json.parsed') }; });
+  ipcMain.on('orbe-json', (e) => { e.returnValue = { pretty: store.t('json.pretty') }; });
   ipcMain.handle('orbe', async (e, action, payload) => {
     if (!ok(e) || typeof action !== 'string') return undefined;
     if (action.startsWith('boost:')) return boostEditor.action(action, payload, e.sender);
