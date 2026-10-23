@@ -38,8 +38,11 @@ function entry(wc) {
 function mark(wc, kind, { tab = null } = {}) {
   if (!wc || wc.isDestroyed() || !KINDS.includes(kind)) return;
   const st = entry(wc);
-  st.kinds.set(kind, { at: Date.now(), tab });
-  if (tab && !st.timer) {
+  const was = st.kinds.get(kind);
+  // A share of something else may still run in this page: its end would go unseen, so the indicator holds.
+  const held = !!was && (was.held || was.tab !== tab);
+  st.kinds.set(kind, { at: Date.now(), tab, held });
+  if (tab && !held && !st.timer) {
     let idle = 0;
     st.timer = setInterval(() => {
       if (wc.isDestroyed()) return;
@@ -48,10 +51,10 @@ function mark(wc, kind, { tab = null } = {}) {
       // secondes, puis il faut deux relevés de suite sans aucune capture.
       const shot = !!(k && k.tab && !k.tab.isDestroyed() && k.tab.isBeingCaptured());
       idle = shot || (k && Date.now() - k.at < SETTLE) ? 0 : idle + 1;
-      if (!k || !k.tab || idle >= 2) {
+      if (!k || !k.tab || k.held || idle >= 2) {
         clearInterval(st.timer);
         st.timer = null;
-        if (k && k.tab) { st.kinds.delete('screen'); hooks.changed(); }
+        if (k && k.tab && !k.held) { st.kinds.delete('screen'); hooks.changed(); }
       }
     }, 700);
     if (st.timer.unref) st.timer.unref();
