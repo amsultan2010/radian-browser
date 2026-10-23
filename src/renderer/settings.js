@@ -2,7 +2,7 @@
 // Tout champ listé ici (case à cocher ou liste dont l'id est la clé du réglage)
 // est rempli et enregistré automatiquement, quel que soit son volet.
 const FIELDS = ['lang', 'searchEngine', 'suggestions', 'archiveAfterHours', 'maxLiveTabs', 'sleepAfterHours', 'memoryBudget', 'appearance', 'translucent', 'externalLinks', 'autoPip', 'batterySaver', 'adblock', 'peekLinks', 'passwordSave', 'passwordFill', 'sounds', 'soundGestures', 'soundVolume',
-  'restoreSession', 'warnOnQuit', 'peekShift', 'littleAltClick', 'littleArchiveHours', 'tabKeysFavorites', 'tabKeysNinthLast', 'showToolbar', 'showFullUrl', 'cookieBanners', 'themeData', 'mediaControls', 'devLocalhost', 'boostsEnabled', 'boostsJs', 'downloadAsk', 'downloadOpenPdf', 'updateCheck'];
+  'restoreSession', 'warnOnQuit', 'peekShift', 'littleAltClick', 'littleArchiveHours', 'tabKeysFavorites', 'tabKeysNinthLast', 'showToolbar', 'showFullUrl', 'cookieBanners', 'themeData', 'mediaControls', 'devLocalhost', 'boostsEnabled', 'boostsJs', 'downloadAsk', 'downloadOpenPdf', 'updateCheck', 'haptics'];
 const NUMERIC = new Set(['archiveAfterHours', 'maxLiveTabs', 'sleepAfterHours', 'memoryBudget', 'littleArchiveHours', 'soundVolume']);
 const el = (id) => document.getElementById(id);
 const make = (tag, className, text) => { const n = document.createElement(tag); if (className) n.className = className; if (text != null) n.textContent = text; return n; };

@@ -115,8 +115,7 @@ const SETTABLE = {
   showFullUrl: bool,
   warnOnQuit: bool,
   restoreSession: bool,
-  // « haptics » : enregistré, sans effet ni case dans les réglages — Electron n'expose pas le retour haptique du pavé tactile (REG-40).
-  haptics: bool,
+  haptics: bool, // REG-40, played by src/main/haptics.js
   peekShift: bool,
   littleAltClick: bool,
   littleArchiveHours: (v) => ARCHIVE_HOURS.includes(v),
