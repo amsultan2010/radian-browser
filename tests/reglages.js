@@ -98,9 +98,10 @@ module.exports = async function reglagesTests(ctx) {
 
   const s2 = store.makeSpace('Réglages', '⚙️', '#10b981');
   w.data.spaces.push(s2);
+  const extBefore = s().externalLinks;
   await set({ externalLinks: 'space:inconnu' });
   await set({ externalLinks: 'ailleurs' });
-  const badExt = s().externalLinks === 'window';
+  const badExt = s().externalLinks === extBefore;
   await set({ externalLinks: 'space:' + s2.id });
   check('liens des autres applications : Espace existant accepté, valeur inconnue refusée', badExt && s().externalLinks === 'space:' + s2.id);
 
