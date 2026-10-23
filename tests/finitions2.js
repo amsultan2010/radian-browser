@@ -448,7 +448,7 @@ module.exports = async function finitions2Tests(ctx) {
       const s0 = S;
       const ext = [{ id: 'abcdefghijklmnop', title: 'Essai <i>', icon: '', enabled: true, badge: '7' }];
       render({ ...s0, toolbar: true, extensions: ext });
-      const on = { tb: document.querySelectorAll('#tb-exts .ext').length, side: document.querySelectorAll('#exts .ext').length, title: document.querySelector('#tb-exts .ext').title, tags: document.querySelector('#tb-exts .ext i') ? 1 : 0, badge: document.querySelector('#tb-exts .badge').textContent, after: document.getElementById('tb-url').nextElementSibling.id };
+      const on = { tb: document.querySelectorAll('#tb-exts .ext').length, side: document.querySelectorAll('#exts .ext').length, title: document.querySelector('#tb-exts .ext').title, tags: document.querySelector('#tb-exts .ext i') ? 1 : 0, badge: document.querySelector('#tb-exts .badge').textContent, after: document.getElementById('toolbar').lastElementChild.id };
       render({ ...s0, toolbar: false, extensions: ext });
       const off = { tb: document.querySelectorAll('#tb-exts .ext').length, side: document.querySelectorAll('#exts .ext').length };
       render(s0);

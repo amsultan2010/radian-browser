@@ -839,6 +839,7 @@ $('lock').onclick = () => send('siteInfo');
 $('popup-note').onclick = () => send('popupMenu');
 $('capture-note').onclick = () => send('captureMenu');
 $('tb-url').onclick = () => send('openCommand', 'edit');
+$('tb-dev').onclick = (e) => { const b = e.target.closest('[data-cmd]'); if (b) send('command', b.dataset.cmd); };
 // Clic droit sur la barre d'outils : adresse entière, copie, capture, partage.
 $('toolbar').addEventListener('contextmenu', (e) => { e.preventDefault(); send('toolbarMenu'); });
 $('b-newtab').onclick = () => send('openCommand', 'new');
