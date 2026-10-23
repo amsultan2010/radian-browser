@@ -35,6 +35,9 @@ jobs:
       - name: Site search and link routing rules
         run: node tests/liens.test.js
 
+      - name: Notification click hook
+        run: node tests/notifications.test.js
+
       - name: Screenshot folder
         run: |
           mkdir -p "$RUNNER_TEMP/captures"
