@@ -148,16 +148,23 @@
 .sw.sel span.name { color: var(--fg); }
 
 /* Thème de l'Espace : sélecteur disposé comme celui d'Arc (apparence, champ de
-   couleurs, − et +, pastilles par pages, vague d'intensité, molette de grain). */
-#theme { bottom: 54px; width: 248px; max-height: calc(100vh - 66px); overflow-y: auto; padding: 12px; transform-origin: 20% 100%; animation: panel-in var(--spring-snappy); }
+   couleurs, − et +, pastilles par pages, vague d'intensité, molette de grain).
+   Arc 1.170's popover, measured: 356 × 508 pt, radius 18, 18 pt right of the sidebar and
+   23 pt from the top of the window (overlay.js places it); every control at Arc's place. */
+#theme { top: 23px; width: 356px; height: 508px; max-height: calc(100vh - 31px); overflow-y: auto; padding: 0; border-radius: 18px; transform-origin: 0 0; animation: panel-in var(--spring-snappy); }
+/* Arc's popover material is lighter than the other panels in the dark. */
+@media (prefers-color-scheme: dark) { :root:not([data-scheme="light"]) #theme { --panel: rgba(70, 69, 82, 0.97); } }
+:root[data-scheme="dark"] #theme { --panel: rgba(70, 69, 82, 0.97); }
 #theme::-webkit-scrollbar { width: 0; }
 @keyframes panel-in { from { opacity: 0; transform: translateY(8px) scale(0.97); } }
-/* Claire, automatique, sombre : trois boutons dont l'icône s'anime quand on la choisit. */
-#theme-modes { display: flex; width: max-content; margin: 0 auto; gap: 2px; padding: 2px; border-radius: 9px; background: var(--pill); }
-.mode { width: 40px; height: 26px; border-radius: 7px; display: grid; place-items: center; color: var(--dim); transition: background 120ms, color 120ms, transform var(--spring-bouncy); }
-.mode:hover { color: var(--fg); }
+/* Automatique, claire, sombre : trois boutons de 32 pt au pas de 40, dans le haut du champ ;
+   l'icône s'anime quand on la choisit. */
+#theme-modes { position: absolute; z-index: 1; top: 32px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; }
+.mode { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: var(--dim); transition: background 120ms, color 120ms, transform var(--spring-bouncy); }
+.mode svg.i { width: 18px; height: 18px; }
+.mode svg :not(.rays) { fill: currentColor; }
+.mode:hover, .mode.sel { background: color-mix(in srgb, currentColor 14%, transparent); color: var(--fg); }
 .mode:active { transform: scale(0.9); transition: transform var(--press); }
-.mode.sel { background: var(--active); color: var(--fg); box-shadow: var(--active-shadow); }
 .mode svg * { transform-box: fill-box; transform-origin: center; }
 .mode.sel .rays { animation: rays-turn 700ms var(--ease); }
 .mode.sel .moon { animation: moon-rock 700ms var(--ease); }
@@ -167,20 +174,22 @@
 @keyframes moon-rock { from { transform: rotate(-50deg) scale(0.7); opacity: 0; } }
 @keyframes star-twinkle { 0% { transform: scale(0.3); opacity: 0; } 60% { transform: scale(1.25); } }
 
-/* Champ carré : grille de points colorés (dessinée par overlay.js), poignées par-dessus. */
+/* Champ de 340 pt : une grille de points fins au pas de 4,25 pt, comme celle d'Arc, grise
+   tant que l'Espace n'a pas de couleur, colorée ensuite (overlay.js) ; poignées par-dessus. */
 #theme-wheel {
-  position: relative;
-  margin-top: 10px;
-  aspect-ratio: 1;
-  border-radius: 12px;
-  background: var(--pill);
-  box-shadow: inset 0 0 0 0.5px var(--panel-line);
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  width: 340px;
+  height: 340px;
+  border-radius: 6px;
+  background: radial-gradient(circle, color-mix(in srgb, currentColor 14%, transparent) 0.6px, transparent 0.9px) 0 0 / 4.25px 4.25px, color-mix(in srgb, currentColor 5%, transparent);
   touch-action: none;
 }
 #theme-grid { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; pointer-events: none; }
-#theme-plain { position: absolute; inset: 0; display: none; place-items: center; text-align: center; padding: 0 40px; border-radius: inherit; font-size: 11.5px; font-weight: 600; color: var(--dim); pointer-events: none; }
-#theme-wheel.plain #theme-plain { display: grid; }
-#theme-wheel.plain #theme-grid { opacity: 0.45; }
+#theme-plain { position: absolute; inset: 0; display: none; place-items: center; text-align: center; padding: 0 40px; border-radius: inherit; font-size: 13px; font-weight: 600; color: var(--fg); pointer-events: none; }
+#theme.plain #theme-plain { display: grid; }
+#theme.plain #theme-grid { opacity: 0; }
 /* Une poignée par couleur, cerclée de blanc ; la première est la plus grande.
    Elle se déplace par transformation seulement. */
 .dot {
@@ -197,38 +206,45 @@
 .dot[data-i="0"] { width: 26px; height: 26px; left: -13px; top: -13px; }
 .dot.sel { z-index: 1; }
 .dot:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
-#theme-count { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
-.tb { width: 28px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: var(--pill); color: var(--fg); transition: transform var(--spring-bouncy); }
-.tb:hover { background: color-mix(in srgb, var(--pill) 100%, var(--hover)); }
-.tb:active { transform: scale(0.88); transition: transform var(--press); }
+/* − et + : 32 pt, centrés au bas du champ. */
+#theme-count { position: absolute; z-index: 1; top: 300px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; }
+.tb, .pg { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: var(--fg); transition: background 120ms, transform var(--spring-bouncy); }
+.tb:hover, .pg:hover { background: color-mix(in srgb, currentColor 14%, transparent); }
+.tb:active, .pg:active { transform: scale(0.88); transition: transform var(--press); }
 .tb[disabled], .pg[disabled] { opacity: 0.35; pointer-events: none; }
 
-#theme-pages { display: flex; align-items: center; gap: 2px; margin-top: 10px; }
-.pg { flex: none; width: 18px; height: 22px; border-radius: 5px; display: grid; place-items: center; color: var(--dim); }
-.pg:hover { color: var(--fg); background: var(--hover); }
-.pg svg.i { width: 14px; height: 14px; }
-#theme-presets { flex: 1; display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
-.swatch { aspect-ratio: 1; border-radius: 50%; border: 0; outline-offset: 1.5px; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18); transition: transform var(--spring-bouncy); }
-.swatch:hover { transform: scale(1.12); }
+/* Pastilles : 16 pt sous le champ, neuf de 24 pt au pas de 29,5 entre ‹ et › ; la bande
+   des cinq pages glisse d'une page à l'autre (overlay.js). Chacune cerclée d'un liseré
+   10 % plus sombre qu'elle. */
+#theme-pages { position: absolute; top: 364px; left: 8px; width: 340px; display: flex; align-items: center; justify-content: space-between; }
+#theme-view { width: 265.5px; overflow: hidden; }
+#theme-presets { display: flex; transition: transform var(--spring-smooth); }
+#theme-presets.still { transition: none; }
+.swatch { flex: none; width: 24px; height: 24px; margin: 4px 2.75px; border-radius: 50%; border: 0; outline-offset: 1px; box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, 0.1); transition: transform var(--spring-bouncy); }
+.swatch:hover { transform: scale(1.1); }
 .swatch:active { transform: scale(0.86); transition: transform var(--press); }
 .swatch.sel { outline: 2px solid var(--fg); }
 
-#theme-tune { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
-#theme-wave { position: relative; flex: 1; height: 30px; color: var(--dim); }
-#theme-wave svg { position: absolute; left: 7px; top: 5px; width: calc(100% - 14px); height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; pointer-events: none; }
-#theme-wave svg path { vector-effect: non-scaling-stroke; }
+/* Intensité (224 × 44) et molette de grain (84 × 84), sur la dernière rangée ; atténuées
+   tant que l'Espace n'a pas de couleur, comme dans Arc. */
+#theme-tune { position: absolute; top: 412px; left: 0; right: 0; height: 84px; }
+#theme.plain #theme-wave, #theme.plain #theme-dial { opacity: 0.5; }
+#theme-wave { position: absolute; left: 18px; top: 18px; width: 224px; height: 44px; }
+#theme-wave::before { content: ''; position: absolute; left: 0; right: 0; top: 14px; height: 16px; border-radius: 8px; background: color-mix(in srgb, currentColor 12%, transparent); pointer-events: none; }
+#theme-wave svg { position: absolute; left: 6px; top: 8px; width: 212px; height: 28px; overflow: visible; fill: none; stroke: color-mix(in srgb, currentColor 32%, transparent); stroke-width: 5; stroke-linecap: round; pointer-events: none; }
 #theme-wave input { -webkit-appearance: none; position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; background: none; outline: 0; }
-#theme-wave input::-webkit-slider-runnable-track { height: 30px; background: none; }
-#theme-wave input::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 24px; margin-top: 3px; border-radius: 7px; background: #fff; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform var(--spring-bouncy); }
+#theme-wave input::-webkit-slider-runnable-track { height: 44px; background: none; }
+#theme-wave input::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 24px; margin-top: 10px; border-radius: 7px; background: #fff; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform var(--spring-bouncy); }
+#theme.plain #theme-wave input::-webkit-slider-thumb { visibility: hidden; }
 #theme-wave input:active::-webkit-slider-thumb { transform: scale(1.08); }
 #theme-wave input:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--accent); outline-offset: 1px; }
-/* Molette crantée : les crans et le repère tournent avec la valeur (--turn, posé par overlay.js). */
-#theme-dial { position: relative; flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--pill); box-shadow: inset 0 0 0 0.5px var(--panel-line), 0 1px 2px rgba(0, 0, 0, 0.12); touch-action: none; cursor: grab; }
-#theme-dial::before, #theme-dial::after { content: ''; position: absolute; pointer-events: none; transform: rotate(var(--turn, -135deg)); }
-#theme-dial::before { inset: 1px; border-radius: 50%; background: radial-gradient(closest-side, var(--panel) 76%, transparent 78%), repeating-conic-gradient(var(--faint) 0 5deg, transparent 5deg 15deg); }
-#theme-dial::after { left: 50%; top: 5px; width: 3px; height: 7px; margin-left: -1.5px; border-radius: 2px; background: var(--fg); transform-origin: 50% 10px; }
-/* Face: the chosen texture under a light sphere shading, like Arc's grey knob; plain at zero grain, as in Arc. */
-#theme-dial .face { position: absolute; inset: 5px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.35) 75%), var(--knob) center / 96px 96px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18); opacity: var(--amount, 0); pointer-events: none; }
+/* Molette : vingt points autour d'un cercle de 40 pt ; ceux jusqu'à la valeur s'allument (overlay.js). */
+#theme-dial { position: absolute; left: 258px; top: 0; width: 84px; height: 84px; border-radius: 50%; touch-action: none; cursor: grab; }
+#theme-ring { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; fill: color-mix(in srgb, currentColor 30%, transparent); }
+#theme-ring .on { fill: currentColor; }
+#theme-ring .rim { fill: none; stroke: color-mix(in srgb, currentColor 30%, transparent); stroke-width: 1; }
+/* Face: the chosen texture under a light sphere shading, inside the circle; plain at zero grain, as in Arc. */
+#theme-dial .face { position: absolute; inset: 23px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.35) 75%), var(--knob) center / 96px 96px; opacity: var(--amount, 0); pointer-events: none; }
 #theme-dial:active { cursor: grabbing; }
 #theme-dial:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 #theme-dial input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; pointer-events: none; }
