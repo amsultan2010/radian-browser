@@ -1,7 +1,7 @@
 {
   "name": "radian",
   "productName": "Radian",
-  "version": "0.15.5",
+  "version": "0.16.0",
   "description": "Radian — an open-source macOS browser that works like Arc. Built on Orbe.",
   "main": "src/main/main.js",
   "license": "MIT",

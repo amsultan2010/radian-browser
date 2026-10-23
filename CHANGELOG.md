@@ -4,10 +4,11 @@ All notable changes to Radian are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and Radian aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-The version number still carries on from Orbe 0.15.5 until Radian's first
-release.
+Radian's first release is 0.16.0; its version number carries on from Orbe 0.15.5.
 
 ## [Unreleased]
+
+## [0.16.0] - 2026-10-23
 
 ### Added
 
@@ -88,5 +89,11 @@ release.
 - Pressing Enter in the Command Bar before new suggestions arrived could run
   the previous first row instead of what you typed.
 - A Space swipe forced a layout on every frame for nothing.
+- The welcome page showed Orbe's ring logo; it now shows Radian's R, and the
+  mounted DMG shows Radian's icon too.
+- The welcome page no longer asks for donations to Orbe. Orbe stays credited
+  in the README, NOTICE and License, and in Help > Support Orbe.
+- The end-to-end tests pass again on macOS and Windows.
 
-[Unreleased]: https://github.com/amsultan2010/radian-browser/commits/main
+[Unreleased]: https://github.com/amsultan2010/radian-browser/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/amsultan2010/radian-browser/releases/tag/v0.16.0
