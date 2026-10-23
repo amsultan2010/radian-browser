@@ -335,9 +335,9 @@
 
 /* Aperçu (Peek) : voile sombre derrière la page et boutons sur le côté. */
 body.peek #backdrop, body.peek-out #backdrop { background: rgba(0, 0, 0, 0.42); }
-body.peek #backdrop, body.peek #peek { animation: fade var(--peek-ms, 200ms) var(--ease-out) both; }
+body.peek #backdrop, body.peek #peek { animation: fade var(--peek-ms, 230ms) var(--ease-out) both; }
 body.peek-pull #backdrop { animation: none; opacity: var(--pull-o, 1); transition: opacity var(--pull-ms, 0ms) var(--ease-out); }
-body.peek-out #backdrop, body.peek-out #peek { animation: fade-out var(--peek-ms, 150ms) var(--ease-in) both; pointer-events: none; }
+body.peek-out #backdrop, body.peek-out #peek { animation: fade-out var(--peek-ms, 180ms) var(--ease-out) both; pointer-events: none; }
 @keyframes fade { from { opacity: 0; } }
 @keyframes fade-out { to { opacity: 0; } }
 #peek { position: fixed; top: 22px; right: 8px; display: flex; flex-direction: column; gap: 8px; }

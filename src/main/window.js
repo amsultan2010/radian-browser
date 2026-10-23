@@ -3467,7 +3467,7 @@ class OrbeWindow {
     this.flushPeek();
     const state = this.peekState;
     this.peekState = null;
-    place(state.view, this.peekSeed(this.peekRect(), state.point), ms, 'ease-in');
+    place(state.view, this.peekSeed(this.peekRect(), state.point), ms); // Arc closes it ease-out too
     this.peekOverlay({ leaving: true, ms });
     const done = () => {
       if (!this.win.isDestroyed()) {
