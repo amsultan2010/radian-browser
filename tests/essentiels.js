@@ -446,6 +446,27 @@ module.exports = async function essentielsTests(ctx) {
   await until(() => permissions.get(priv.wc.session, B, 'notifications') === true, 'réponse retenue en mémoire');
   check('navigation privée : la réponse n’est pas écrite dans le profil', !('notifications' in (store.state.permissions[B] || {})));
 
+  // A click on a page's notification brings its tab forward (EXT-10).
+  {
+    const shown = [];
+    const show0 = permissions.env.showPage;
+    permissions.env.showPage = (wc) => { shown.push(wc); return true; };
+    const notify = (wc, senderFrame = wc.mainFrame) => permissions.internals.notificationClicked({ sender: wc, senderFrame });
+    permissions.set(cam.wc.session, A, 'notifications', false);
+    notify(cam.wc);
+    permissions.set(cam.wc.session, A, 'notifications', true);
+    notify(cam.wc, { parent: cam.wc.mainFrame, url: A + '/' });
+    notify(cam.wc);
+    check('notification clicked: believed only from a top frame of a site allowed to notify', shown.length === 1 && shown[0] === cam.wc, shown.length);
+    await js(cam.wc, `(() => { const n = new Notification('essai'); n.dispatchEvent(new Event('click')); n.close(); return n instanceof Notification; })()`);
+    await sleep(300);
+    check('notification: a click the page fakes brings nothing forward', shown.length === 1, shown.length);
+    permissions.env.showPage = show0;
+    const later = await open(A + '/apres', 'Page /apres');
+    check('notification clicked: its tab is selected again', w.activeId === later.id && show0(cam.wc) === true && w.activeId === cam.id, w.activeId);
+    delete store.state.permissions[A].notifications;
+  }
+
   // ---------------------------------------------------------------- Partage d'écran
   const fake = { id: 'screen:9999:0', name: 'Écran <b>factice</b>', kind: 'screen', thumb: '', source: { id: 'screen:9999:0', name: 'Écran factice' } };
   displayMedia.env.sources = async () => [fake];

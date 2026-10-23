@@ -186,7 +186,20 @@ function setup({ win, sessions, test = false }) {
   controlDeps.live = live;
   // Geste récent de l'utilisateur dans un onglet (relevé par popups.gesture) : sert au partage d'écran et aux liens externes.
   const gesture = (wc) => { const where = locate(wc); if (!where) return null; return where.rt.gesture ? Date.now() - where.rt.gesture : Infinity; };
-  permissions.setup({ test, toast, ownerWindow, gesture });
+  // Notification clicked (permissions.js): its tab is selected, in its Space and window, and
+  // Radian comes forward with that window; a Little Radian page brings its own window.
+  const showPage = (wc) => {
+    const where = locate(wc);
+    const little = where ? null : require('./little').LittleWindow.all.find((l) => l.view && l.view.webContents === wc);
+    const bw = where ? where.owner.win : little && little.win;
+    if (!bw || bw.isDestroyed()) return false;
+    if (where) where.owner.activate(where.rt.id);
+    if (bw.isMinimized()) bw.restore();
+    bw.show();
+    bw.focus();
+    return true;
+  };
+  permissions.setup({ test, toast, ownerWindow, gesture, showPage });
   displayMedia.setup({ test, toast });
   certs.setup();
   auth.setup();
