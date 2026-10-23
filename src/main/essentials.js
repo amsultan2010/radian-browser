@@ -138,6 +138,8 @@ function siteControl(w, deps = {}) {
         case 'zap': self.close(null); w.run('zap'); return null;
         case 'share': self.close(null); w.share(); return null;
         case 'capture': self.close(null); w.capture(); return null;
+        case 'captureFull': self.close(null); w.captureFull(); return null;
+        case 'capturePortrait': self.close(null); w.capturePortrait(); return null;
         case 'details': self.close(null); siteInfo(w); return null;
         case 'ext': {
           const x = (extActions(w) || []).find((e) => String(e.id) === String(arg) && e.enabled !== false);

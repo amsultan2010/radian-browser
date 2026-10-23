@@ -24,7 +24,7 @@ function el(tag, cls, text) {
 function button(label, fn, { cls = '', risky = false, id = '' } = {}) {
   const b = el('button', 'b ' + cls, label);
   if (id) b.id = id;
-  b.onclick = () => { if (!risky || settled()) fn(); };
+  b.onclick = (e) => { if (!risky || settled()) fn(e); };
   return b;
 }
 
@@ -308,7 +308,8 @@ const KINDS = {
     const quick = el('div', 'quick');
     quick.append(button(t('edit.copyUrl'), () => run('copy'), { id: 'c-copy', cls: 'small' }));
     if (p.share) quick.append(button(t('tb.share'), () => run('share'), { id: 'c-share', cls: 'small' }));
-    quick.append(button(t('ctl.capture'), () => run('capture'), { id: 'c-capture', cls: 'small' }), button(t('ctl.details'), () => run('details'), { id: 'c-details', cls: 'small' }));
+    // As in Arc: Capture Full Page, or with Option held a Portrait capture.
+    quick.append(button(t('ctl.capture'), () => run('capture'), { id: 'c-capture', cls: 'small' }), button(t('ctl.captureFull'), (e) => run(e.altKey ? 'capturePortrait' : 'captureFull'), { id: 'c-capture-full', cls: 'small' }), button(t('ctl.details'), () => run('details'), { id: 'c-details', cls: 'small' }));
     body.append(quick);
 
     const shield = section(t('ctl.blocking'), 'c-shield');
