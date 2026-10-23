@@ -174,7 +174,7 @@ function broadcastSettings() {
 
 const SETTABLE = {
   ...prefs.SETTABLE,
-  lang: (v) => v === 'fr' || v === 'en',
+  lang: (v) => typeof v === 'string' && Object.hasOwn(locales, v),
   searchEngine: (v) => Object.prototype.hasOwnProperty.call(suggest.ENGINES, v),
   suggestions: (v) => typeof v === 'boolean',
   archiveAfterHours: (v) => [0, 12, 24, 168, 720].includes(v),
@@ -212,15 +212,14 @@ function shortcutGroups() {
     title,
     items: [...names.map((n) => commands.byName.get(n)).filter((c) => c && shortcuts.keysOf(c.name)).map((c) => ({ label: t(c.label), keys: shortcuts.keysOf(c.name) })), ...extra],
   });
-  const fr = store.state.settings.lang === 'fr';
   return [
     group(t('menu.tabs'), ['newTab', 'commandBar', 'closeTab', 'reopen', 'togglePin', 'nextTab', 'prevTab', 'clearToday'], [
-      { label: fr ? 'Aller à l’onglet 1 à 9' : 'Go to tab 1 to 9', keys: '⌘1 … ⌘9' },
-      { label: fr ? 'Onglets récents (maintenir ⌃)' : 'Recent tabs (hold ⌃)', keys: '⌃⇥' },
+      { label: t('keys.goTabN'), keys: '⌘1 … ⌘9' },
+      { label: t('keys.recentTabs'), keys: '⌃⇥' },
     ]),
-    group(t('menu.spaces'), ['nextSpace', 'prevSpace'], [{ label: fr ? 'Aller à l’Espace 1 à 9' : 'Go to Space 1 to 9', keys: '⌃1 … ⌃9' }]),
+    group(t('menu.spaces'), ['nextSpace', 'prevSpace'], [{ label: t('keys.goSpaceN'), keys: '⌃1 … ⌃9' }]),
     group(t('menu.window'), ['newWindow', 'newIncognito', 'newLittle', 'closeWindow', 'toggleSidebar', 'toggleToolbar', 'addSplit', 'closeSplit', 'fullscreen', 'library', 'downloads', 'newEasel', 'settings']),
-    group(fr ? 'Page' : 'Page', ['back', 'forward', 'reload', 'forceReload', 'stop', 'find', 'findNext', 'findPrev', 'copyUrl', 'copyUrlMarkdown', 'capture', 'captureToEasel', 'savePage', 'print', 'zoomIn', 'zoomOut', 'actualSize', 'history']),
+    group(t('keys.page'), ['back', 'forward', 'reload', 'forceReload', 'stop', 'find', 'findNext', 'findPrev', 'copyUrl', 'copyUrlMarkdown', 'capture', 'captureToEasel', 'savePage', 'print', 'zoomIn', 'zoomOut', 'actualSize', 'history']),
     group(t('view.developer'), ['devtools', 'inspect', 'console', 'source']),
   ];
 }

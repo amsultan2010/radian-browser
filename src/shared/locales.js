@@ -1296,6 +1296,11 @@ const fr = {
   'ext.updateAsk': 'La nouvelle version de « {name} » demande davantage',
   'ext.updateRefused': 'Mise à jour non installée : les nouvelles autorisations ont été refusées. La version {version} reste en place.',
   'impb.undoExpired': 'Trop tard pour annuler cet import d’ici : retire les signets à la main.',
+  // Shortcuts sheet rows without a command of their own
+  'keys.goTabN': 'Aller à l’onglet 1 à 9',
+  'keys.recentTabs': 'Onglets récents (maintenir ⌃)',
+  'keys.goSpaceN': 'Aller à l’Espace 1 à 9',
+  'keys.page': 'Page',
 };
 
 const en = {
@@ -2572,6 +2577,11 @@ const en = {
   'ext.updateAsk': 'The new version of “{name}” asks for more',
   'ext.updateRefused': 'Update not installed: the new permissions were declined. Version {version} stays in place.',
   'impb.undoExpired': 'Too late to undo this import from here: remove the bookmarks by hand.',
+  // Shortcuts sheet rows without a command of their own
+  'keys.goTabN': 'Go to tab 1 to 9',
+  'keys.recentTabs': 'Recent tabs (hold ⌃)',
+  'keys.goSpaceN': 'Go to Space 1 to 9',
+  'keys.page': 'Page',
 };
 
 module.exports = { fr, en };

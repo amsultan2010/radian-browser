@@ -17,6 +17,13 @@ const uid = () => crypto.randomBytes(6).toString('base64url');
 const lightIcon = (u) => !!u && !(u.startsWith('data:') && u.length > 2048);
 const INTERNAL_PAGE = /^orbe:\/\/app\/(library|shortcuts|welcome|notes|easel)\.html/;
 
+function systemLang() {
+  try {
+    for (const l of require('electron').app.getPreferredSystemLanguages()) if (Object.hasOwn(locales, l.slice(0, 2))) return l.slice(0, 2);
+  } catch {} // outside Electron (pure-node tests)
+  return 'en';
+}
+
 const DEFAULT_SETTINGS = {
   // Anglais par défaut ; les essais (npm test, test:ui) vérifient le texte de référence, en français.
   lang: process.argv.includes('--selftest') || process.env.ORBE_UI_TEST === '1' ? 'fr' : 'en',
@@ -124,7 +131,10 @@ class Store {
   normalize(s) {
     const from = s.version || 0;
     s.version = 2;
+    const fresh = !(s.settings && s.settings.lang);
     s.settings = { ...DEFAULT_SETTINGS, ...(s.settings || {}) };
+    // A first launch speaks the Mac's language when Radian has it (tests keep their fixed language).
+    if (fresh && s.settings.lang === 'en') s.settings.lang = systemLang();
     s.tabs = s.tabs || {};
     // Profils : chacun a ses cookies, ses connexions et ses favoris.
     if (!Array.isArray(s.profiles) || !s.profiles.length) s.profiles = [{ id: 'default', name: this.t('profiles.default', s.settings.lang) }];
@@ -199,7 +209,7 @@ class Store {
 
   t(key, lang, vars) {
     const l = lang || (this.state && this.state.settings.lang) || 'en';
-    let str = (locales[l] && locales[l][key]) || locales.fr[key] || key;
+    let str = (locales[l] && locales[l][key]) || locales.en[key] || locales.fr[key] || key;
     if (vars) for (const k of Object.keys(vars)) str = str.replace(`{${k}}`, vars[k]);
     return str;
   }

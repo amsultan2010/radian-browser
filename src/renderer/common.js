@@ -12,7 +12,7 @@ let KEYS = O.keys || {};
 const KEY_IN_TEXT = { 'side.empty': 'newTab', 'side.toggle': 'toggleSidebar' };
 
 function t(key, vars) {
-  let s = (O.locales[lang] && O.locales[lang][key]) || O.locales.fr[key] || key;
+  let s = (O.locales[lang] && O.locales[lang][key]) || O.locales.en[key] || O.locales.fr[key] || key;
   const cmd = KEY_IN_TEXT[key];
   const before = cmd && O.defaultKeys && O.defaultKeys[cmd];
   if (before && KEYS[cmd] !== before) s = KEYS[cmd] ? s.replace(before, KEYS[cmd]) : s.replace(` (${before})`, '').replace(before, '…');
