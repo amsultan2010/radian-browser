@@ -4,8 +4,7 @@
 // ceux qui feraient d'Orbe un Node.js à tout faire pour un autre programme
 // (ELECTRON_RUN_AS_NODE, NODE_OPTIONS, --inspect) : il lirait sinon le coffre
 // de mots de passe sous l'identité d'Orbe.
-// Sur macOS, à faire avant la signature (binaire « Electron Framework ») ;
-// sous Windows, la table est dans Orbe.exe.
+// À faire avant la signature (binaire « Electron Framework »).
 const fs = require('fs');
 
 const FUSE_SENTINEL = Buffer.from('dL7pKGdnNz796PbbjQWNKmHXBZaB9tsX');

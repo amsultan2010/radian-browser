@@ -1,7 +1,5 @@
-# Radian's tests on macOS and Windows, on every push.
-# On Windows the workflow also builds the app, checks it (fuses, icon, version
-# info, registration as a browser) and takes screenshots, uploaded as
-# artifacts of the run.
+# Radian's tests on macOS, on every push. Screenshots taken by the end-to-end
+# tests are uploaded as artifacts of the run.
 name: Tests
 
 on:
@@ -10,13 +8,9 @@ on:
 
 jobs:
   tests:
-    name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: macOS
+    runs-on: macos-latest
     timeout-minutes: 25
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,19 +35,10 @@ jobs:
       - name: Site search and link routing rules
         run: node tests/liens.test.js
 
-      # The default screen on Windows runners is too small for the window.
-      - name: Screen at 1920 × 1080 (Windows)
-        if: runner.os == 'Windows'
-        continue-on-error: true
-        shell: pwsh
-        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
-
-      - name: Screenshot folder and version
-        shell: bash
+      - name: Screenshot folder
         run: |
           mkdir -p "$RUNNER_TEMP/captures"
           echo "ORBE_SHOTS=$RUNNER_TEMP/captures" >> "$GITHUB_ENV"
-          echo "ORBE_VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
 
       - name: End-to-end tests
         run: node scripts/dev.js --selftest
@@ -62,92 +47,10 @@ jobs:
       - name: Extensions in the browser
         run: node scripts/test-ext.js
 
-      # After the end-to-end tests: on Windows, the installed engine
-      # (electron.exe) is the test executable. Elsewhere these tests are skipped.
-      - name: Windows build parts (fuses, executable resources, registry)
-        run: node --test tests/pe-resources.test.js
-
-      - name: Build the app (Windows)
-        if: runner.os == 'Windows'
-        run: node scripts/build-win.js --icon
-
-      - name: Built app starts (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: ORBE_SCENARIO=tests/smoke.js ORBE_USER_DATA="$RUNNER_TEMP/orbe-smoke" "$HOME/.orbe-dev/dist/Radian/Radian.exe" --selftest --orbe-test
-
-      - name: Archive, fuses, version and icon of Radian.exe (Windows)
-        if: runner.os == 'Windows'
-        run: node tests/win-package.js
-
-      # Independent check with PowerShell, without going through Radian's code.
-      - name: Version info read by PowerShell (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $v = (Get-Item "$HOME/.orbe-dev/dist/Radian/Radian.exe").VersionInfo
-          $v | Format-List ProductName, FileDescription, CompanyName, FileVersion, ProductVersion, OriginalFilename, InternalName, LegalCopyright
-          if ($v.ProductName -ne 'Radian' -or $v.FileDescription -ne 'Radian' -or $v.CompanyName -ne 'Radian' -or $v.OriginalFilename -ne 'Radian.exe') { throw 'Informations de version inattendues' }
-          if ($v.FileVersion -ne $env:ORBE_VERSION -or $v.ProductVersion -ne $env:ORBE_VERSION) { throw "Version inattendue : $($v.FileVersion)" }
-
-      - name: Default browser, register (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: ORBE_WIN_DEFAULT_STEP=register ORBE_SCENARIO=tests/win-default.js ORBE_USER_DATA="$RUNNER_TEMP/orbe-defaut" "$HOME/.orbe-dev/dist/Radian/Radian.exe" --selftest --orbe-test
-
-      - name: Default browser, registry after registering (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $exe = (Resolve-Path "$HOME/.orbe-dev/dist/Radian/Radian.exe").Path
-          reg query 'HKCU\Software\Classes\RadianHTML' /s
-          if ($LASTEXITCODE) { throw 'RadianHTML absent' }
-          reg query 'HKCU\Software\Clients\StartMenuInternet\Radian' /s
-          if ($LASTEXITCODE) { throw 'StartMenuInternet\Radian absent' }
-          reg query 'HKCU\Software\RegisteredApplications' /v Radian
-          if ($LASTEXITCODE) { throw 'Radian absent de RegisteredApplications' }
-          # List of registered apps: Radian is in it, and its path leads to readable capabilities.
-          $apps = Get-ItemProperty 'HKCU:\Software\RegisteredApplications'
-          Write-Host "Applications inscrites pour l'utilisateur : $(($apps.PSObject.Properties | Where-Object { $_.Name -notlike 'PS*' } | ForEach-Object Name) -join ', ')"
-          $caps = "HKCU:\$($apps.Radian)"
-          if ((Get-ItemProperty $caps).ApplicationName -ne 'Radian') { throw 'Capacités illisibles' }
-          if ((Get-ItemProperty $caps).ApplicationDescription -notmatch 'Radian — a') { throw 'Description mal encodée' }
-          foreach ($scheme in 'http', 'https') { if ((Get-ItemProperty "$caps\URLAssociations").$scheme -ne 'RadianHTML') { throw "Capacité $scheme absente" } }
-          foreach ($ext in '.htm', '.html') { if ((Get-ItemProperty "$caps\FileAssociations").$ext -ne 'RadianHTML') { throw "Capacité $ext absente" } }
-          $cmd = (Get-ItemProperty 'HKCU:\Software\Classes\RadianHTML\shell\open\command').'(default)'
-          if ($cmd -ne "`"$exe`" `"%1`"") { throw "Commande inattendue : $cmd" }
-          Write-Host "Commande d'ouverture : $cmd"
-
-      - name: Default browser, unregister (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: ORBE_WIN_DEFAULT_STEP=unregister ORBE_SCENARIO=tests/win-default.js ORBE_USER_DATA="$RUNNER_TEMP/orbe-defaut" "$HOME/.orbe-dev/dist/Radian/Radian.exe" --selftest --orbe-test
-
-      - name: Default browser, registry after unregistering (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          foreach ($key in 'HKCU:\Software\Classes\RadianHTML', 'HKCU:\Software\Clients\StartMenuInternet\Radian') { if (Test-Path $key) { throw "Clé encore présente : $key" } }
-          $apps = Get-ItemProperty 'HKCU:\Software\RegisteredApplications'
-          if ($null -ne $apps.Radian) { throw 'Radian encore dans RegisteredApplications' }
-          foreach ($ext in '.htm', '.html') {
-            $p = Get-ItemProperty "HKCU:\Software\Classes\$ext\OpenWithProgids" -ErrorAction SilentlyContinue
-            if ($p -and ($p.PSObject.Properties.Name -contains 'RadianHTML')) { throw "RadianHTML encore proposé pour $ext" }
-          }
-          Write-Host 'Plus aucune trace de l''inscription dans le registre.'
-
       - name: Screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: captures-${{ matrix.os }}
+          name: captures-macos
           path: ${{ runner.temp }}/captures
           if-no-files-found: ignore
-
-      - name: Windows app (zip)
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: Radian-${{ env.ORBE_VERSION }}-windows-x64
-          path: ~/.orbe-dev/dist/Radian-${{ env.ORBE_VERSION }}-windows-x64.zip
-          compression-level: 0
