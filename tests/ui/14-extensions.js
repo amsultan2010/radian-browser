@@ -1,4 +1,4 @@
-// Extensions, à la souris réelle : bouton sous l'adresse, fenêtre de
+// Extensions, à la souris réelle : bouton dans la pastille d'adresse, fenêtre de
 // l'extension, panneau latéral (ouverture, largeur, fermeture).
 const assert = require('node:assert/strict');
 const path = require('path');
@@ -23,15 +23,23 @@ module.exports = {
       return !!top && (top === el || el.contains(top));
     }, sel);
 
-    await t.verifier('le bouton de l’extension apparaît sous l’adresse, sans recouvrir ni être recouvert', async () => {
+    await t.verifier('le bouton de l’extension paraît dans la pastille d’adresse au survol de la barre latérale, avant « Copier le lien », et le texte de l’adresse s’arrête avant lui', async () => {
       await jusqua(() => shell.evaluate(() => document.querySelectorAll('#exts .ext').length === 1), 'bouton d’extension');
+      await jusqua(async () => { await shell.mouse.move(600, 600); return !(await shell.locator('#exts .ext').isVisible()); }, 'bouton masqué hors survol');
+      await jusqua(async () => { await shell.hover('#url'); return shell.locator('#exts .ext').isVisible(); }, 'bouton visible au survol');
       assert.equal(await sousLePointeur(shell, '#exts .ext'), true);
-      const boites = await shell.evaluate(() => ['url-row', 'exts', 'scroll'].map((x) => { const r = document.getElementById(x).getBoundingClientRect(); return [r.top, r.bottom]; }));
-      assert.ok(boites[0][1] <= boites[1][0] + 1 && boites[1][1] <= boites[2][0] + 1, 'adresse, boutons et listes se suivent sans chevauchement : ' + JSON.stringify(boites));
+      const r = await shell.evaluate(() => {
+        const box = (id) => document.getElementById(id).getBoundingClientRect();
+        const u = box('url-row');
+        const b = document.querySelector('#exts .ext').getBoundingClientRect();
+        const pad = parseFloat(getComputedStyle(document.getElementById('url')).paddingRight);
+        return { dedans: b.left >= u.left && b.right <= u.right + 0.5 && b.top >= u.top && b.bottom <= u.bottom + 0.5, avantCopie: b.right <= box('url-copy').left + 0.5, texte: u.right - pad <= b.left + 0.5 };
+      });
+      assert.deepEqual(r, { dedans: true, avantCopie: true, texte: true });
       assert.equal(await shell.getAttribute('#exts .ext', 'title'), 'Essai');
     });
 
-    await t.verifier('barre d’outils affichée (⇧⌘D) : le bouton de l’extension passe à droite de l’adresse, et s’y laisse cliquer ; barre masquée, il revient sous l’adresse', async () => {
+    await t.verifier('barre d’outils affichée (⇧⌘D) : le bouton de l’extension passe à droite de l’adresse, et s’y laisse cliquer ; barre masquée, il revient dans la pastille', async () => {
       await ctx.menu('Shift+Cmd+D');
       await jusqua(() => shell.locator('#toolbar').isVisible(), 'barre d’outils');
       await jusqua(() => shell.evaluate(() => document.querySelectorAll('#tb-exts .ext').length === 1 && document.querySelectorAll('#exts .ext').length === 0), 'bouton dans la barre d’outils');
@@ -45,11 +53,11 @@ module.exports = {
       await ctx.principal(({ req, w }) => req('ext-host.js').closePopup(w));
       await jusqua(() => !pageExt('popup.html'), 'fenêtre refermée', 8000);
       await ctx.menu('Shift+Cmd+D');
-      await jusqua(() => shell.evaluate(() => document.querySelectorAll('#exts .ext').length === 1 && document.querySelectorAll('#tb-exts .ext').length === 0), 'bouton revenu sous l’adresse');
+      await jusqua(() => shell.evaluate(() => document.querySelectorAll('#exts .ext').length === 1 && document.querySelectorAll('#tb-exts .ext').length === 0), 'bouton revenu dans la pastille');
     });
 
     await t.verifier('un clic sur le bouton ouvre la fenêtre de l’extension', async () => {
-      await ctx.clic(shell, '#exts .ext');
+      await ctx.clic(shell, '#exts .ext', { survol: shell.locator('#url') });
       const popup = await jusqua(() => pageExt('popup.html'), 'fenêtre de l’extension', 8000);
       await jusqua(() => popup.evaluate(() => !!document.getElementById('out')), 'contenu de la fenêtre');
       assert.equal(await popup.evaluate(() => typeof chrome.tabs.query), 'function');
@@ -59,7 +67,7 @@ module.exports = {
 
     await t.verifier('le panneau latéral s’ouvre à droite et la page lui laisse la place', async () => {
       const avant = (await ctx.etat()).vuePage.width;
-      const popup = pageExt('popup.html') || (await (async () => { await ctx.clic(shell, '#exts .ext'); return jusqua(() => pageExt('popup.html'), 'fenêtre', 8000); })());
+      const popup = pageExt('popup.html') || (await (async () => { await ctx.clic(shell, '#exts .ext', { survol: shell.locator('#url') }); return jusqua(() => pageExt('popup.html'), 'fenêtre', 8000); })());
       await popup.evaluate(() => chrome.windows.getCurrent().then((w) => chrome.sidePanel.open({ windowId: w.id })));
       await jusqua(() => pageExt('panel.html'), 'page du panneau', 8000);
       const apres = await jusqua(async () => { const l = (await ctx.etat()).vuePage.width; return l < avant - 200 ? l : null; }, 'page rétrécie');
@@ -122,14 +130,15 @@ module.exports = {
     await t.verifier('clic droit sur le bouton de l’extension : son menu ; « Détacher » retire le bouton, qui revient une fois épinglé', async () => {
       // Le menu natif ne se pilote pas : il est relevé, puis son article actionné.
       await ctx.principal(({ w }) => { global.__menuExt = null; w.__popup = w.popup; w.popup = (tpl) => { global.__menuExt = tpl; }; });
+      await shell.hover('#url');
       await shell.locator('#exts .ext').click({ button: 'right' });
       await jusqua(() => ctx.principal(() => !!global.__menuExt), 'menu de l’extension');
       const articles = await ctx.principal(() => global.__menuExt.filter((i) => i.type !== 'separator').map((i) => i.label));
       assert.deepEqual(articles.slice(1), ['Options', 'Détacher de la barre latérale', 'Gérer les extensions…']);
       await ctx.principal(() => { global.__menuExt.find((i) => i.label === 'Détacher de la barre latérale').click(); });
       await jusqua(() => shell.evaluate(() => document.querySelectorAll('#exts .ext').length === 0), 'bouton détaché');
-      const boites = await shell.evaluate(() => document.getElementById('exts').getBoundingClientRect().height);
-      assert.equal(boites, 0, 'la rangée vide ne garde pas de place');
+      const boites = await shell.evaluate(() => document.getElementById('exts').getBoundingClientRect().width);
+      assert.equal(boites, 0, 'la rangée vide ne prend pas de place dans la pastille');
       await ctx.principal(({ req, w }, x) => { req('ext-ui.js').setPinned(x, true); w.popup = w.__popup; }, id);
       await jusqua(() => shell.evaluate(() => document.querySelectorAll('#exts .ext').length === 1), 'bouton revenu');
     });

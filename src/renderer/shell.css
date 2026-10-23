@@ -91,17 +91,21 @@ svg.i.tb { width: 20px; height: 20px; }
 #top svg.i.tb { position: relative; top: 0.5px; }
 
 /* Arc : la pastille d’adresse occupe toute la largeur (x 8–220, y 46–82) ; les témoins
-   (cadenas, copier le lien, fenêtres bloquées, capture, bouclier) se posent dans son bout droit. */
-#url-row { display: grid; grid-template-columns: 1fr repeat(5, auto); align-items: center; flex: none; }
+   (cadenas, extensions épinglées, copier le lien, fenêtres bloquées, capture, bouclier) se posent dans son bout droit. */
+/* The address keeps a fixed minimum (not `auto`): the padding shell.js gives #url then never feeds back into the columns. */
+#url-row { display: grid; grid-template-columns: minmax(72px, 1fr) repeat(6, auto); align-items: center; flex: none; }
 #url { grid-area: 1 / 1 / 2 / -1; }
 #lock { grid-area: 1 / 2; }
-#url-copy { grid-area: 1 / 3; }
-#popup-note { grid-area: 1 / 4; }
-#capture-note { grid-area: 1 / 5; }
-#shield { grid-area: 1 / 6; margin-right: 4px; }
-#lock, #url-row .note, #shield { z-index: 1; } /* au-dessus de la pastille, qui les précède ou les suit */
+#exts { grid-area: 1 / 3; }
+#url-copy { grid-area: 1 / 4; }
+#popup-note { grid-area: 1 / 5; }
+#capture-note { grid-area: 1 / 6; }
+#shield { grid-area: 1 / 7; margin-right: 4px; }
+#lock, #url-row .note, #shield, #exts { z-index: 1; } /* au-dessus de la pastille, qui les précède ou les suit */
 /* Au repos, rien dans la pastille (comme Arc) : cadenas d’une page sûre et bouclier paraissent au survol. */
 #url-row:not(:hover) #shield { display: none; }
+/* As in Arc, pinned extensions show in the pill when the sidebar is hovered (help center GIF). */
+#sidebar:not(:hover) #exts { display: none; }
 #shield {
   height: 28px;
   min-width: 28px;
@@ -793,12 +797,14 @@ html[data-family="dark"] body.blurred.no-tab #card { box-shadow: 0 0 0 200vmax r
 .divider.v { width: auto; height: 8px; cursor: row-resize; }
 .divider.v::after { width: 34px; height: 3px; }
 
-/* Boutons des extensions, sous l'adresse. */
-#exts { display: flex; flex-wrap: wrap; gap: 4px; flex: none; }
+/* Pinned extensions inside the address pill, one 28 pt slot each like Arc's copy and site buttons.
+   The row is one line tall: buttons that do not fit wrap onto a clipped second line, so
+   only whole buttons show (Arc: show the toolbar to see more of them). */
+#exts { display: flex; flex-wrap: wrap; height: 28px; overflow: hidden; }
+#exts .ext { width: 28px; }
 /* Barre d'outils : les extensions à droite de l'adresse, sur une ligne. */
 #tb-exts { display: flex; gap: 2px; flex: none; align-items: center; -webkit-app-region: no-drag; }
 #tb-exts:empty { display: none; }
-#exts:not(:empty) { margin-top: 6px; }
 .ext { width: 30px; height: 28px; border-radius: 8px; display: grid; place-items: center; position: relative; transition: background 120ms, transform var(--spring-bouncy); }
 .ext:hover { background: var(--hover); }
 .ext:active { transform: scale(0.9); transition: transform var(--press); }
@@ -822,7 +828,6 @@ html[data-family="dark"] body.blurred #url:has(.placeholder) > * { opacity: 0.55
 #url-row:hover #url-copy:not([hidden]) { display: grid; }
 #url-copy:hover { background: var(--hover); color: var(--fg); }
 #url-copy:active { transform: scale(0.88); transition: transform var(--press); }
-#url-row:hover #url:has(~ #url-copy:not([hidden])) { padding-right: 38px; }
 
 /* En-tête de l'Espace : « … » et chevron de la section épinglée, au survol. */
 #space-head[hidden] { display: none; }

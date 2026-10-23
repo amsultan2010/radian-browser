@@ -454,7 +454,7 @@ module.exports = async function finitions2Tests(ctx) {
       render(s0);
       return { on, off, rest: document.querySelectorAll('#tb-exts .ext, #exts .ext').length === (s0.extensions || []).length };
     })()`);
-    check('barre d’outils affichée : les boutons d’extension sont à droite de l’adresse (et plus sous la pastille) ; masquée, ils reviennent sous l’adresse',
+    check('barre d’outils affichée : les boutons d’extension sont à droite de l’adresse (et plus dans la pastille) ; masquée, ils reviennent dans la pastille',
       seen.on.tb === 1 && seen.on.side === 0 && seen.on.title === 'Essai <i>' && seen.on.tags === 0 && seen.on.badge === '7' && seen.on.after === 'tb-exts' && seen.off.tb === 0 && seen.off.side === 1 && seen.rest === true, JSON.stringify(seen));
   }
 

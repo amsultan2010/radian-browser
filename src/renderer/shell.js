@@ -424,7 +424,7 @@ function render(s) {
   drawSpaces(s.spaces, s.space.id);
 
   // Boutons des extensions : icône, pastille, clic = fenêtre de l'extension.
-  // Barre d'outils affichée : ils sont à sa droite (comme dans Arc), et non plus sous l'adresse.
+  // In the address pill, revealed on hover (shell.css); with the toolbar shown they sit at its right, always visible (Arc).
   const exts = s.toolbar && !FLOATING ? $('tb-exts') : $('exts');
   const extSig = JSON.stringify(s.extensions || []);
   if (exts._sig !== extSig) {
@@ -816,6 +816,13 @@ sidebar.addEventListener('contextmenu', (e) => {
 $('trace-note').onclick = () => send('trace:stop');
 $('update-open').onclick = () => send('update:show');
 $('update-close').onclick = () => send('update:dismiss');
+// Buttons revealed in the address pill sit over it: the address text stops before the first one instead of running under it.
+const urlFit = new ResizeObserver(() => {
+  const row = $('url-row');
+  const first = [...row.children].find((el) => el.id !== 'url' && el.offsetWidth);
+  $('url').style.paddingRight = first ? `${Math.round(row.getBoundingClientRect().right - first.getBoundingClientRect().left) + 4}px` : '';
+});
+for (const el of $('url-row').children) if (el.id !== 'url') urlFit.observe(el);
 for (const box of [$('exts'), $('tb-exts')]) {
   box.addEventListener('contextmenu', (e) => {
     const b = e.target.closest('[data-ext]');
