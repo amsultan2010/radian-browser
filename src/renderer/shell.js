@@ -1223,7 +1223,8 @@ function onState(s) {
   } else if (slide && S && s.space.id !== S.space.id) {
     slideEnd(); // changement venu d'ailleurs pendant un balayage : le balayage est abandonné
   }
-  const visible = FLOATING ? s.sidebar.peek && !s.sidebar.visible : s.sidebar.visible;
+  // Floating (hover-revealed) sidebar: Arc 1.170 swaps the list in one frame (live capture, motion.md); docked, it slides.
+  const visible = !FLOATING && s.sidebar.visible;
   if (S && !slide && s.space.id !== S.space.id && visible && document.body.classList.contains('open') && !reducedMotion.matches && !drag) return slideTo(s);
   const first = !S;
   render(s);
