@@ -1229,6 +1229,8 @@ class OrbeWindow {
     });
     wc.on('did-start-loading', () => { rt.loading = true; OrbeWindow.pushAll(); });
     wc.on('did-stop-loading', () => { rt.loading = false; OrbeWindow.pushAll(); });
+    // Share Quote: the page preload says whether the page has selected text (src/preload/page.js).
+    wc.ipc.on('orbe-quote', (e, has) => { if (!!rt.quote !== (has === true)) { rt.quote = has === true; OrbeWindow.pushAll(); } });
     wc.on('page-title-updated', (e, title) => {
       if (isErrorPage(wc.getURL())) return;
       tab.title = String(title).slice(0, 300);
@@ -1251,7 +1253,7 @@ class OrbeWindow {
       if (!incognito) store.visit(url, tab.title, tab.favicon);
       touch();
     };
-    wc.on('did-navigate', (e, url) => { rt.typed = false; rt.objected = false; rt.sleeping = false; hooks.navigated(rt); navigated(url); });
+    wc.on('did-navigate', (e, url) => { rt.typed = false; rt.objected = false; rt.sleeping = false; rt.quote = false; hooks.navigated(rt); navigated(url); });
     // Nouveau document : titre, artiste et pochette annoncés par le précédent ne valent
     // plus rien (le lecteur miniature ne montre jamais ceux d'un autre site).
     wc.on('did-navigate', () => { rt.media = null; });
@@ -4830,6 +4832,8 @@ class OrbeWindow {
         canForward: !!(wc && wc.navigationHistory.canGoForward()),
         blocked: wc && settings.adblock ? (adblock.stats().blockedByTab.get(wc.id) || 0) : 0,
         shield: !settings.adblock ? 'off' : (tab && adblock.isSiteAllowed(tab.url) ? 'allowed' : 'on'),
+        // Share Quote: text selected in the page, except on Gmail, Slack and YouTube, as in Arc.
+        quote: !!(tab && this.activeRt && this.activeRt.quote) && !/(^|\.)(mail\.google|slack|youtube)\.com(:\d+)?$/.test(prefs.hostOf(tab.url)),
         // Connexion (cadenas, « Non sécurisé »), fenêtres surgissantes bloquées, captures en cours.
         ...hooks.navState(this, this.activeRt, tab),
       },
