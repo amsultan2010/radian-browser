@@ -49,8 +49,11 @@
     const fwd = button('ib mp-fwd', 'fwd15', 'media.forward', () => act(p.id, 'forward'));
     const next = button('ib mp-next', 'next', 'media.next', () => act(p.id, 'next'));
     const pip = button('ib mp-pip', 'pip', 'media.pip', () => act(p.id, 'pip'));
+    // In a call: the page's microphone and camera (as in Arc's mini player).
+    const mic = button('ib mp-mic', 'microphone', 'media.mic', () => act(p.id, 'mic'));
+    const cam = button('ib mp-cam', 'camera', 'media.cam', () => act(p.id, 'cam'));
     const mute = button('ib mp-mute', 'sound', 'media.mute', () => act(p.id, 'mute'));
-    ctl.append(prev, back, fwd, next, pip, mute);
+    ctl.append(prev, back, fwd, next, pip, mic, cam, mute);
     const play = button('ib mp-play', 'pause', 'media.pause', () => act(p.id, 'toggle'));
     const x = button('mp-x', 'x', 'media.close', () => act(p.id, 'close'));
     const bar = document.createElement('div');
@@ -58,7 +61,7 @@
     const fill = document.createElement('i');
     bar.appendChild(fill);
     el.append(open, ctl, play, x, bar);
-    el._ = { art, title, inner, sub, prev, back, fwd, next, pip, mute, play, bar, fill };
+    el._ = { art, title, inner, sub, prev, back, fwd, next, pip, mic, cam, mute, play, bar, fill };
     scrub(el, bar);
     el.addEventListener('pointerleave', () => replay(el));
     volume(el, mute);
@@ -229,7 +232,7 @@
       marquee(el);
     }
     // Rien n'est réécrit qui n'ait changé : un état reçu ne coûte aucune mise en page.
-    const key = [p.sub, p.playing, p.muted, p.prev, p.next, p.seek, p.pip].join('\u0001');
+    const key = [p.sub, p.playing, p.muted, p.prev, p.next, p.seek, p.pip, p.mic, p.cam].join('\u0001');
     if (el._key !== key) {
       el._key = key;
       _.sub.textContent = p.sub || '';
@@ -244,6 +247,11 @@
       _.back.hidden = !p.seek;
       _.fwd.hidden = !p.seek;
       _.pip.hidden = !p.pip;
+      for (const [b, state, name] of [[_.mic, p.mic, 'microphone'], [_.cam, p.cam, 'camera']]) {
+        b.hidden = !state;
+        b.firstChild.firstChild.setAttribute('href', state === 'off' ? `#i-${name}-off` : `#i-${name}`);
+        b.setAttribute('aria-pressed', String(state === 'on'));
+      }
     }
     // Volume annoncé par la page — sauf pendant qu'on le règle ici (l'écho arrive après).
     if (el._vol !== p.volume && !(el._volAt && performance.now() - el._volAt < 1500)) level(el, typeof p.volume === 'number' ? p.volume : 1);
