@@ -1306,6 +1306,14 @@ const fr = {
   'set.noteAppNotes': 'Notes de Radian',
   // Share Quote
   'side.shareQuote': 'Partager la citation',
+  // More app icons
+  'appIcon.hologram': 'Hologramme',
+  'appIcon.metal': 'Métal',
+  'appIcon.schoolbook': 'Cahier',
+  'appIcon.arcade': 'Arcade',
+  'appIcon.sunset': 'Crépuscule',
+  'appIcon.graphite': 'Graphite',
+  'appIcon.fluted': 'Verre cannelé',
 };
 
 const en = {
@@ -2592,6 +2600,14 @@ const en = {
   'set.noteAppNotes': 'Radian Notes',
   // Share Quote
   'side.shareQuote': 'Share Quote',
+  // More app icons
+  'appIcon.hologram': 'Hologram',
+  'appIcon.metal': 'Metal',
+  'appIcon.schoolbook': 'Schoolbook',
+  'appIcon.arcade': 'Arcade',
+  'appIcon.sunset': 'Sunset',
+  'appIcon.graphite': 'Graphite',
+  'appIcon.fluted': 'Fluted Glass',
 };
 
 // Other languages live in their own files and fall back to English (src/renderer/common.js `t`).

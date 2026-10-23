@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <filter id="tile-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.3"/></filter>
+    <filter id="sticker-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#3A0E3F" flood-opacity="0.32"/></filter>
+    <clipPath id="tile"><path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z"/></clipPath>
+    <mask id="band" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><path d="M284.3 493A275 275 0 0 0 755.7 394" fill="none" stroke="#fff" stroke-width="128" stroke-linecap="round" stroke-linejoin="round"/></mask>
+    <clipPath id="left"><path d="M56.1 -523.3L1129.5 1623.3L56.1 2160L-1017.2 13.3Z"/></clipPath>
+    <clipPath id="right"><path d="M56.1 -523.3L1129.5 1623.3L2202.8 1086.6L1129.5 -1060Z"/></clipPath>
+    <clipPath id="stem"><rect x="306.3" y="0" width="128" height="1024"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="100" x2="0" y2="924" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFC56B"/><stop offset="0.38" stop-color="#FF7A5C"/><stop offset="0.72" stop-color="#D2477A"/><stop offset="1" stop-color="#5A2B84"/></linearGradient>
+    <radialGradient id="sun" cx="512" cy="800" r="380" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFF4C9"/><stop offset="0.77" stop-color="#FFC861"/><stop offset="0.775" stop-color="#FFC861" stop-opacity="0.35"/><stop offset="1" stop-color="#FFC861" stop-opacity="0"/></radialGradient>
+  </defs>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="#E8665E" filter="url(#tile-shadow)"/>
+  <path d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4 -20.2 195a185 185 0 0 1 -80.8 80.8c-39.6 20.2 -91.4 20.2 -195 20.2H396c-103.6 0 -155.4 0 -195 -20.2a185 185 0 0 1 -80.8 -80.8c-20.2 -39.6 -20.2 -91.4 -20.2 -195V396c0 -103.6 0 -155.4 20.2 -195a185 185 0 0 1 80.8 -80.8c39.6 -20.2 91.4 -20.2 195 -20.2Z" fill="url(#bg)"/>
+  <!-- A low sun behind the mark, cut by the horizon. -->
+  <g clip-path="url(#tile)">
+    <rect x="100" y="420" width="824" height="380" fill="url(#sun)"/>
+    <rect x="100" y="800" width="824" height="124" fill="#4A2377"/>
+    <rect x="100" y="800" width="824" height="6" fill="#FFD27A" fill-opacity="0.55"/>
+  </g>
+  <g fill="none" stroke="#FFF6E8" stroke-width="180" stroke-linecap="round" stroke-linejoin="round" filter="url(#sticker-shadow)">
+    <path d="M370.3 697V326H474.3A112 140 0 0 1 546.3 573.2L608.2 697"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394"/>
+  </g>
+  <g fill="none" stroke-width="128" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M370.3 697V326" stroke="#7B2D8E"/>
+    <path d="M370.3 559.8V697" stroke="#3E1A6B"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#FF6A3D" clip-path="url(#left)"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#FFAE42" clip-path="url(#right)"/>
+    <path d="M284.3 493A275 275 0 0 0 755.7 394" stroke="#E2492A" clip-path="url(#stem)"/>
+    <path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#7B2D8E"/>
+    <path d="M370.3 326H474.3A112 140 0 0 1 546.3 573.2L608.2 697" stroke="#631F77" mask="url(#band)"/>
+  </g>
+</svg>
