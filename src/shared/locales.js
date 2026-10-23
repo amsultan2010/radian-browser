@@ -2584,4 +2584,5 @@ const en = {
   'keys.page': 'Page',
 };
 
-module.exports = { fr, en };
+// Other languages live in their own files and fall back to English (src/renderer/common.js `t`).
+module.exports = { fr, en, es: require('./locales-es') };
