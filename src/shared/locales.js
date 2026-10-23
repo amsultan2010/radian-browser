@@ -1299,6 +1299,7 @@ const fr = {
   // More app icons
   'appIcon.hologram': 'Hologramme',
   'appIcon.metal': 'Métal',
+  'appIcon.schoolbook': 'Cahier',
 };
 
 const en = {
@@ -2578,6 +2579,7 @@ const en = {
   // More app icons
   'appIcon.hologram': 'Hologram',
   'appIcon.metal': 'Metal',
+  'appIcon.schoolbook': 'Schoolbook',
 };
 
 module.exports = { fr, en };
