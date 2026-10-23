@@ -555,6 +555,7 @@ module.exports = async function finitions2Tests(ctx) {
     w.handle('battery', { level: 0.14, charging: true });
     OrbeWindow.trimLive({ deep: true });
     check('réglage coupé, ou machine rebranchée : le délai choisi revient', asked.join() === `${3 * 36e5},${3 * 36e5}`, asked.join());
+    check('machine rebranchée : un message dit que l’économie de batterie s’arrête', toasts.slice(1).join() === T('toast.batterySaverOff'), toasts.join('|'));
     check('réglage « Économie de batterie » : actif par défaut', require('../src/main/store').DEFAULT_SETTINGS.batterySaver === true);
     veille.pick = pick0;
     w.toast = toast0;

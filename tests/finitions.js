@@ -523,7 +523,7 @@ module.exports = async function finitionsTests(ctx) {
   w.activate(G3);
   toasts.length = 0;
   w.moveToSpace(G1, away.id);
-  check('onglet déplacé vers un autre Espace : un message le dit, avec le nom de l’Espace', toasts.length === 1 && toasts[0] === T('toast.tabMoved', { space: 'Ailleurs' }) && away.today.includes(G1) && w.spaceId === space.id);
+  check('onglet déplacé vers un autre Espace : un message le dit', toasts.length === 1 && toasts[0] === T('toast.tabMoved', { space: 'Ailleurs' }) && away.today.includes(G1) && w.spaceId === space.id);
   w.toastClick();
   check('… un clic sur le message mène à l’onglet, dans son nouvel Espace', w.spaceId === away.id && w.activeId === G1);
   w.switchSpace(space.id);

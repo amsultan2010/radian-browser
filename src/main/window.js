@@ -1534,6 +1534,9 @@ class OrbeWindow {
       };
       say(0);
       OrbeWindow.trimLive({ deep: true });
+    } else if (before && !now) {
+      const target = w || OrbeWindow.focused || OrbeWindow.primary;
+      if (target && !target.win.isDestroyed()) target.toast(t('toast.batterySaverOff'));
     }
     return true;
   }
